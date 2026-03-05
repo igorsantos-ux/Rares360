@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:20-slim
 
 WORKDIR /app
 
@@ -7,6 +7,8 @@ RUN npm install
 
 COPY . .
 
+# Expõe a porta do Vite
 EXPOSE 3000
 
-CMD ["npm", "run", "dev"]
+# Rodar o Vite aceitando conexões externas
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
