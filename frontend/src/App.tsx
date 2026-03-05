@@ -16,7 +16,7 @@ import DocumentsPage from './pages/Documents';
 
 function App() {
   return (
-    <div className="flex min-h-screen bg-[#F0EAD6]">
+    <div className="flex min-h-screen bg-[#F8FAFC]">
       <Sidebar />
       <main className="flex-1 ml-72 p-8 lg:p-12 transition-all duration-300">
         <div className="max-w-7xl mx-auto">
