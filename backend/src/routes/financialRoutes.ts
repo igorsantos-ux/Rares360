@@ -5,6 +5,7 @@ const router = Router();
 
 router.get('/summary', FinancialController.getSummary);
 router.get('/break-even', FinancialController.getBreakEven);
+router.get('/evolution', FinancialController.getEvolution);
 router.post('/transactions', FinancialController.createTransaction);
 
 export default router;

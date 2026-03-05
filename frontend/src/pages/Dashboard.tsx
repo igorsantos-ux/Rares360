@@ -37,6 +37,15 @@ const Dashboard = () => {
         }
     });
 
+    // Fetch evolution data for the chart
+    const { data: evolution } = useQuery({
+        queryKey: ['financial-evolution'],
+        queryFn: async () => {
+            const response = await financialApi.getEvolution();
+            return response.data;
+        }
+    });
+
     const currentGoal = goals?.find((g: any) => g.type === 'PROFIT') || goals?.[0];
 
     // Create transaction mutation
@@ -141,14 +150,28 @@ const Dashboard = () => {
                             </select>
                         </div>
                         <div className="h-72 mt-auto flex items-end gap-3 px-2">
-                            {[45, 62, 58, 75, 88, 72].map((h, i) => (
-                                <div key={i} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer">
-                                    <div className="w-full bg-slate-100 rounded-2xl relative overflow-hidden transition-all duration-300" style={{ height: `${h}%` }}>
-                                        <div className="absolute inset-x-0 bottom-0 bg-[#0f172a] rounded-2xl group-hover:bg-[#10b981] transition-all duration-300" style={{ height: '60%' }}></div>
+                            {evolution?.map((item: any, i: number) => {
+                                const maxVal = Math.max(...evolution.map((e: any) => e.income), 100);
+                                const h = (item.income / maxVal) * 100;
+                                const profitH = item.income > 0 ? (item.profit / item.income) * 100 : 0;
+
+                                return (
+                                    <div key={i} className="flex-1 flex flex-col items-center gap-3 group cursor-pointer">
+                                        <div className="w-full bg-slate-100 rounded-2xl relative overflow-hidden transition-all duration-300 h-full flex flex-col justify-end">
+                                            <div
+                                                className="w-full bg-slate-200/50 rounded-2xl absolute group-hover:bg-slate-200 transition-all duration-300"
+                                                style={{ height: `${h}%` }}
+                                            >
+                                                <div
+                                                    className="absolute inset-x-0 bottom-0 bg-[#0f172a] rounded-2xl group-hover:bg-[#10b981] transition-all duration-300"
+                                                    style={{ height: `${Math.max(profitH, 0)}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                        <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">{item.month}</span>
                                     </div>
-                                    <span className="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Mes {i + 1}</span>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 

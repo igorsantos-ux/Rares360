@@ -72,23 +72,23 @@ async function main() {
                     cost: proc.cost,
                     doctorId: doc.id,
                     customerId: cust.id,
-                    createdAt: new Date(2026, month - 1, day)
+                    date: new Date(2026, month - 1, day)
                 }
             })
         }
 
         // Despesas Fixas
         await prisma.transaction.create({
-            data: { description: 'Aluguel Unidade Central', amount: 8000, type: 'EXPENSE', category: 'Custos Fixos', createdAt: new Date(2026, month - 1, 5) }
+            data: { description: 'Aluguel Unidade Central', amount: 8000, type: 'EXPENSE', category: 'Custos Fixos', date: new Date(2026, month - 1, 5) }
         })
         await prisma.transaction.create({
-            data: { description: 'Salários Equipe', amount: 12000, type: 'EXPENSE', category: 'Custos Fixos', createdAt: new Date(2026, month - 1, 20) }
+            data: { description: 'Salários Equipe', amount: 12000, type: 'EXPENSE', category: 'Custos Fixos', date: new Date(2026, month - 1, 20) }
         })
         await prisma.transaction.create({
-            data: { description: 'Marketing Digital', amount: 2500, type: 'EXPENSE', category: 'Marketing', createdAt: new Date(2026, month - 1, 10) }
+            data: { description: 'Marketing Digital', amount: 2500, type: 'EXPENSE', category: 'Marketing', date: new Date(2026, month - 1, 10) }
         })
         await prisma.transaction.create({
-            data: { description: 'Insumos de Clínica', amount: Math.floor(Math.random() * 3000) + 1500, type: 'EXPENSE', category: 'Suprimentos', createdAt: new Date(2026, month - 1, 15) }
+            data: { description: 'Insumos de Clínica', amount: Math.floor(Math.random() * 3000) + 1500, type: 'EXPENSE', category: 'Suprimentos', date: new Date(2026, month - 1, 15) }
         })
     }
 

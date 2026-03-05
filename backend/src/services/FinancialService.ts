@@ -51,7 +51,44 @@ export class FinancialService {
         };
     }
 
-    static async createTransaction(data: { amount: number; type: 'INCOME' | 'EXPENSE'; category: string; description: string; doctorId?: string }) {
+    static async getEvolution() {
+        // Obter os últimos 6 meses
+        const evolution = [];
+        const now = new Date();
+
+        for (let i = 5; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const nextDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+
+            const monthTransactions = await prisma.transaction.findMany({
+                where: {
+                    date: {
+                        gte: date,
+                        lt: nextDate
+                    }
+                }
+            });
+
+            const income = monthTransactions
+                .filter(t => t.type === 'INCOME')
+                .reduce((acc, t) => acc + t.amount, 0);
+
+            const expenses = monthTransactions
+                .filter(t => t.type === 'EXPENSE')
+                .reduce((acc, t) => acc + t.amount, 0);
+
+            evolution.push({
+                month: date.toLocaleString('pt-BR', { month: 'short' }).toUpperCase(),
+                income,
+                expenses,
+                profit: income - expenses
+            });
+        }
+
+        return evolution;
+    }
+
+    static async createTransaction(data: { amount: number; type: 'INCOME' | 'EXPENSE'; category: string; description: string; doctorId?: string; procedureName?: string; cost?: number; customerId?: string }) {
         return await prisma.transaction.create({
             data: {
                 amount: data.amount,
@@ -59,6 +96,9 @@ export class FinancialService {
                 category: data.category,
                 description: data.description,
                 doctorId: data.doctorId || null,
+                procedureName: data.procedureName || null,
+                cost: data.cost ?? 0,
+                customerId: data.customerId || null,
                 date: new Date()
             }
         });

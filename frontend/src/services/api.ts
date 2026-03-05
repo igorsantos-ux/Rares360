@@ -7,6 +7,7 @@ const api = axios.create({
 export const financialApi = {
     getSummary: () => api.get('/financial/summary'),
     getBreakEven: () => api.get('/financial/break-even'),
+    getEvolution: () => api.get('/financial/evolution'),
     createTransaction: (data: any) => api.post('/financial/transactions', data),
 };
 

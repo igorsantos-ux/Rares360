@@ -20,6 +20,15 @@ export class FinancialController {
         }
     }
 
+    static async getEvolution(req: Request, res: Response) {
+        try {
+            const evolution = await FinancialService.getEvolution();
+            res.json(evolution);
+        } catch (error) {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
     static async createTransaction(req: Request, res: Response) {
         try {
             const { amount, type, category, description, doctorId } = req.body;
