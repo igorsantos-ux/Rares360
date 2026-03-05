@@ -85,13 +85,13 @@ const DFCPage = () => {
                 />
                 <CashStatCard
                     label="Geração de Caixa"
-                    value={`R$ ${(dre?.netResult || 0).toLocaleString()}`}
+                    value={`R$ ${dfc.operational.total.toLocaleString()}`}
                     icon={<TrendingUp size={20} />}
                     positive
                 />
                 <CashStatCard
                     label="Saldo Final (Projetado)"
-                    value={`R$ ${(145200 + (dre?.netResult || 0)).toLocaleString()}`}
+                    value={`R$ ${dfc.finalBalance.toLocaleString()}`}
                     icon={<ArrowRightLeft size={20} />}
                 />
             </div>
@@ -102,13 +102,12 @@ const DFCPage = () => {
                 <div className="bg-white/70 backdrop-blur-md p-10 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm">
                     <h3 className="font-extrabold text-2xl text-[#697D58] mb-8">Atividades Operacionais</h3>
                     <div className="space-y-4">
-                        <DFCRow label="(+) Recebimentos de Clientes" value={dre?.revenue} type="in" />
-                        <DFCRow label="(-) Pagamentos a Fornecedores" value={dre?.variableCosts} type="out" />
-                        <DFCRow label="(-) Pagamentos de Pessoal" value={dre?.fixedExpenses * 0.6} type="out" />
-                        <DFCRow label="(-) Impostos e Taxas" value={dre?.revenue * 0.08} type="out" />
+                        {dfc.operational.details.map((item, idx) => (
+                            <DFCRow key={idx} label={item.category} value={item.value} type={item.type === 'inflow' ? 'in' : 'out'} />
+                        ))}
                         <div className="pt-4 border-t border-[#8A9A5B]/10 mt-6 font-black flex justify-between text-[#697D58]">
                             <span>(=) Fluxo Operacional Líquido</span>
-                            <span>R$ {dre?.netResult?.toLocaleString()}</span>
+                            <span>R$ {dfc.operational.total.toLocaleString()}</span>
                         </div>
                     </div>
                 </div>
@@ -118,9 +117,9 @@ const DFCPage = () => {
                     <div className="bg-white/70 backdrop-blur-md p-10 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm">
                         <h3 className="font-extrabold text-2xl text-[#697D58] mb-8">Atividades de Investimento</h3>
                         <div className="space-y-4">
-                            <DFCRow label="(-) Aquisição de Equipamentos" value={0} type="out" />
-                            <DFCRow label="(-) Reformas e Benfeitorias" value={0} type="out" />
-                            <p className="text-xs text-slate-400 italic text-center py-4">Nenhum investimento registrado no período.</p>
+                            {dfc.investing.details.map((item, idx) => (
+                                <DFCRow key={idx} label={item.category} value={item.value} type={item.type === 'inflow' ? 'in' : 'out'} />
+                            ))}
                         </div>
                     </div>
 

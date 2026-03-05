@@ -86,7 +86,7 @@ const DREPage = () => {
                 />
                 <SummaryCard
                     label="Resultado Líquido"
-                    value={`R$ ${dre?.netResult?.toLocaleString() || '0'}`}
+                    value={`R$ ${dre?.netProfit?.toLocaleString() || '0'}`}
                     icon={<TrendingUp size={20} />}
                     color="moss"
                 />
@@ -109,11 +109,11 @@ const DREPage = () => {
                     <div className="h-px bg-[#8A9A5B]/10 my-4"></div>
 
                     <DRERow label="(=) Margem de Contribuição" value={dre?.revenue * 0.92 - dre?.variableCosts} isSubtotal />
-                    <DRERow label="(-) Despesas Operacionais Fixas" value={dre?.fixedExpenses} isNegative />
-                    <DRERow label="(-) Despesas Administrativas" value={dre?.fixedExpenses * 0.3} isNegative />
+                    <DRERow label="(-) Despesas Operacionais Fixas" value={dre?.fixedCosts} isNegative />
+                    <DRERow label="(-) Despesas Administrativas" value={dre?.fixedCosts * 0.3} isNegative />
                     <div className="h-px bg-[#8A9A5B]/10 my-4"></div>
 
-                    <DRERow label="(=) RESULTADO OPERACIONAL (EBITDA)" value={dre?.netResult} isTotal />
+                    <DRERow label="(=) RESULTADO OPERACIONAL (EBITDA)" value={dre?.netProfit} isTotal />
                 </div>
 
                 <div className="mt-12 bg-[#8A9A5B]/5 p-8 rounded-3xl border border-[#8A9A5B]/10 flex items-start gap-4">
@@ -123,7 +123,7 @@ const DREPage = () => {
                     <div>
                         <h4 className="font-black text-[#697D58] text-sm mb-1 uppercase tracking-widest">Insight de Performance</h4>
                         <p className="text-slate-600 font-medium text-sm leading-relaxed">
-                            Sua lucratividade atual de <span className="font-bold">{(dre?.netResult / (dre?.revenue || 1) * 100).toFixed(1)}%</span> está acima da média do setor (18%).
+                            Sua lucratividade atual de <span className="font-bold">{(dre?.netProfit / (dre?.revenue || 1) * 100).toFixed(1)}%</span> está acima da média do setor (18%).
                             Considere reinvestir parte do resultado em marketing para aumentar o volume de pacientes particulares.
                         </p>
                     </div>
