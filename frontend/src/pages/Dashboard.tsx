@@ -18,6 +18,8 @@ import {
 
 const Dashboard = () => {
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+    const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+    const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
 
     // Dados Fictícios para Visualização (Mock Data)
     const summary = {
@@ -58,9 +60,12 @@ const Dashboard = () => {
                     <p className="text-slate-500 font-medium mt-1">Aqui está a visão geral da sua clínica hoje.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/20 rounded-2xl font-bold text-sm text-[#697D58] hover:bg-[#8A9A5B]/5 transition-all shadow-sm">
+                    <button
+                        onClick={() => setIsFilterModalOpen(true)}
+                        className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/20 rounded-2xl font-bold text-sm text-[#697D58] hover:bg-[#8A9A5B]/5 transition-all shadow-sm"
+                    >
                         <Filter size={18} />
-                        Filtrar Período
+                        {selectedPeriod}
                     </button>
                     <button
                         onClick={() => setIsTransactionModalOpen(true)}
@@ -213,20 +218,76 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Modal placeholder (to be improved) */}
-            {isTransactionModalOpen && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div className="bg-white p-10 rounded-[2rem] max-w-md w-full animate-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-xl font-bold text-[#697D58]">Novo Lançamento</h3>
-                            <button onClick={() => setIsTransactionModalOpen(false)} className="text-slate-400 hover:text-slate-600">
-                                <ArrowRight size={20} />
+            {/* Filter Modal */}
+            {isFilterModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                    <div className="bg-white rounded-[2.5rem] max-w-md w-full p-10 shadow-2xl animate-in zoom-in-95 duration-300">
+                        <div className="flex justify-between items-center mb-8">
+                            <h3 className="text-2xl font-black text-[#697D58]">Filtrar Período</h3>
+                            <button onClick={() => setIsFilterModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                <Plus size={24} className="rotate-45 text-slate-400" />
                             </button>
                         </div>
-                        <p className="text-slate-500 mb-8">Formulário de lançamento em desenvolvimento...</p>
+
+                        <div className="grid grid-cols-1 gap-3">
+                            {['Hoje', 'Últimos 7 dias', 'Este Mês', 'Últimos 30 dias', 'Este Ano', 'Personalizado'].map((period) => (
+                                <button
+                                    key={period}
+                                    onClick={() => {
+                                        setSelectedPeriod(period);
+                                        setIsFilterModalOpen(false);
+                                    }}
+                                    className={`w-full py-4 px-6 rounded-2xl font-bold text-left transition-all flex justify-between items-center ${selectedPeriod === period
+                                            ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 translate-x-1'
+                                            : 'bg-slate-50 text-slate-600 hover:bg-[#8A9A5B]/10 hover:text-[#697D58]'
+                                        }`}
+                                >
+                                    {period}
+                                    {selectedPeriod === period && <ArrowRight size={18} />}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={() => setIsFilterModalOpen(false)}
+                            className="w-full mt-8 py-4 bg-[#697D58] text-white rounded-2xl font-black shadow-xl hover:brightness-110 active:scale-95 transition-all"
+                        >
+                            Aplicar Filtro
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal placeholder (to be improved) */}
+            {isTransactionModalOpen && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
+                    <div className="bg-white p-10 rounded-[2.5rem] max-w-md w-full animate-in zoom-in-95 duration-300 shadow-2xl">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-2xl font-bold text-[#697D58]">Novo Lançamento</h3>
+                            <button onClick={() => setIsTransactionModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                <Plus size={24} className="rotate-45 text-slate-400" />
+                            </button>
+                        </div>
+                        <div className="space-y-6">
+                            <p className="text-slate-500 font-medium leading-relaxed">Selecione o tipo de lançamento que deseja realizar hoje:</p>
+                            <div className="grid grid-cols-2 gap-4">
+                                <button className="p-6 bg-[#8A9A5B]/10 border border-[#8A9A5B]/20 rounded-3xl flex flex-col items-center gap-3 hover:bg-[#8A9A5B] hover:text-white transition-all group">
+                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#8A9A5B] group-hover:bg-white/20 group-hover:text-white shadow-sm">
+                                        <TrendingUp size={24} />
+                                    </div>
+                                    <span className="font-bold text-sm">Receita</span>
+                                </button>
+                                <button className="p-6 bg-[#DEB587]/10 border border-[#DEB587]/20 rounded-3xl flex flex-col items-center gap-3 hover:bg-[#DEB587] hover:text-white transition-all group">
+                                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#DEB587] group-hover:bg-white/20 group-hover:text-white shadow-sm">
+                                        <TrendingDown size={24} />
+                                    </div>
+                                    <span className="font-bold text-sm">Despesa</span>
+                                </button>
+                            </div>
+                        </div>
                         <button
                             onClick={() => setIsTransactionModalOpen(false)}
-                            className="w-full py-3 bg-[#8A9A5B] text-white rounded-xl font-bold"
+                            className="mt-10 w-full py-4 bg-[#697D58] text-white rounded-2xl font-black shadow-xl hover:brightness-110 transition-all"
                         >
                             Fechar
                         </button>
