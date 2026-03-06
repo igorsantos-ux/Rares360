@@ -98,7 +98,7 @@ const AboutPage = () => {
                         <PillarCard
                             icon={<BookOpen size={32} />}
                             title="Expertise"
-                            desc="Vasta experiência em reestruturação de fluxo de caixa e planejamento tributário estratégico."
+                            desc="Especialista em gestão financeira estratégica para clínicas médicas, utilizando dados e indicadores para orientar decisões operacionais e comerciais com foco em resultado, eficiência e lucratividade."
                         />
                     </div>
                 </div>
@@ -108,8 +108,8 @@ const AboutPage = () => {
             <section className="py-40 px-8 bg-white relative overflow-hidden">
                 <div className="max-w-4xl mx-auto text-center relative z-10">
                     <div className="text-[12rem] font-black text-[#8A9A5B]/10 absolute -top-40 left-1/2 -translate-x-1/2 select-none">"</div>
-                    <h3 className="text-3xl md:text-5xl font-black text-[#697D58] leading-tight tracking-tight italic">
-                        "Meu objetivo não é apenas organizar números, mas dar liberdade para que você possa focar no que realmente ama fazer, sabendo que seu futuro financeiro está em mãos seguras."
+                    <h3 className="text-2xl md:text-4xl font-black text-[#697D58] leading-tight tracking-tight italic">
+                        "Meu objetivo é trazer clareza para a gestão do seu negócio. Que você entenda seus números, tenha controle sobre a operação da sua clínica e consiga tomar decisões com segurança, sabendo exatamente onde está, para onde quer ir e quais caminhos precisam ser seguidos para alcançar esse resultado."
                     </h3>
                     <div className="mt-12 flex flex-col items-center">
                         <div className="w-16 h-1 bg-[#8A9A5B] mb-4"></div>
