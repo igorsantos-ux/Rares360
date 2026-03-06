@@ -21,6 +21,8 @@ const Dashboard = () => {
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
+    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
     const [transactionType, setTransactionType] = useState<'income' | 'expense' | null>(null);
     const [formData, setFormData] = useState({
         amount: '',
@@ -269,7 +271,9 @@ const Dashboard = () => {
                                     key={period}
                                     onClick={() => {
                                         setSelectedPeriod(period);
-                                        setIsFilterModalOpen(false);
+                                        if (period !== 'Personalizado') {
+                                            setIsFilterModalOpen(false);
+                                        }
                                     }}
                                     className={`w-full py-4 px-6 rounded-2xl font-bold text-left transition-all flex justify-between items-center ${selectedPeriod === period
                                         ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 translate-x-1'
