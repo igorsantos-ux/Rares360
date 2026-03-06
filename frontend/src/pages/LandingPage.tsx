@@ -29,7 +29,7 @@ const LandingPage = () => {
             {/* Navbar */}
             <nav className="fixed top-0 w-full z-[100] px-8 py-6 flex justify-between items-center backdrop-blur-md bg-white/30 border-b border-[#8A9A5B]/10">
                 <div className="flex items-center gap-2">
-                    <img src="/logo-alamino-dark.png" alt="Logo Roberta Alamino" className="h-16 w-auto object-contain" />
+                    <img src="/logo-alamino-dark.png" alt="Logo Roberta Alamino" className="h-20 w-auto object-contain" />
                 </div>
                 <div className="flex items-center gap-8">
                     <Link to="/about" className="text-[#697D58] font-bold hover:opacity-70 transition-opacity">Quem Somos</Link>

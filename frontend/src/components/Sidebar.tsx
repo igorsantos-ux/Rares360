@@ -35,8 +35,8 @@ const Sidebar = () => {
     return (
         <aside className="w-72 bg-[#F0EAD6] text-slate-800 flex flex-col h-screen fixed left-0 top-0 z-20 border-r border-[#8A9A5B]/20">
             <div className="p-8">
-                <div className="flex items-center gap-2">
-                    <img src="/logo-alamino-dark.png" alt="Logo Roberta Alamino" className="h-16 w-auto object-contain" />
+                <div className="flex justify-center mb-4">
+                    <img src="/logo-alamino-dark.png" alt="Logo Roberta Alamino" className="h-24 w-auto object-contain" />
                 </div>
             </div>
 

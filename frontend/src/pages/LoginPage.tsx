@@ -41,7 +41,7 @@ const LoginPage = () => {
                 {/* Logo Section */}
                 <div className="flex flex-col items-center mb-10">
                     <Link to="/" className="flex items-center gap-3 mb-4 group transition-all">
-                        <img src="/logo-alamino-dark.png" alt="Logo Roberta Alamino" className="w-64 h-auto object-contain group-hover:scale-105 transition-transform" />
+                        <img src="/logo-alamino-dark.png" alt="Logo Roberta Alamino" className="w-80 h-auto object-contain group-hover:scale-105 transition-transform" />
                     </Link>
                 </div>
 
