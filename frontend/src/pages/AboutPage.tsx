@@ -57,7 +57,7 @@ const AboutPage = () => {
                             <span className="text-[#8A9A5B]">gera resultados</span>.
                         </h1>
                         <p className="text-xl text-slate-500 font-medium leading-relaxed mb-10">
-                            Com mais de uma década de experiência no mercado financeiro, Roberta Alamino construiu uma carreira sólida focada na transformação de consultórios e empresas em negócios altamente lucrativos. Sua abordagem une técnica rigorosa com uma visão humana e estratégica.
+                            Com mais de uma década de vivência na operação de clínicas médicas, Roberta Alamino desenvolveu uma sólida experiência na gestão financeira, operacional, administrativa e estratégica desses negócios. Ao longo de sua trajetória, tem se dedicado a estruturar consultórios e transformá-los em negócios mais organizados, sustentáveis e preparados para crescer com consistência. Sua abordagem une análise técnica, visão estratégica e uma compreensão profunda da realidade operacional das clínicas.
                         </p>
 
                         <div className="flex gap-4">
