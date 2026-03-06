@@ -4,9 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import {
     Mail,
     Lock,
-    ArrowRight,
-    Github,
-    Chrome
+    ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -99,19 +97,6 @@ const LoginPage = () => {
                         </button>
                     </form>
 
-                    <div className="relative my-10">
-                        <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#8A9A5B]/20"></div></div>
-                        <div className="relative flex justify-center text-xs uppercase font-black tracking-widest text-[#8A9A5B]"><span className="bg-transparent px-4 backdrop-blur-md italic">Acesso Restrito</span></div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <button className="flex items-center justify-center gap-3 py-4 bg-white/40 border border-white rounded-2xl font-bold text-sm text-[#697D58] hover:bg-white/60 transition-all shadow-sm">
-                            <Chrome size={18} /> Google
-                        </button>
-                        <button className="flex items-center justify-center gap-3 py-4 bg-white/40 border border-white rounded-2xl font-bold text-sm text-[#697D58] hover:bg-white/60 transition-all shadow-sm">
-                            <Github size={18} /> GitHub
-                        </button>
-                    </div>
                 </div>
 
                 <p className="mt-10 text-center text-slate-500 font-medium">
