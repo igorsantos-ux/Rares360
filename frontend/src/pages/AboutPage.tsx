@@ -36,7 +36,7 @@ const AboutPage = () => {
                     >
                         <div className="aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl border-8 border-[#8A9A5B]/10">
                             <img
-                                src="/roberta_alamino_new.png"
+                                src="/roberta.png"
                                 alt="Roberta Alamino"
                                 className="w-full h-full object-cover"
                             />
