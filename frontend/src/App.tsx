@@ -1,4 +1,4 @@
-import Sidebar from './components/Sidebar';
+import Header from './components/Header';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
 import AboutPage from './pages/AboutPage';
@@ -26,8 +26,8 @@ function App() {
   const { user, loading } = useAuth();
   const isPublicPage = ['/', '/about', '/login'].includes(location.pathname);
 
-  // Só mostra Sidebar se for Staff/Admin de Clínica e o carregamento terminou
-  const showSidebar = !isPublicPage && !loading && user && user.role?.toUpperCase() !== 'ADMIN_GLOBAL';
+  // Só mostra Header se for Staff/Admin de Clínica e o carregamento terminou
+  const showHeader = !isPublicPage && !loading && user && user.role?.toUpperCase() !== 'ADMIN_GLOBAL';
 
   // Loading global para rotas privadas durante a recuperação da sessão
   if (loading && !isPublicPage) {
@@ -39,10 +39,10 @@ function App() {
   }
 
   return (
-    <div className={`flex min-h-screen ${isPublicPage ? 'bg-white' : 'bg-[#F0EAD6]'}`}>
-      {showSidebar && <Sidebar />}
-      <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'ml-0' : (showSidebar ? 'ml-72 p-8 lg:p-12' : 'p-0')}`}>
-        <div className={isPublicPage ? '' : (showSidebar ? 'max-w-7xl mx-auto' : '')}>
+    <div className={`flex flex-col min-h-screen ${isPublicPage ? 'bg-white' : 'bg-[#F0EAD6]'}`}>
+      {showHeader && <Header />}
+      <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'ml-0' : (showHeader ? 'pt-28 pb-12 px-8 lg:px-12 ml-0' : 'p-0')}`}>
+        <div className={isPublicPage ? '' : (showHeader ? 'max-w-7xl mx-auto' : '')}>
           <Routes>
             {/* Public Routes - Auto-redirect if logged in */}
             <Route path="/" element={
