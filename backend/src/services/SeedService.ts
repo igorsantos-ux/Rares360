@@ -1,15 +1,16 @@
 import prisma from '../lib/prisma.js';
+import { AuthService } from './AuthService.js';
 
 export class SeedService {
     static async autoSeedIfEmpty() {
         try {
-            const count = await prisma.transaction.count();
+            const count = await prisma.user.count();
             if (count === 0) {
-                console.log('Database is empty. Starting auto-seed with 2026 data...');
+                console.log('Database is empty. Starting auto-seed for Heath Finance SaaS...');
                 await this.runSeed();
                 console.log('Auto-seed completed successfully! 🚀');
             } else {
-                console.log(`Database already has ${count} transactions. Skipping auto-seed.`);
+                console.log(`Database already has ${count} users. Skipping auto-seed.`);
             }
         } catch (error) {
             console.error('Failed to run auto-seed:', error);
@@ -17,20 +18,54 @@ export class SeedService {
     }
 
     static async runSeed() {
-        // Limpeza (opcional, mas bom para o comando manual)
+        // Limpeza
         await prisma.transaction.deleteMany();
         await prisma.financialGoal.deleteMany();
         await prisma.lead.deleteMany();
         await prisma.stockItem.deleteMany();
         await prisma.doctor.deleteMany();
         await prisma.customer.deleteMany();
+        await prisma.user.deleteMany();
+        await prisma.clinic.deleteMany();
 
-        // 1. Médicos
+        const hashedPassword = await AuthService.hashPassword('admin123');
+
+        // 1. Criar Global Admin (ADMMM)
+        await prisma.user.create({
+            data: {
+                name: 'Igor Admin',
+                email: 'admin@heathfinance.com.br',
+                password: hashedPassword,
+                role: 'ADMIN_GLOBAL'
+            }
+        });
+
+        // 2. Criar Clínica de Teste
+        const clinic = await prisma.clinic.create({
+            data: {
+                name: 'Clínica Health Teste',
+                cnpj: '12.345.678/0001-99',
+                address: 'Av. Paulista, 1000 - São Paulo, SP',
+            }
+        });
+
+        // 3. Criar Admin da Clínica
+        await prisma.user.create({
+            data: {
+                name: 'Roberta Alamino',
+                email: 'roberta@alamino.com.br',
+                password: hashedPassword,
+                role: 'CLINIC_ADMIN',
+                clinicId: clinic.id
+            }
+        });
+
+        // 4. Médicos
         const doctors = [
-            { name: 'Dr. Marcelo Silva', specialty: 'Dermatologia', commission: 0.15 },
-            { name: 'Dra. Ana Oliveira', specialty: 'Estética Avançada', commission: 0.20 },
-            { name: 'Dr. Ricardo Santos', specialty: 'Cirurgia Plástica', commission: 0.25 },
-            { name: 'Dra. Juliana Lima', specialty: 'Harmonização Facial', commission: 0.18 },
+            { name: 'Dr. Marcelo Silva', specialty: 'Dermatologia', commission: 0.15, clinicId: clinic.id },
+            { name: 'Dra. Ana Oliveira', specialty: 'Estética Avançada', commission: 0.20, clinicId: clinic.id },
+            { name: 'Dr. Ricardo Santos', specialty: 'Cirurgia Plástica', commission: 0.25, clinicId: clinic.id },
+            { name: 'Dra. Juliana Lima', specialty: 'Harmonização Facial', commission: 0.18, clinicId: clinic.id },
         ];
 
         const createdDoctors = [];
@@ -38,13 +73,13 @@ export class SeedService {
             createdDoctors.push(await prisma.doctor.create({ data: d }));
         }
 
-        // 2. Clientes
+        // 5. Clientes
         const customers = [
-            { name: 'Maria Santos', email: 'maria@email.com', phone: '(11) 98888-7777' },
-            { name: 'João Pereira', email: 'joao@email.com', phone: '(11) 97777-6666' },
-            { name: 'Ana Costa', email: 'ana.c@email.com', phone: '(11) 96666-5555' },
-            { name: 'Roberto Lima', email: 'roberto@email.com', phone: '(11) 95555-4444' },
-            { name: 'Carla Dias', email: 'carla@email.com', phone: '(11) 94444-3333' },
+            { name: 'Maria Santos', email: 'maria@email.com', phone: '(11) 98888-7777', clinicId: clinic.id },
+            { name: 'João Pereira', email: 'joao@email.com', phone: '(11) 97777-6666', clinicId: clinic.id },
+            { name: 'Ana Costa', email: 'ana.c@email.com', phone: '(11) 96666-5555', clinicId: clinic.id },
+            { name: 'Roberto Lima', email: 'roberto@email.com', phone: '(11) 95555-4444', clinicId: clinic.id },
+            { name: 'Carla Dias', email: 'carla@email.com', phone: '(11) 94444-3333', clinicId: clinic.id },
         ];
 
         const createdCustomers = [];
@@ -52,7 +87,7 @@ export class SeedService {
             createdCustomers.push(await prisma.customer.create({ data: c }));
         }
 
-        // 3. Transações 2026
+        // 6. Transações 2026
         const procedures = [
             { name: 'Botox', price: 1500, cost: 600 },
             { name: 'Preenchimento', price: 2200, cost: 1100 },
@@ -60,7 +95,6 @@ export class SeedService {
             { name: 'Peeling', price: 600, cost: 150 },
         ];
 
-        // Gerar JAN, FEB e MAR de 2026
         for (let month = 1; month <= 3; month++) {
             const transCount = 20;
             for (let i = 0; i < transCount; i++) {
@@ -79,31 +113,31 @@ export class SeedService {
                         cost: proc.cost,
                         doctorId: doc.id,
                         customerId: cust.id,
+                        clinicId: clinic.id,
                         date: new Date(2026, month - 1, day)
                     }
                 });
             }
 
-            // Despesas mensais
             await prisma.transaction.create({
-                data: { description: 'Aluguel', amount: 8000, type: 'EXPENSE', category: 'Custos Fixos', date: new Date(2026, month - 1, 5) }
+                data: { description: 'Aluguel', amount: 8000, type: 'EXPENSE', category: 'Custos Fixos', clinicId: clinic.id, date: new Date(2026, month - 1, 5) }
             });
             await prisma.transaction.create({
-                data: { description: 'Salários Equipe', amount: 12000, type: 'EXPENSE', category: 'Custos Fixos', date: new Date(2026, month - 1, 20) }
+                data: { description: 'Salários Equipe', amount: 12000, type: 'EXPENSE', category: 'Custos Fixos', clinicId: clinic.id, date: new Date(2026, month - 1, 20) }
             });
         }
 
-        // 4. Metas
+        // 7. Metas
         const goals = [
-            { month: 1, year: 2026, target: 120000, achieved: 125000, type: 'PROFIT' },
-            { month: 2, year: 2026, target: 120000, achieved: 110000, type: 'PROFIT' },
-            { month: 3, year: 2026, target: 150000, achieved: 45000, type: 'PROFIT' },
+            { month: 1, year: 2026, target: 120000, achieved: 125000, type: 'PROFIT', clinicId: clinic.id },
+            { month: 2, year: 2026, target: 120000, achieved: 110000, type: 'PROFIT', clinicId: clinic.id },
+            { month: 3, year: 2026, target: 150000, achieved: 45000, type: 'PROFIT', clinicId: clinic.id },
         ];
         for (const g of goals) {
             await prisma.financialGoal.create({ data: g });
         }
 
-        // 5. Leads
+        // 8. Leads (Global ou por clínica? No schema não tem clinicId, vou manter global por enquanto ou adicionar depois)
         const leads = [
             { name: 'Juliana P.', source: 'Instagram', status: 'Novo' },
             { name: 'Marcos R.', source: 'Google', status: 'Contatado' },
@@ -113,10 +147,10 @@ export class SeedService {
             await prisma.lead.create({ data: l });
         }
 
-        // 6. Estoque
+        // 9. Estoque
         const items = [
-            { name: 'Botox 100U', category: 'Injetáveis', quantity: 15, minQuantity: 5, price: 1200 },
-            { name: 'Ácido Hialurônico', category: 'Injetáveis', quantity: 25, minQuantity: 10, price: 850 },
+            { name: 'Botox 100U', category: 'Injetáveis', quantity: 15, minQuantity: 5, price: 1200, clinicId: clinic.id },
+            { name: 'Ácido Hialurônico', category: 'Injetáveis', quantity: 25, minQuantity: 10, price: 850, clinicId: clinic.id },
         ];
         for (const it of items) {
             await prisma.stockItem.create({ data: it });

@@ -12,14 +12,15 @@ import {
     FolderOpen,
     LogOut
 } from 'lucide-react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 const Sidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const { logout } = useAuth();
 
     const handleLogout = () => {
-        // Aqui poderíamos limpar tokens de autenticação se existissem
+        logout();
         navigate('/login');
     };
 

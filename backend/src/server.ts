@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 
+import authRoutes from './routes/authRoutes.js';
+import saasRoutes from './routes/saasRoutes.js';
 import financialRoutes from './routes/financialRoutes.js';
 import coreRoutes from './routes/coreRoutes.js';
 import reportingRoutes from './routes/reportingRoutes.js';
@@ -20,6 +22,8 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+app.use('/api/auth', authRoutes);
+app.use('/api/saas', saasRoutes);
 app.use('/api/financial', financialRoutes);
 app.use('/api/core', coreRoutes);
 app.use('/api/reporting', reportingRoutes);

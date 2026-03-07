@@ -7,21 +7,38 @@ import {
     ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { authApi } from '../services/api';
 
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { login } = useAuth();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
-        // Mock login delay
-        setTimeout(() => {
+        setError('');
+
+        try {
+            const response = await authApi.login({ email, password });
+            const { token, user } = response.data;
+
+            login(token, user);
+
+            if (user.role === 'ADMIN_GLOBAL') {
+                navigate('/saas-dashboard');
+            } else {
+                navigate('/dashboard');
+            }
+        } catch (err: any) {
+            setError(err.response?.data?.error || 'Erro ao realizar login. Verifique suas credenciais.');
+        } finally {
             setIsLoading(false);
-            navigate('/dashboard');
-        }, 1500);
+        }
     };
 
     return (
@@ -51,6 +68,11 @@ const LoginPage = () => {
                     <p className="text-slate-500 font-medium mb-10">Entre com suas credenciais para gerenciar sua clínica.</p>
 
                     <form onSubmit={handleLogin} className="space-y-6">
+                        {error && (
+                            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-600 text-sm font-bold animate-pulse">
+                                {error}
+                            </div>
+                        )}
                         <div className="space-y-2">
                             <label className="text-xs font-black text-[#697D58] uppercase tracking-widest ml-4">E-mail</label>
                             <div className="relative group">

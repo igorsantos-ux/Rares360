@@ -2,8 +2,9 @@ import { Transaction, Doctor, StockItem } from '@prisma/client';
 import prisma from '../lib/prisma.js';
 
 export class MedicalService {
-    static async getProductivity() {
+    static async getProductivity(clinicId: string) {
         const doctors = await prisma.doctor.findMany({
+            where: { clinicId },
             include: { transactions: { where: { type: 'INCOME' } } }
         });
 
@@ -24,20 +25,23 @@ export class MedicalService {
         });
     }
 
-    static async createDoctor(data: { name: string; specialty: string; commission: number }) {
+    static async createDoctor(data: { name: string; specialty: string; commission: number; clinicId: string }) {
         return await prisma.doctor.create({
             data: {
                 name: data.name,
                 specialty: data.specialty,
-                commission: data.commission
+                commission: data.commission,
+                clinicId: data.clinicId
             }
         });
     }
 }
 
 export class InventoryService {
-    static async getStockStatus() {
-        const items: StockItem[] = await prisma.stockItem.findMany();
+    static async getStockStatus(clinicId: string) {
+        const items: StockItem[] = await prisma.stockItem.findMany({
+            where: { clinicId }
+        });
 
         const totalInventoryValue = items.reduce((acc, item) => acc + (item.quantity * item.price), 0);
 
@@ -63,14 +67,15 @@ export class InventoryService {
         });
     }
 
-    static async createStockItem(data: { name: string; quantity: number; minQuantity: number; price: number; category: string }) {
+    static async createStockItem(data: { name: string; quantity: number; minQuantity: number; price: number; category: string; clinicId: string }) {
         return await prisma.stockItem.create({
             data: {
                 name: data.name,
                 quantity: data.quantity,
                 minQuantity: data.minQuantity,
                 price: data.price,
-                category: data.category
+                category: data.category,
+                clinicId: data.clinicId
             }
         });
     }

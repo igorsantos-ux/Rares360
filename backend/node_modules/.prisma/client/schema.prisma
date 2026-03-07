@@ -10,7 +10,10 @@ datasource db {
 model Clinic {
   id            String          @id @default(uuid())
   name          String
+  cnpj          String?         @unique
+  address       String?
   logo          String?
+  isActive      Boolean         @default(true)
   users         User[]
   transactions  Transaction[]
   doctors       Doctor[]

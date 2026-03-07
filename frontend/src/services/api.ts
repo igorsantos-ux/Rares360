@@ -4,45 +4,59 @@ const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
 });
 
-// Helper para injetar clinicId nas queries
-const withClinic = (url: string, clinicId?: string) => {
-    if (!clinicId) return url;
-    const separator = url.includes('?') ? '&' : '?';
-    return `${url}${separator}clinicId=${clinicId}`;
+// Interceptor para injetar o token JWT
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('heath_finance_token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+export const authApi = {
+    login: (data: any) => api.post('/auth/login', data),
+    me: () => api.get('/auth/me'),
+};
+
+export const saasApi = {
+    getClinics: () => api.get('/saas/clinics'),
+    createClinic: (data: any) => api.post('/saas/clinics', data),
+    getUsers: () => api.get('/saas/users'),
+    createUser: (data: any) => api.post('/saas/users', data),
 };
 
 export const financialApi = {
-    getSummary: (clinicId?: string) => api.get(withClinic('/financial/summary', clinicId)),
-    getBreakEven: (clinicId?: string) => api.get(withClinic('/financial/break-even', clinicId)),
-    getEvolution: (clinicId?: string) => api.get(withClinic('/financial/evolution', clinicId)),
-    createTransaction: (data: any) => api.post('/financial/transactions', data), // clinicId vai no body
+    getSummary: () => api.get('/financial/summary'),
+    getBreakEven: () => api.get('/financial/break-even'),
+    getEvolution: () => api.get('/financial/evolution'),
+    createTransaction: (data: any) => api.post('/financial/transactions', data),
 };
 
 export const coreApi = {
-    getPatients: (clinicId?: string) => api.get(withClinic('/core/patients', clinicId)),
-    getDoctors: (clinicId?: string) => api.get(withClinic('/core/doctors', clinicId)),
-    getStock: (clinicId?: string) => api.get(withClinic('/core/stock', clinicId)),
-    getProductivity: (clinicId?: string) => api.get(withClinic('/core/productivity', clinicId)), // Added to fix build
-    createDoctor: (data: any) => api.post('/core/doctors', data), // Added to fix build
+    getPatients: () => api.get('/core/patients'),
+    getDoctors: () => api.get('/core/doctors'),
+    getStock: () => api.get('/core/stock'),
+    getProductivity: () => api.get('/core/productivity'),
+    createDoctor: (data: any) => api.post('/core/doctors', data),
 };
 
 export const reportingApi = {
-    getDashboardKPIs: (clinicId: string) => api.get(withClinic('/reporting/dashboard-kpis', clinicId)),
-    getCashFlow: (clinicId: string) => api.get(withClinic('/reporting/cash-flow', clinicId)),
-    getDRE: (clinicId: string) => api.get(withClinic('/reporting/dre', clinicId)),
-    getBillingAnalytics: (clinicId: string) => api.get(withClinic('/reporting/billing-analytics', clinicId)),
-    getGoals: (clinicId: string) => api.get(withClinic('/reporting/goals', clinicId)),
-    postSmartGoal: (clinicId: string, targetProfit: number) => api.post('/reporting/smart-goal', { clinicId, targetProfit }),
+    getDashboardKPIs: () => api.get('/reporting/dashboard-kpis'),
+    getCashFlow: () => api.get('/reporting/cash-flow'),
+    getDRE: () => api.get('/reporting/dre'),
+    getBillingAnalytics: () => api.get('/reporting/billing-analytics'),
+    getGoals: () => api.get('/reporting/goals'),
+    postSmartGoal: (targetProfit: number) => api.post('/reporting/smart-goal', { targetProfit }),
 };
 
 export const historyApi = {
-    getSummary: (clinicId?: string) => api.get(withClinic('/history/summary', clinicId)),
-    getWeekly: (month: number, clinicId?: string) => api.get(withClinic(`/history/weekly?month=${month}`, clinicId)),
-    getProcedures: (clinicId?: string) => api.get(withClinic('/history/procedures', clinicId)),
+    getSummary: () => api.get('/history/summary'),
+    getWeekly: (month: number) => api.get(`/history/weekly?month=${month}`),
+    getProcedures: () => api.get('/history/procedures'),
 };
 
 export const analyticsApi = {
-    getInsights: (clinicId: string) => api.get(withClinic('/analytics/insights', clinicId)),
+    getInsights: () => api.get('/analytics/insights'),
 };
 
 export default api;

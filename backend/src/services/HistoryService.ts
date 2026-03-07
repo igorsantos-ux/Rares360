@@ -1,9 +1,10 @@
 import prisma from '../lib/prisma.js';
 
 export class HistoryService {
-    static async getYearlySummary(year: number = 2026) {
+    static async getYearlySummary(year: number = 2026, clinicId: string) {
         const transactions = await prisma.transaction.findMany({
             where: {
+                clinicId,
                 date: {
                     gte: new Date(`${year}-01-01`),
                     lte: new Date(`${year}-12-31`)
@@ -32,9 +33,10 @@ export class HistoryService {
         return monthlyData;
     }
 
-    static async getDetailedProcedures() {
+    static async getDetailedProcedures(clinicId: string) {
         return await prisma.transaction.findMany({
             where: {
+                clinicId,
                 type: 'INCOME',
                 NOT: { procedureName: null }
             },
@@ -48,12 +50,13 @@ export class HistoryService {
         });
     }
 
-    static async getWeeklyAnalysis(month: number, year: number = 2026) {
+    static async getWeeklyAnalysis(month: number, clinicId: string, year: number = 2026) {
         const startDate = new Date(year, month, 1);
         const endDate = new Date(year, month + 1, 0);
 
         const transactions = await prisma.transaction.findMany({
             where: {
+                clinicId,
                 date: {
                     gte: startDate,
                     lte: endDate

@@ -2,25 +2,25 @@ import { Request, Response } from 'express';
 import { MedicalService, InventoryService } from '../services/CoreServices.js';
 
 export class CoreController {
-    static async getProductivity(req: Request, res: Response) {
+    static async getProductivity(req: any, res: Response) {
         try {
-            const data = await MedicalService.getProductivity();
+            const data = await MedicalService.getProductivity(req.clinicId);
             res.json(data);
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    static async getStock(req: Request, res: Response) {
+    static async getStock(req: any, res: Response) {
         try {
-            const data = await InventoryService.getStockStatus();
+            const data = await InventoryService.getStockStatus(req.clinicId);
             res.json(data);
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });
         }
     }
 
-    static async createStock(req: Request, res: Response) {
+    static async createStock(req: any, res: Response) {
         try {
             const { name, quantity, minQuantity, price, category } = req.body;
             const data = await InventoryService.createStockItem({
@@ -28,7 +28,8 @@ export class CoreController {
                 quantity: Number(quantity),
                 minQuantity: Number(minQuantity),
                 price: Number(price),
-                category
+                category,
+                clinicId: req.clinicId
             });
             res.status(201).json(data);
         } catch (error) {
@@ -36,13 +37,14 @@ export class CoreController {
         }
     }
 
-    static async createDoctor(req: Request, res: Response) {
+    static async createDoctor(req: any, res: Response) {
         try {
             const { name, specialty, commission } = req.body;
             const data = await MedicalService.createDoctor({
                 name,
                 specialty,
-                commission: Number(commission)
+                commission: Number(commission),
+                clinicId: req.clinicId
             });
             res.status(201).json(data);
         } catch (error) {
