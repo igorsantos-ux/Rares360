@@ -11,14 +11,18 @@ import {
 import { saasApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FileDown, CreditCard, Edit3, Check, X as XIcon } from 'lucide-react';
 
 const SaaSManagement = () => {
     const { logout, user } = useAuth();
     const [clinics, setClinics] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<'clinics' | 'users'>('clinics');
+    const [billingData, setBillingData] = useState<any[]>([]);
+    const [activeTab, setActiveTab] = useState<'clinics' | 'users' | 'billing'>('clinics');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingPrice, setEditingPrice] = useState<string | null>(null);
+    const [tempPrice, setTempPrice] = useState<string>('');
 
     // Form States
     const [newClinic, setNewClinic] = useState({ name: '', cnpj: '', address: '' });
@@ -31,16 +35,28 @@ const SaaSManagement = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [clinicsRes, usersRes] = await Promise.all([
+            const [clinicsRes, usersRes, billingRes] = await Promise.all([
                 saasApi.getClinics(),
-                saasApi.getUsers()
+                saasApi.getUsers(),
+                saasApi.getBilling()
             ]);
             setClinics(clinicsRes.data);
             setUsers(usersRes.data);
+            setBillingData(billingRes.data);
         } catch (error) {
             console.error('Failed to fetch SaaS data', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleUpdatePrice = async (clinicId: string) => {
+        try {
+            await saasApi.updateClinic(clinicId, { pricePerUser: parseFloat(tempPrice) });
+            setEditingPrice(null);
+            fetchData();
+        } catch (error) {
+            alert('Erro ao atualizar preço');
         }
     };
 
@@ -105,6 +121,13 @@ const SaaSManagement = () => {
                         <Users size={24} />
                         <span className="font-black border-l border-white/10 pl-4 uppercase tracking-widest text-xs">Usuários</span>
                     </button>
+                    <button
+                        onClick={() => setActiveTab('billing')}
+                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 ${activeTab === 'billing' ? 'bg-orange-600/20 text-orange-400 border border-orange-500/30' : 'bg-white/5 text-slate-400 border border-transparent hover:bg-white/10'}`}
+                    >
+                        <CreditCard size={24} />
+                        <span className="font-black border-l border-white/10 pl-4 uppercase tracking-widest text-xs">Faturamento</span>
+                    </button>
 
                     {/* Stats Card */}
                     <div className="p-6 rounded-[2.5rem] bg-gradient-to-br from-[#161B22] to-[#0D1117] border border-white/10 shadow-2xl relative overflow-hidden group">
@@ -113,7 +136,9 @@ const SaaSManagement = () => {
                         </div>
                         <p className="text-slate-500 text-xs font-black uppercase tracking-[0.2em] mb-4">Total Ativo</p>
                         <div className="flex items-end gap-2">
-                            <span className="text-5xl font-black">{activeTab === 'clinics' ? clinics.length : users.length}</span>
+                            <span className="text-5xl font-black">
+                                {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : billingData.length}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -125,7 +150,7 @@ const SaaSManagement = () => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
                             <input
                                 type="text"
-                                placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : 'usuário'}...`}
+                                placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : activeTab === 'users' ? 'usuário' : 'fatura'}...`}
                                 className="bg-white/5 border border-white/10 rounded-2xl py-3 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-64 text-sm font-medium"
                             />
                         </div>
@@ -147,14 +172,20 @@ const SaaSManagement = () => {
                                 <thead>
                                     <tr className="border-b border-white/10 bg-white/5">
                                         <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-widest">Nome</th>
-                                        <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-widest">{activeTab === 'clinics' ? 'CNPJ' : 'E-mail'}</th>
-                                        <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-widest">{activeTab === 'clinics' ? 'Status' : 'Role'}</th>
-                                        <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-widest">Ações</th>
+                                        <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-widest">
+                                            {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : 'Usuários Reg.'}
+                                        </th>
+                                        <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-widest">
+                                            {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : 'Vl. por Usuário'}
+                                        </th>
+                                        <th className="p-6 text-xs font-black text-slate-500 uppercase tracking-widest">
+                                            {activeTab === 'billing' ? 'Total Fatura' : 'Ações'}
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <AnimatePresence>
-                                        {(activeTab === 'clinics' ? clinics : users).map((item) => (
+                                        {(activeTab === 'clinics' ? clinics : activeTab === 'users' ? users : billingData).map((item) => (
                                             <motion.tr
                                                 key={item.id}
                                                 initial={{ opacity: 0, y: 10 }}
@@ -163,23 +194,73 @@ const SaaSManagement = () => {
                                             >
                                                 <td className="p-6">
                                                     <div className="font-bold flex items-center gap-3">
-                                                        <div className={`w-2 h-2 rounded-full ${activeTab === 'clinics' ? (item.isActive ? 'bg-emerald-400' : 'bg-red-400') : 'bg-blue-400'}`}></div>
+                                                        <div className={`w-2 h-2 rounded-full ${activeTab === 'clinics' ? (item.isActive ? 'bg-emerald-400' : 'bg-red-400') : activeTab === 'users' ? 'bg-blue-400' : 'bg-orange-400'}`}></div>
                                                         {item.name}
                                                     </div>
                                                     {activeTab === 'users' && <span className="text-[10px] text-slate-500 block mt-1">{item.clinic?.name || 'Acesso Global'}</span>}
                                                 </td>
                                                 <td className="p-6 text-slate-400 font-medium text-sm">
-                                                    {activeTab === 'clinics' ? item.cnpj || 'Não info' : item.email}
+                                                    {activeTab === 'clinics' ? (item.cnpj || 'Não info') : activeTab === 'users' ? item.email : `${item.userCount} usuários`}
                                                 </td>
                                                 <td className="p-6">
-                                                    <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-tight uppercase ${activeTab === 'clinics' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
-                                                        {activeTab === 'clinics' ? (item.isActive ? 'Ativo' : 'Inativo') : item.role}
-                                                    </span>
+                                                    {activeTab === 'billing' ? (
+                                                        <div className="flex items-center gap-2">
+                                                            {editingPrice === item.id ? (
+                                                                <>
+                                                                    <input
+                                                                        type="number"
+                                                                        className="w-20 bg-white/5 border border-white/20 rounded px-2 py-1 text-sm outline-none"
+                                                                        value={tempPrice}
+                                                                        onChange={e => setTempPrice(e.target.value)}
+                                                                        autoFocus
+                                                                    />
+                                                                    <button onClick={() => handleUpdatePrice(item.id)} className="text-emerald-400 p-1 hover:bg-emerald-500/10 rounded"><Check size={14} /></button>
+                                                                    <button onClick={() => setEditingPrice(null)} className="text-red-400 p-1 hover:bg-red-500/10 rounded"><XIcon size={14} /></button>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <span className="text-slate-300">R$ {item.pricePerUser?.toFixed(2)}</span>
+                                                                    <button
+                                                                        onClick={() => { setEditingPrice(item.id); setTempPrice(item.pricePerUser.toString()); }}
+                                                                        className="p-1 hover:bg-white/5 rounded text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                    >
+                                                                        <Edit3 size={12} />
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    ) : (
+                                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-tight uppercase ${activeTab === 'clinics' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                                                            {activeTab === 'clinics' ? (item.isActive ? 'Ativo' : 'Inativo') : item.role}
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td className="p-6">
-                                                    <button className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all">
-                                                        <Settings size={18} />
-                                                    </button>
+                                                    {activeTab === 'billing' ? (
+                                                        <div className="flex items-center justify-between">
+                                                            <span className="font-bold text-orange-400">R$ {item.total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                            <div className="flex gap-2">
+                                                                <a
+                                                                    href={saasApi.getInvoicePDFUrl(item.id)}
+                                                                    download
+                                                                    className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all flex items-center gap-1 text-[10px] font-bold"
+                                                                >
+                                                                    <FileDown size={14} /> PDF
+                                                                </a>
+                                                                <a
+                                                                    href={saasApi.getInvoiceXMLUrl(item.id)}
+                                                                    download
+                                                                    className="p-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-400 hover:text-white transition-all flex items-center gap-1 text-[10px] font-bold"
+                                                                >
+                                                                    <FileDown size={14} /> XML
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <button className="p-2 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-all">
+                                                            <Settings size={18} />
+                                                        </button>
+                                                    )}
                                                 </td>
                                             </motion.tr>
                                         ))}

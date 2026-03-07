@@ -12,6 +12,7 @@ model Clinic {
   name          String
   cnpj          String?         @unique
   address       String?
+  pricePerUser  Float           @default(50.0)
   logo          String?
   isActive      Boolean         @default(true)
   users         User[]

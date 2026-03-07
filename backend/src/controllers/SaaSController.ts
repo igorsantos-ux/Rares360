@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { AuthService } from '../services/AuthService.js';
+import { BillingService } from '../services/BillingService.js';
 
 export class SaaSController {
     // Gestão de Clínicas
@@ -21,13 +22,39 @@ export class SaaSController {
 
     static async createClinic(req: any, res: Response) {
         try {
-            const { name, cnpj, address } = req.body;
+            const { name, cnpj, address, pricePerUser } = req.body;
             const clinic = await prisma.clinic.create({
-                data: { name, cnpj, address }
+                data: {
+                    name,
+                    cnpj,
+                    address,
+                    pricePerUser: pricePerUser ? parseFloat(pricePerUser) : 50.0
+                }
             });
             res.status(201).json(clinic);
         } catch (error) {
             res.status(500).json({ error: 'Erro ao criar clínica' });
+        }
+    }
+
+    static async updateClinic(req: any, res: Response) {
+        try {
+            const { id } = req.params;
+            const { name, cnpj, address, pricePerUser, isActive } = req.body;
+
+            const clinic = await prisma.clinic.update({
+                where: { id },
+                data: {
+                    name,
+                    cnpj,
+                    address,
+                    pricePerUser: pricePerUser !== undefined ? parseFloat(pricePerUser) : undefined,
+                    isActive
+                }
+            });
+            res.json(clinic);
+        } catch (error) {
+            res.status(500).json({ error: 'Erro ao atualizar clínica' });
         }
     }
 
@@ -72,6 +99,82 @@ export class SaaSController {
             });
         } catch (error) {
             res.status(500).json({ error: 'Erro ao criar usuário' });
+        }
+    }
+
+    static async getBillingSummary(req: any, res: Response) {
+        try {
+            const clinics = await prisma.clinic.findMany({
+                include: {
+                    _count: {
+                        select: { users: true }
+                    }
+                }
+            });
+
+            const summary = clinics.map(c => ({
+                id: c.id,
+                name: c.name,
+                cnpj: c.cnpj,
+                userCount: c._count.users,
+                pricePerUser: c.pricePerUser,
+                total: c._count.users * c.pricePerUser
+            }));
+
+            res.json(summary);
+        } catch (error) {
+            res.status(500).json({ error: 'Erro ao gerar relatório de faturamento' });
+        }
+    }
+
+    static async generateInvoicePDF(req: any, res: Response) {
+        try {
+            const { clinicId } = req.params;
+            const clinic = await prisma.clinic.findUnique({
+                where: { id: clinicId },
+                include: { _count: { select: { users: true } } }
+            });
+
+            if (!clinic) return res.status(404).json({ error: 'Clínica não encontrada' });
+
+            const pdfBuffer = await BillingService.generatePDF({
+                clinicName: clinic.name,
+                userCount: clinic._count.users,
+                pricePerUser: clinic.pricePerUser,
+                total: clinic._count.users * clinic.pricePerUser
+            });
+
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename=fatura-${clinic.name}.pdf`);
+            res.send(pdfBuffer);
+        } catch (error) {
+            res.status(500).json({ error: 'Erro ao gerar PDF' });
+        }
+    }
+
+    static async generateInvoiceXML(req: any, res: Response) {
+        try {
+            const { clinicId } = req.params;
+            const clinic = await prisma.clinic.findUnique({
+                where: { id: clinicId },
+                include: { _count: { select: { users: true } } }
+            });
+
+            if (!clinic) return res.status(404).json({ error: 'Clínica não encontrada' });
+
+            const xml = BillingService.generateXML({
+                clinicName: clinic.name,
+                cnpj: clinic.cnpj || '',
+                userCount: clinic._count.users,
+                pricePerUser: clinic.pricePerUser,
+                total: clinic._count.users * clinic.pricePerUser
+            });
+
+            res.setHeader('Content-Type', 'application/xml');
+            res.setHeader('Content-Disposition', `attachment; filename=fatura-${clinic.name}.xml`);
+            res.send(xml);
+        } catch (error) {
+            res.status(500).json({ error: 'Erro ao gerar XML' });
         }
     }
 }
