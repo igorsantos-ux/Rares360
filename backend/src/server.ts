@@ -16,14 +16,24 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
-app.use(express.json());
-
-// Logger de requisições simples
+// Logger de requisições - MOVIDO PARA O TOPO para capturar tudo (inclusive OPTIONS/CORS)
 app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+    const origin = req.headers.origin || 'No Origin';
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Origin: ${origin}`);
     next();
 });
+
+// Configuração robusta de CORS
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+}));
+
+app.use(express.json());
 
 app.get('/', (req, res) => {
     res.json({ message: 'Heath Finance API is online' });
