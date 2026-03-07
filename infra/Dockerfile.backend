@@ -11,4 +11,5 @@ RUN npx prisma generate
 
 EXPOSE 3001
 
+# O comando dev agora inclui npx prisma generate e db push
 CMD ["npm", "run", "dev"]

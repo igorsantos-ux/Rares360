@@ -26,21 +26,28 @@ export class SeedService {
                 });
                 console.log('✅ Admin global criado com sucesso!');
             } else {
-                console.log('✅ Admin global verificado/atualizado com sucesso!');
+                console.log('✅ Admin global já existe. Mantendo credenciais atuais.');
             }
 
-            // Upsert da Roberta Alamino para garantir o acesso da clínica (sem .br)
-            await prisma.user.upsert({
-                where: { email: 'roberta@alamino.com' },
-                update: { password: hashedPassword, role: 'CLINIC_ADMIN' },
-                create: {
-                    name: 'Roberta Alamino',
-                    email: 'roberta@alamino.com',
-                    password: hashedPassword,
-                    role: 'CLINIC_ADMIN'
-                }
+            // Verifica Roberta Alamino
+            const existingRoberta = await prisma.user.findUnique({
+                where: { email: 'roberta@alamino.com' }
             });
-            console.log('✅ Usuário Roberta Alamino verificado/atualizado!');
+
+            if (!existingRoberta) {
+                console.log('Usuário Roberta não encontrado. Criando...');
+                await prisma.user.create({
+                    data: {
+                        name: 'Roberta Alamino',
+                        email: 'roberta@alamino.com',
+                        password: hashedPassword,
+                        role: 'CLINIC_ADMIN'
+                    }
+                });
+                console.log('✅ Usuário Roberta Alamino criado!');
+            } else {
+                console.log('✅ Usuário Roberta Alamino já existe.');
+            }
 
             // Se for a primeira vez (sem outras clínicas), roda o seed completo
             const clinicCount = await prisma.clinic.count();
