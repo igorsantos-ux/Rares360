@@ -15,7 +15,7 @@ export class SeedService {
             });
 
             if (!existingAdmin) {
-                console.log('Admin global não encontrado. Criando com senha padrão...');
+                console.log('Admin global não encontrado. Criando com senha padrão (admin123)...');
                 await prisma.user.create({
                     data: {
                         name: 'Igor Admin',
@@ -26,12 +26,13 @@ export class SeedService {
                 });
                 console.log('✅ Admin global criado com sucesso!');
             } else {
-                console.log('✅ Admin global já existe. Mantendo credenciais atuais.');
+                console.log(`✅ Admin global já existe: ${adminEmail.substring(0, 3)}***. Mantendo credenciais atuais.`);
             }
 
             // Verifica Roberta Alamino
+            const robertaEmail = 'roberta@alamino.com';
             const existingRoberta = await prisma.user.findUnique({
-                where: { email: 'roberta@alamino.com' }
+                where: { email: robertaEmail }
             });
 
             if (!existingRoberta) {
@@ -39,14 +40,14 @@ export class SeedService {
                 await prisma.user.create({
                     data: {
                         name: 'Roberta Alamino',
-                        email: 'roberta@alamino.com',
+                        email: robertaEmail,
                         password: hashedPassword,
                         role: 'CLINIC_ADMIN'
                     }
                 });
                 console.log('✅ Usuário Roberta Alamino criado!');
             } else {
-                console.log('✅ Usuário Roberta Alamino já existe.');
+                console.log(`✅ Usuário Roberta Alamino já existe: ${robertaEmail.substring(0, 3)}***.`);
             }
 
             // Se for a primeira vez (sem outras clínicas), roda o seed completo
@@ -66,7 +67,8 @@ export class SeedService {
     }
 
     static async runSeed() {
-        // Limpeza (Mantendo usuários para não quebrar sessões ou o admin principal)
+        console.log('--- Iniciando Seed de Dados de Teste ---');
+        // Limpeza (Não limpamos usuários aqui para evitar deslogar quem está testando)
         await prisma.transaction.deleteMany();
         await prisma.financialGoal.deleteMany();
         await prisma.lead.deleteMany();
@@ -75,39 +77,51 @@ export class SeedService {
         await prisma.customer.deleteMany();
         await prisma.clinic.deleteMany();
 
-        const hashedPassword = await AuthService.hashPassword('admin123');
+        const defaultHashedPassword = await AuthService.hashPassword('admin123');
 
-        // 1. Upsert Global Admin (ADMMM) - Garante que ele exista após a limpeza de outras tabelas
-        await prisma.user.upsert({
-            where: { email: 'admin@heathfinance.com.br' },
-            update: { password: hashedPassword, role: 'ADMIN_GLOBAL' },
-            create: {
-                name: 'Igor Admin',
-                email: 'admin@heathfinance.com.br',
-                password: hashedPassword,
-                role: 'ADMIN_GLOBAL'
-            }
-        });
+        // 1. Garantir Admin (Sem sobrescrever senha se já existir)
+        const adminEmail = 'admin@heathfinance.com.br';
+        const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+        if (!existingAdmin) {
+            await prisma.user.create({
+                data: {
+                    name: 'Igor Admin',
+                    email: adminEmail,
+                    password: defaultHashedPassword,
+                    role: 'ADMIN_GLOBAL'
+                }
+            });
+        }
 
-        // 2. Criar Clínica de Teste
+        // 2. Criar Clínica de Teste (Novo Schema)
         const clinic = await prisma.clinic.create({
             data: {
                 name: 'Clínica Health Teste',
+                razaoSocial: 'Health Finance Teste LTDA',
                 cnpj: '12.345.678/0001-99',
-                address: 'Av. Paulista, 1000 - São Paulo, SP',
+                logradouro: 'Av. Paulista, 1000',
+                cidade: 'São Paulo',
+                estado: 'SP',
+                cep: '01310-100',
+                regimeTributario: 'SIMPLES',
+                pricePerUser: 50.0
             }
         });
 
-        // 3. Criar Admin da Clínica
-        await prisma.user.create({
-            data: {
-                name: 'Roberta Alamino',
-                email: 'roberta@alamino.com',
-                password: hashedPassword,
-                role: 'CLINIC_ADMIN',
-                clinicId: clinic.id
-            }
-        });
+        // 3. Criar Roberta Alamino (Sem sobrescrever senha)
+        const robertaEmail = 'roberta@alamino.com';
+        const existingRoberta = await prisma.user.findUnique({ where: { email: robertaEmail } });
+        if (!existingRoberta) {
+            await prisma.user.create({
+                data: {
+                    name: 'Roberta Alamino',
+                    email: robertaEmail,
+                    password: defaultHashedPassword,
+                    role: 'CLINIC_ADMIN',
+                    clinicId: clinic.id
+                }
+            });
+        }
 
         // 4. Médicos
         const doctors = [
