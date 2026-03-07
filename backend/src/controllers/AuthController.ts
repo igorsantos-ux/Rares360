@@ -5,7 +5,10 @@ import { AuthService } from '../services/AuthService.js';
 export class AuthController {
     static async login(req: Request, res: Response) {
         try {
-            const { email, password } = req.body;
+            const { email: rawEmail, password } = req.body;
+            const email = rawEmail?.toLowerCase().trim();
+
+            console.log(`Tentativa de login para: ${email}`);
 
             const user = await prisma.user.findUnique({
                 where: { email },
@@ -13,14 +16,18 @@ export class AuthController {
             });
 
             if (!user) {
+                console.log(`Usuário não encontrado: ${email}`);
                 return res.status(401).json({ error: 'Credenciais inválidas' });
             }
 
             const isPasswordValid = await AuthService.comparePasswords(password, user.password);
 
             if (!isPasswordValid) {
+                console.log(`Senha incorreta para o usuário: ${email}`);
                 return res.status(401).json({ error: 'Credenciais inválidas' });
             }
+
+            console.log(`Login bem-sucedido: ${email} (${user.role})`);
 
             const token = AuthService.generateToken({
                 id: user.id,

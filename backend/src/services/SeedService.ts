@@ -4,16 +4,24 @@ import { AuthService } from './AuthService.js';
 export class SeedService {
     static async autoSeedIfEmpty() {
         try {
-            const count = await prisma.user.count();
-            if (count === 0) {
-                console.log('Database is empty. Starting auto-seed for Heath Finance SaaS...');
+            // Verifica se o admin mestre já existe para evitar re-seeds acidentais
+            const adminExists = await prisma.user.findUnique({
+                where: { email: 'admin@heathfinance.com.br' }
+            });
+
+            if (!adminExists) {
+                console.log('Admin global não encontrado. Iniciando auto-seed para Heath Finance SaaS...');
                 await this.runSeed();
-                console.log('Auto-seed completed successfully! 🚀');
+                console.log('Auto-seed completado com sucesso! 🚀');
             } else {
-                console.log(`Database already has ${count} users. Skipping auto-seed.`);
+                console.log('Admin global já existe. Pulando auto-seed.');
             }
-        } catch (error) {
-            console.error('Failed to run auto-seed:', error);
+        } catch (error: any) {
+            if (error.code === 'P2021') {
+                console.error('❌ Database tables do not exist. Please run migrations first (npx prisma migrate deploy).');
+            } else {
+                console.error('Failed to run auto-seed:', error);
+            }
         }
     }
 
