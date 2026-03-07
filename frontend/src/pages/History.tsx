@@ -40,28 +40,27 @@ const months = [
 
 const HistoryPage = () => {
     const [selectedMonth, setSelectedMonth] = useState(2); // Inicia em Março (2)
-    const clinicId = "default-clinic-id";
 
     const { data: summary, isLoading: isSummaryLoading } = useQuery({
-        queryKey: ['history-summary', clinicId],
+        queryKey: ['history-summary'],
         queryFn: async () => {
-            const res = await historyApi.getSummary(clinicId);
+            const res = await historyApi.getSummary();
             return res.data || [];
         }
     });
 
     const { data: weeklyData, isLoading: isWeeklyLoading } = useQuery({
-        queryKey: ['history-weekly', selectedMonth, clinicId],
+        queryKey: ['history-weekly', selectedMonth],
         queryFn: async () => {
-            const res = await historyApi.getWeekly(selectedMonth, clinicId);
+            const res = await historyApi.getWeekly(selectedMonth);
             return res.data || [];
         }
     });
 
     const { data: procedures, isLoading: isProceduresLoading } = useQuery({
-        queryKey: ['history-procedures', clinicId],
+        queryKey: ['history-procedures'],
         queryFn: async () => {
-            const res = await historyApi.getProcedures(clinicId);
+            const res = await historyApi.getProcedures();
             return res.data || [];
         }
     });

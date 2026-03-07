@@ -13,20 +13,19 @@ import {
 } from 'lucide-react';
 
 const ExpensesBilling = () => {
-    const clinicId = "default-clinic-id";
 
     const { data: summary } = useQuery({
-        queryKey: ['dashboard-kpis', clinicId],
+        queryKey: ['dashboard-kpis'],
         queryFn: async () => {
-            const response = await reportingApi.getDashboardKPIs(clinicId);
+            const response = await reportingApi.getDashboardKPIs();
             return response.data;
         }
     });
 
     const { data: evolution } = useQuery({
-        queryKey: ['financial-evolution', clinicId],
+        queryKey: ['financial-evolution'],
         queryFn: async () => {
-            const response = await financialApi.getEvolution(clinicId);
+            const response = await financialApi.getEvolution();
             return response.data;
         }
     });

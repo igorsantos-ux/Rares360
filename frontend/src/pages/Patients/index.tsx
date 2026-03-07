@@ -16,12 +16,11 @@ import {
 
 const PatientsPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const clinicId = "default-clinic-id";
 
     const { data: patients, isLoading } = useQuery({
-        queryKey: ['patients', clinicId],
+        queryKey: ['patients'],
         queryFn: async () => {
-            const response = await coreApi.getPatients(clinicId);
+            const response = await coreApi.getPatients();
             return response.data;
         }
     });
@@ -137,8 +136,8 @@ const PatientsPage = () => {
                                     </td>
                                     <td className="px-8 py-6">
                                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${patient.status === 'Ativo'
-                                                ? 'bg-[#8A9A5B]/10 text-[#697D58]'
-                                                : 'bg-slate-100 text-slate-400'
+                                            ? 'bg-[#8A9A5B]/10 text-[#697D58]'
+                                            : 'bg-slate-100 text-slate-400'
                                             }`}>
                                             {patient.status}
                                         </span>

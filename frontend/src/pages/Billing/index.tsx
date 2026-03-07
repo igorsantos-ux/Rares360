@@ -11,12 +11,11 @@ import {
 } from 'lucide-react';
 
 const BillingPage = () => {
-    const clinicId = "default-clinic-id";
 
     const { data: billingData, isLoading } = useQuery({
-        queryKey: ['billing-analytics', clinicId],
+        queryKey: ['billing-analytics'],
         queryFn: async () => {
-            const response = await reportingApi.getBillingAnalytics(clinicId);
+            const response = await reportingApi.getBillingAnalytics();
             return response.data;
         }
     });

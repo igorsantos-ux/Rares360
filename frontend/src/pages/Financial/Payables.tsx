@@ -14,12 +14,11 @@ import {
 
 const PayablesPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
-    const clinicId = "default-clinic-id";
 
     const { data: summary } = useQuery({
-        queryKey: ['financial-summary', clinicId],
+        queryKey: ['financial-summary'],
         queryFn: async () => {
-            const response = await financialApi.getSummary(clinicId);
+            const response = await financialApi.getSummary();
             return response.data;
         }
     });

@@ -6,8 +6,6 @@ import {
     Settings,
     LogOut,
     Search,
-    CheckCircle2,
-    XCircle,
     LayoutDashboard
 } from 'lucide-react';
 import { saasApi } from '../services/api';

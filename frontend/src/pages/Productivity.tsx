@@ -15,13 +15,12 @@ import { coreApi } from '../services/api';
 const Productivity = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const queryClient = useQueryClient();
-    const clinicId = "default-clinic-id";
 
     // Fetch productivity data
     const { data: doctors, isLoading } = useQuery({
-        queryKey: ['productivity', clinicId],
+        queryKey: ['productivity'],
         queryFn: async () => {
-            const response = await coreApi.getProductivity(clinicId);
+            const response = await coreApi.getProductivity();
             return response.data;
         }
     });
