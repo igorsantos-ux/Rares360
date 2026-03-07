@@ -60,9 +60,9 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', message: 'Heath Finance API is running' });
 });
 
-const port = process.env.PORT || 3001;
+const port = 3001;
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}`);
+app.listen(port, '0.0.0.0', () => {
+    console.log(`🚀 Server is officially listening on 0.0.0.0:${port}`);
     SeedService.autoSeedIfEmpty().catch(err => console.error('Erro no auto-seed background:', err));
 });
