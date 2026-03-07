@@ -83,7 +83,7 @@ export class SaaSController {
                     pricePerUser: parseFloatSafe(pricePerUser) || 50.0
                 }
             });
-            res.status(201).json(clinic);
+            res.status(200).json(clinic);
         } catch (error) {
             console.error('Error creating clinic:', error);
             res.status(500).json({ error: 'Erro ao criar clínica. Verifique se o CNPJ já existe ou se as tabelas do banco de dados foram migradas corretamente.' });
