@@ -10,12 +10,56 @@ datasource db {
 
 model Clinic {
   id            String          @id @default(uuid())
-  name          String
+  name          String          // Nome de exibição principal
+  razaoSocial   String?
   cnpj          String?         @unique
-  address       String?
-  pricePerUser  Float           @default(50.0)
+  inscricaoEstadual  String?
+  inscricaoMunicipal String?
+  cnae          String?
+  regimeTributario   String?
+  dataAbertura  DateTime?
+  
+  // Endereço
+  cep           String?
+  logradouro    String?
+  numero        String?
+  complemento   String?
+  bairro        String?
+  cidade        String?
+  estado        String?
+  
+  // Contato
+  telefone      String?
+  whatsapp      String?
+  email         String?
+  site          String?
+  
+  // Faturamento e Fiscal
+  codigoServico String?
+  aliquotaISS   Float?
+  certificadoDigitalUrl String?
+  
+  // Dados Bancários
+  banco         String?
+  agencia       String?
+  conta         String?
+  tipoConta     String?
+  chavePix      String?
+  
+  // Identificação e Sistema
   logo          String?
+  corMarca      String?
+  responsavelAdmin    String?
+  responsavelTecnico  String?
+  crmResponsavel      String?
+  
+  // Regulatório
+  registroVigilancia  String?
+  cnes          String?
+
+  pricePerUser  Float           @default(50.0)
   isActive      Boolean         @default(true)
+  
   users         User[]
   transactions  Transaction[]
   doctors       Doctor[]

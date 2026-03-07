@@ -25,8 +25,17 @@ const SaaSManagement = () => {
     const [tempPrice, setTempPrice] = useState<string>('');
 
     // Form States
-    const [newClinic, setNewClinic] = useState({ name: '', cnpj: '', address: '' });
+    const [newClinic, setNewClinic] = useState({
+        name: '', razaoSocial: '', cnpj: '', inscricaoEstadual: '', inscricaoMunicipal: '', cnae: '', regimeTributario: '', dataAbertura: '',
+        cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '',
+        telefone: '', whatsapp: '', email: '', site: '',
+        codigoServico: '', aliquotaISS: '', certificadoDigitalUrl: '',
+        banco: '', agencia: '', conta: '', tipoConta: '', chavePix: '',
+        logo: '', corMarca: '', responsavelAdmin: '', responsavelTecnico: '', crmResponsavel: '',
+        registroVigilancia: '', cnes: '', pricePerUser: '50.0'
+    });
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'CLINIC_ADMIN', clinicId: '' });
+    const [formSection, setFormSection] = useState<number>(1);
 
     useEffect(() => {
         fetchData();
@@ -65,7 +74,16 @@ const SaaSManagement = () => {
         try {
             await saasApi.createClinic(newClinic);
             setIsModalOpen(false);
-            setNewClinic({ name: '', cnpj: '', address: '' });
+            setFormSection(1);
+            setNewClinic({
+                name: '', razaoSocial: '', cnpj: '', inscricaoEstadual: '', inscricaoMunicipal: '', cnae: '', regimeTributario: '', dataAbertura: '',
+                cep: '', logradouro: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '',
+                telefone: '', whatsapp: '', email: '', site: '',
+                codigoServico: '', aliquotaISS: '', certificadoDigitalUrl: '',
+                banco: '', agencia: '', conta: '', tipoConta: '', chavePix: '',
+                logo: '', corMarca: '', responsavelAdmin: '', responsavelTecnico: '', crmResponsavel: '',
+                registroVigilancia: '', cnes: '', pricePerUser: '50.0'
+            });
             fetchData();
         } catch (error) {
             alert('Erro ao criar clínica');
@@ -83,6 +101,35 @@ const SaaSManagement = () => {
             alert('Erro ao criar usuário');
         }
     };
+
+    const InputField = ({ label, value, onChange, placeholder = '', type = 'text', required = false }: any) => (
+        <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-[#697D58] ml-2 block">{label}{required && '*'}</label>
+            <input
+                type={type}
+                required={required}
+                className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold text-sm"
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                placeholder={placeholder}
+            />
+        </div>
+    );
+
+    const SelectField = ({ label, value, onChange, options, required = false }: any) => (
+        <div className="space-y-1.5">
+            <label className="text-[10px] font-black uppercase tracking-widest text-[#697D58] ml-2 block">{label}{required && '*'}</label>
+            <select
+                required={required}
+                className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold text-sm appearance-none"
+                value={value}
+                onChange={e => onChange(e.target.value)}
+            >
+                <option value="">Selecione...</option>
+                {options.map((opt: any) => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+            </select>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-[#F0EAD6] text-[#1A202C] p-6 md:p-10 animate-in fade-in duration-700">
@@ -275,105 +322,189 @@ const SaaSManagement = () => {
             {/* Modals */}
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={() => setIsModalOpen(false)}
-                            className="absolute inset-0 bg-[#1A202C]/60 backdrop-blur-sm"
-                        />
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-[#1A202C]/60 backdrop-blur-sm overflow-y-auto">
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0, y: 20 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                            className="bg-white border border-[#8A9A5B]/10 w-full max-w-lg rounded-[2.5rem] p-10 relative z-10 shadow-3xl text-[#1A202C]"
+                            className="bg-white border border-[#8A9A5B]/10 w-full max-w-4xl rounded-[2.5rem] p-10 relative z-10 shadow-3xl text-[#1A202C] my-auto"
                         >
-                            <h2 className="text-3xl font-black mb-6 text-[#697D58]">Novo {activeTab === 'clinics' ? 'Clínica' : 'Usuário'}</h2>
+                            <button onClick={() => setIsModalOpen(false)} className="absolute top-8 right-8 p-2 hover:bg-slate-100 rounded-full transition-all">
+                                <XIcon size={24} className="text-slate-400" />
+                            </button>
+
+                            <h2 className="text-3xl font-black mb-1 text-[#697D58]">
+                                {activeTab === 'clinics' ? 'Configurar Nova Clínica' : 'Cadastrar Novo Usuário'}
+                            </h2>
+                            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-8">Gestão SaaS Heath Finance</p>
 
                             {activeTab === 'clinics' ? (
-                                <form onSubmit={handleCreateClinic} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest text-[#697D58] ml-4">Nome da Clínica</label>
-                                        <input
-                                            required
-                                            className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold"
-                                            value={newClinic.name}
-                                            onChange={e => setNewClinic({ ...newClinic, name: e.target.value })}
-                                            placeholder="Nome fantasia"
-                                        />
+                                <form onSubmit={handleCreateClinic} className="space-y-8">
+                                    {/* Form Tabs / Navigation */}
+                                    <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl overflow-x-auto no-scrollbar">
+                                        {[
+                                            { id: 1, label: 'Empresa' },
+                                            { id: 2, label: 'Endereço' },
+                                            { id: 3, label: 'Contato' },
+                                            { id: 4, label: 'Fiscal' },
+                                            { id: 5, label: 'Bancos' },
+                                            { id: 6, label: 'Sistema' }
+                                        ].map(s => (
+                                            <button
+                                                key={s.id}
+                                                type="button"
+                                                onClick={() => setFormSection(s.id)}
+                                                className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${formSection === s.id ? 'bg-white text-[#8A9A5B] shadow-sm' : 'text-slate-400 hover:text-[#697D58]'}`}
+                                            >
+                                                {s.label}
+                                            </button>
+                                        ))}
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase tracking-widest text-[#697D58] ml-4">CNPJ</label>
-                                            <input
-                                                className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold"
-                                                value={newClinic.cnpj}
-                                                onChange={e => setNewClinic({ ...newClinic, cnpj: e.target.value })}
-                                                placeholder="00.000.000/0001-00"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase tracking-widest text-[#697D58] ml-4">Endereço</label>
-                                            <input
-                                                className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold"
-                                                value={newClinic.address}
-                                                onChange={e => setNewClinic({ ...newClinic, address: e.target.value })}
-                                                placeholder="Cidade - UF"
-                                            />
-                                        </div>
+
+                                    <div className="min-h-[400px]">
+                                        {/* Section 1: Empresa */}
+                                        {formSection === 1 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                <InputField label="Nome de Exibição" required value={newClinic.name} onChange={(v: any) => setNewClinic({ ...newClinic, name: v })} placeholder="Ex: Clínica Roberta Alamino" />
+                                                <InputField label="Razão Social" value={newClinic.razaoSocial} onChange={(v: any) => setNewClinic({ ...newClinic, razaoSocial: v })} />
+                                                <InputField label="CNPJ" required value={newClinic.cnpj} onChange={(v: any) => setNewClinic({ ...newClinic, cnpj: v })} placeholder="00.000.000/0001-00" />
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <InputField label="Insc. Estadual" value={newClinic.inscricaoEstadual} onChange={(v: any) => setNewClinic({ ...newClinic, inscricaoEstadual: v })} />
+                                                    <InputField label="Insc. Municipal" value={newClinic.inscricaoMunicipal} onChange={(v: any) => setNewClinic({ ...newClinic, inscricaoMunicipal: v })} />
+                                                </div>
+                                                <InputField label="CNAE (Principal)" value={newClinic.cnae} onChange={(v: any) => setNewClinic({ ...newClinic, cnae: v })} />
+                                                <SelectField label="Regime Tributário" value={newClinic.regimeTributario} onChange={(v: any) => setNewClinic({ ...newClinic, regimeTributario: v })} options={[
+                                                    { label: 'Simples Nacional', value: 'SIMPLES' },
+                                                    { label: 'Lucro Presumido', value: 'PRESUMIDO' },
+                                                    { label: 'Lucro Real', value: 'REAL' },
+                                                    { label: 'MEI', value: 'MEI' }
+                                                ]} />
+                                                <InputField label="Data de Abertura" type="date" value={newClinic.dataAbertura} onChange={(v: any) => setNewClinic({ ...newClinic, dataAbertura: v })} />
+                                                <InputField label="Mensalidade Padrão" type="number" value={newClinic.pricePerUser} onChange={(v: any) => setNewClinic({ ...newClinic, pricePerUser: v })} />
+                                            </div>
+                                        )}
+
+                                        {/* Section 2: Endereço */}
+                                        {formSection === 2 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                <InputField label="CEP" value={newClinic.cep} onChange={(v: any) => setNewClinic({ ...newClinic, cep: v })} placeholder="00000-000" />
+                                                <div className="md:col-span-2">
+                                                    <InputField label="Logradouro (Rua/Av)" value={newClinic.logradouro} onChange={(v: any) => setNewClinic({ ...newClinic, logradouro: v })} />
+                                                </div>
+                                                <InputField label="Número" value={newClinic.numero} onChange={(v: any) => setNewClinic({ ...newClinic, numero: v })} />
+                                                <InputField label="Complemento" value={newClinic.complemento} onChange={(v: any) => setNewClinic({ ...newClinic, complemento: v })} />
+                                                <InputField label="Bairro" value={newClinic.bairro} onChange={(v: any) => setNewClinic({ ...newClinic, bairro: v })} />
+                                                <div className="md:col-span-2">
+                                                    <InputField label="Cidade" value={newClinic.cidade} onChange={(v: any) => setNewClinic({ ...newClinic, cidade: v })} />
+                                                </div>
+                                                <InputField label="Estado (UF)" value={newClinic.estado} onChange={(v: any) => setNewClinic({ ...newClinic, estado: v })} />
+                                            </div>
+                                        )}
+
+                                        {/* Section 3: Contato */}
+                                        {formSection === 3 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                <InputField label="Telefone Fixo" value={newClinic.telefone} onChange={(v: any) => setNewClinic({ ...newClinic, telefone: v })} />
+                                                <InputField label="WhatsApp" value={newClinic.whatsapp} onChange={(v: any) => setNewClinic({ ...newClinic, whatsapp: v })} />
+                                                <InputField label="E-mail da Clínica" type="email" value={newClinic.email} onChange={(v: any) => setNewClinic({ ...newClinic, email: v })} />
+                                                <InputField label="Site Oficial" value={newClinic.site} onChange={(v: any) => setNewClinic({ ...newClinic, site: v })} placeholder="https://..." />
+                                            </div>
+                                        )}
+
+                                        {/* Section 4: Fiscal */}
+                                        {formSection === 4 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                <InputField label="Cód. Serviço Prefeitura" value={newClinic.codigoServico} onChange={(v: any) => setNewClinic({ ...newClinic, codigoServico: v })} />
+                                                <InputField label="Alíquota ISS (%)" type="number" value={newClinic.aliquotaISS} onChange={(v: any) => setNewClinic({ ...newClinic, aliquotaISS: v })} />
+                                                <div className="md:col-span-2">
+                                                    <InputField label="URL Certificado Digital (Opcional)" value={newClinic.certificadoDigitalUrl} onChange={(v: any) => setNewClinic({ ...newClinic, certificadoDigitalUrl: v })} placeholder="Link para storage ou serviço" />
+                                                </div>
+                                                <div className="md:col-span-2 p-6 bg-amber-50 rounded-2xl border border-amber-200">
+                                                    <p className="text-amber-800 text-[10px] font-black uppercase tracking-widest mb-1">Atenção</p>
+                                                    <p className="text-amber-700 text-xs font-semibold">Configurações fiscais impactam diretamente na emissão de faturamento automático pelo SaaS.</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Section 5: Bancos */}
+                                        {formSection === 5 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                <InputField label="Banco" value={newClinic.banco} onChange={(v: any) => setNewClinic({ ...newClinic, banco: v })} />
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <InputField label="Agência" value={newClinic.agencia} onChange={(v: any) => setNewClinic({ ...newClinic, agencia: v })} />
+                                                    <InputField label="Conta" value={newClinic.conta} onChange={(v: any) => setNewClinic({ ...newClinic, conta: v })} />
+                                                </div>
+                                                <SelectField label="Tipo de Conta" value={newClinic.tipoConta} onChange={(v: any) => setNewClinic({ ...newClinic, tipoConta: v })} options={[
+                                                    { label: 'Conta Corrente PJ', value: 'CORRENTE_PJ' },
+                                                    { label: 'Conta Corrente PF', value: 'CORRENTE_PF' },
+                                                    { label: 'Conta Poupança', value: 'POUPANCA' }
+                                                ]} />
+                                                <InputField label="Chave PIX Principal" value={newClinic.chavePix} onChange={(v: any) => setNewClinic({ ...newClinic, chavePix: v })} />
+                                            </div>
+                                        )}
+
+                                        {/* Section 6: Sistema */}
+                                        {formSection === 6 && (
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                <InputField label="Responsável Admin" value={newClinic.responsavelAdmin} onChange={(v: any) => setNewClinic({ ...newClinic, responsavelAdmin: v })} />
+                                                <InputField label="Responsável Técnico" value={newClinic.responsavelTecnico} onChange={(v: any) => setNewClinic({ ...newClinic, responsavelTecnico: v })} />
+                                                <InputField label="CRM do Responsável" value={newClinic.crmResponsavel} onChange={(v: any) => setNewClinic({ ...newClinic, crmResponsavel: v })} />
+                                                <InputField label="CNES (Opcional)" value={newClinic.cnes} onChange={(v: any) => setNewClinic({ ...newClinic, cnes: v })} />
+                                                <InputField label="Reg. Vigilância Sanitária" value={newClinic.registroVigilancia} onChange={(v: any) => setNewClinic({ ...newClinic, registroVigilancia: v })} />
+                                                <div className="space-y-1.5">
+                                                    <label className="text-[10px] font-black uppercase tracking-widest text-[#697D58] ml-2 block">Cor da Marca</label>
+                                                    <div className="flex gap-2">
+                                                        <input type="color" className="w-12 h-10 rounded-lg p-0 border-none cursor-pointer" value={newClinic.corMarca || '#8A9A5B'} onChange={e => setNewClinic({ ...newClinic, corMarca: e.target.value })} />
+                                                        <input type="text" className="flex-1 bg-slate-50 border border-[#8A9A5B]/10 rounded-xl px-4 py-2 font-bold text-sm" value={newClinic.corMarca} onChange={e => setNewClinic({ ...newClinic, corMarca: e.target.value })} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
-                                    <button type="submit" className="w-full py-5 bg-[#697D58] text-white rounded-2xl font-black mt-6 shadow-xl shadow-[#697D58]/20 hover:scale-[1.02] active:scale-95 transition-all">
-                                        CRIAR CLÍNICA
-                                    </button>
+
+                                    <div className="flex gap-4 pt-6 border-t border-[#8A9A5B]/10">
+                                        <button
+                                            type="button"
+                                            disabled={formSection === 1}
+                                            onClick={() => setFormSection(s => s - 1)}
+                                            className="flex-1 py-4 bg-slate-100 text-slate-400 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 transition-all disabled:opacity-30"
+                                        >
+                                            Anterior
+                                        </button>
+                                        {formSection < 6 ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setFormSection(s => s + 1)}
+                                                className="flex-[2] py-4 bg-[#697D58] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-[#697D58]/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                            >
+                                                Próxima Seção
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="submit"
+                                                className="flex-[2] py-4 bg-[#8A9A5B] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                            >
+                                                Finalizar Cadastro
+                                            </button>
+                                        )}
+                                    </div>
                                 </form>
                             ) : (
-                                <form onSubmit={handleCreateUser} className="space-y-4">
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest text-[#697D58] ml-4">Nome Completo</label>
-                                        <input
-                                            required
-                                            className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold"
-                                            value={newUser.name}
-                                            onChange={e => setNewUser({ ...newUser, name: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase tracking-widest text-[#697D58] ml-4">E-mail</label>
-                                            <input
-                                                required
-                                                type="email"
-                                                className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold"
-                                                value={newUser.email}
-                                                onChange={e => setNewUser({ ...newUser, email: e.target.value })}
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-xs font-black uppercase tracking-widest text-[#697D58] ml-4">Senha Inicial</label>
-                                            <input
-                                                required
-                                                type="password"
-                                                className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold"
-                                                value={newUser.password}
-                                                onChange={e => setNewUser({ ...newUser, password: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-xs font-black uppercase tracking-widest text-[#697D58] ml-4">Vincular Clínica</label>
-                                        <div className="relative">
+                                <form onSubmit={handleCreateUser} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <InputField label="Nome Completo" required value={newUser.name} onChange={(v: any) => setNewUser({ ...newUser, name: v })} />
+                                        <InputField label="E-mail de Acesso" required type="email" value={newUser.email} onChange={(v: any) => setNewUser({ ...newUser, email: v })} />
+                                        <InputField label="Senha Inicial" required type="password" value={newUser.password} onChange={(v: any) => setNewUser({ ...newUser, password: v })} />
+                                        <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-[#697D58] ml-2 block">Vincular Clínica</label>
                                             <select
-                                                className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-2xl py-4 px-6 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all appearance-none font-bold"
+                                                className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold text-sm appearance-none"
                                                 value={newUser.clinicId}
                                                 onChange={e => setNewUser({ ...newUser, clinicId: e.target.value })}
                                             >
                                                 <option value="">Acesso Global (Sem Clínica)</option>
                                                 {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                             </select>
-                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                                                <Building2 size={18} />
-                                            </div>
                                         </div>
                                     </div>
                                     <button type="submit" className="w-full py-5 bg-[#8A9A5B] text-white rounded-2xl font-black mt-6 shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">

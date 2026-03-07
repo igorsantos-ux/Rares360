@@ -22,17 +22,34 @@ export class SaaSController {
 
     static async createClinic(req: any, res: Response) {
         try {
-            const { name, cnpj, address, pricePerUser } = req.body;
+            const {
+                name, razaoSocial, cnpj, inscricaoEstadual, inscricaoMunicipal, cnae, regimeTributario, dataAbertura,
+                cep, logradouro, numero, complemento, bairro, cidade, estado,
+                telefone, whatsapp, email, site,
+                codigoServico, aliquotaISS, certificadoDigitalUrl,
+                banco, agencia, conta, tipoConta, chavePix,
+                logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel,
+                registroVigilancia, cnes, pricePerUser
+            } = req.body;
+
             const clinic = await prisma.clinic.create({
                 data: {
-                    name,
-                    cnpj,
-                    address,
+                    name, razaoSocial, cnpj, inscricaoEstadual, inscricaoMunicipal, cnae, regimeTributario,
+                    dataAbertura: dataAbertura ? new Date(dataAbertura) : null,
+                    cep, logradouro, numero, complemento, bairro, cidade, estado,
+                    telefone, whatsapp, email, site,
+                    codigoServico,
+                    aliquotaISS: aliquotaISS ? parseFloat(aliquotaISS) : null,
+                    certificadoDigitalUrl,
+                    banco, agencia, conta, tipoConta, chavePix,
+                    logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel,
+                    registroVigilancia, cnes,
                     pricePerUser: pricePerUser ? parseFloat(pricePerUser) : 50.0
                 }
             });
             res.status(201).json(clinic);
         } catch (error) {
+            console.error('Error creating clinic:', error);
             res.status(500).json({ error: 'Erro ao criar clínica' });
         }
     }
@@ -40,20 +57,36 @@ export class SaaSController {
     static async updateClinic(req: any, res: Response) {
         try {
             const { id } = req.params;
-            const { name, cnpj, address, pricePerUser, isActive } = req.body;
+            const {
+                name, razaoSocial, cnpj, inscricaoEstadual, inscricaoMunicipal, cnae, regimeTributario, dataAbertura,
+                cep, logradouro, numero, complemento, bairro, cidade, estado,
+                telefone, whatsapp, email, site,
+                codigoServico, aliquotaISS, certificadoDigitalUrl,
+                banco, agencia, conta, tipoConta, chavePix,
+                logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel,
+                registroVigilancia, cnes, pricePerUser, isActive
+            } = req.body;
 
             const clinic = await prisma.clinic.update({
                 where: { id },
                 data: {
-                    name,
-                    cnpj,
-                    address,
+                    name, razaoSocial, cnpj, inscricaoEstadual, inscricaoMunicipal, cnae, regimeTributario,
+                    dataAbertura: dataAbertura ? new Date(dataAbertura) : undefined,
+                    cep, logradouro, numero, complemento, bairro, cidade, estado,
+                    telefone, whatsapp, email, site,
+                    codigoServico,
+                    aliquotaISS: aliquotaISS !== undefined ? parseFloat(aliquotaISS) : undefined,
+                    certificadoDigitalUrl,
+                    banco, agencia, conta, tipoConta, chavePix,
+                    logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel,
+                    registroVigilancia, cnes,
                     pricePerUser: pricePerUser !== undefined ? parseFloat(pricePerUser) : undefined,
                     isActive
                 }
             });
             res.json(clinic);
         } catch (error) {
+            console.error('Error updating clinic:', error);
             res.status(500).json({ error: 'Erro ao atualizar clínica' });
         }
     }
