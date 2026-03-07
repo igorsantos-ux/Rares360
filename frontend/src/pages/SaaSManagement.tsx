@@ -64,6 +64,7 @@ const SaaSManagement = () => {
         registroVigilancia: '', cnes: '', pricePerUser: '50.0'
     });
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'CLINIC_ADMIN', clinicId: '' });
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formSection, setFormSection] = useState<number>(1);
 
     useEffect(() => {
@@ -100,6 +101,9 @@ const SaaSManagement = () => {
 
     const handleCreateClinic = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
         try {
             await saasApi.createClinic(newClinic);
             setIsModalOpen(false);
@@ -114,20 +118,29 @@ const SaaSManagement = () => {
                 registroVigilancia: '', cnes: '', pricePerUser: '50.0'
             });
             fetchData();
-        } catch (error) {
-            alert('Erro ao criar clínica');
+        } catch (error: any) {
+            const message = error.response?.data?.error || 'Erro ao criar clínica';
+            alert(message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     const handleCreateUser = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
         try {
             await saasApi.createUser(newUser);
             setIsModalOpen(false);
             setNewUser({ name: '', email: '', password: '', role: 'CLINIC_ADMIN', clinicId: '' });
             fetchData();
-        } catch (error) {
-            alert('Erro ao criar usuário');
+        } catch (error: any) {
+            const message = error.response?.data?.error || 'Erro ao criar usuário';
+            alert(message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -483,9 +496,10 @@ const SaaSManagement = () => {
                                         ) : (
                                             <button
                                                 type="submit"
-                                                className="flex-[2] py-4 bg-[#8A9A5B] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all"
+                                                disabled={isSubmitting}
+                                                className="flex-[2] py-4 bg-[#8A9A5B] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                Finalizar Cadastro
+                                                {isSubmitting ? 'Salvando...' : 'Finalizar Cadastro'}
                                             </button>
                                         )}
                                     </div>
@@ -508,8 +522,12 @@ const SaaSManagement = () => {
                                             </select>
                                         </div>
                                     </div>
-                                    <button type="submit" className="w-full py-5 bg-[#8A9A5B] text-white rounded-2xl font-black mt-6 shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
-                                        CRIAR USUÁRIO
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="w-full py-5 bg-[#8A9A5B] text-white rounded-2xl font-black mt-6 shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSubmitting ? 'CRIANDO...' : 'CRIAR USUÁRIO'}
                                     </button>
                                 </form>
                             )}

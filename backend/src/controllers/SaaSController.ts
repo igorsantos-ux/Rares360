@@ -84,9 +84,17 @@ export class SaaSController {
                 }
             });
             res.status(200).json(clinic);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error creating clinic:', error);
-            res.status(500).json({ error: 'Erro ao criar clínica. Verifique se o CNPJ já existe ou se as tabelas do banco de dados foram migradas corretamente.' });
+
+            // Tratamento específico para CNPJ duplicado (Prisma P2002)
+            if (error.code === 'P2002' && error.meta?.target?.includes('cnpj')) {
+                return res.status(400).json({
+                    error: 'Este CNPJ já está cadastrado em outra clínica.'
+                });
+            }
+
+            res.status(500).json({ error: 'Erro ao criar clínica no servidor. Verifique os dados ou tente novamente mais tarde.' });
         }
     }
 
@@ -112,9 +120,9 @@ export class SaaSController {
 
             const parseFloatSafe = (val: any) => {
                 if (val === undefined) return undefined;
-                if (val === null || val === '') return null;
+                if (val === null || val === '') return undefined; // Use undefined for updates so Prisma doesn't try to set a non-nullable field to null
                 const f = parseFloat(val);
-                return isNaN(f) ? null : f;
+                return isNaN(f) ? undefined : f;
             };
 
             const clinic = await prisma.clinic.update({
