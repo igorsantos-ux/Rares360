@@ -7,6 +7,7 @@ export class SeedService {
             console.log('Verificando status do banco de dados...');
             const adminEmail = 'admin@heathfinance.com.br';
             const adminPassword = 'admin123';
+            const hashedPassword = await AuthService.hashPassword(adminPassword);
 
             // Verifica se o admin mestre já existe
             const existingAdmin = await prisma.user.findUnique({
@@ -15,7 +16,6 @@ export class SeedService {
 
             if (!existingAdmin) {
                 console.log('Admin global não encontrado. Criando com senha padrão...');
-                const hashedPassword = await AuthService.hashPassword(adminPassword);
                 await prisma.user.create({
                     data: {
                         name: 'Igor Admin',
@@ -26,8 +26,21 @@ export class SeedService {
                 });
                 console.log('✅ Admin global criado com sucesso!');
             } else {
-                console.log('✅ Admin global já existe no sistema.');
+                console.log('✅ Admin global verificado/atualizado com sucesso!');
             }
+
+            // Upsert da Roberta Alamino para garantir o acesso da clínica (sem .br)
+            await prisma.user.upsert({
+                where: { email: 'roberta@alamino.com' },
+                update: { password: hashedPassword, role: 'CLINIC_ADMIN' },
+                create: {
+                    name: 'Roberta Alamino',
+                    email: 'roberta@alamino.com',
+                    password: hashedPassword,
+                    role: 'CLINIC_ADMIN'
+                }
+            });
+            console.log('✅ Usuário Roberta Alamino verificado/atualizado!');
 
             // Se for a primeira vez (sem outras clínicas), roda o seed completo
             const clinicCount = await prisma.clinic.count();
