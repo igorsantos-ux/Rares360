@@ -82,7 +82,7 @@ export class SeedService {
         await prisma.user.create({
             data: {
                 name: 'Roberta Alamino',
-                email: 'roberta@alamino.com.br',
+                email: 'roberta@alamino.com',
                 password: hashedPassword,
                 role: 'CLINIC_ADMIN',
                 clinicId: clinic.id
