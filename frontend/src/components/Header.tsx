@@ -14,7 +14,8 @@ import {
     LogOut,
     ChevronDown,
     Menu,
-    X
+    X,
+    Settings
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -57,6 +58,7 @@ const Header = () => {
                 { icon: <Target size={18} />, label: "Metas", path: "/goals" },
                 { icon: <Package size={18} />, label: "Estoque", path: "/inventory" },
                 { icon: <FolderOpen size={18} />, label: "Documentos", path: "/documents" },
+                { icon: <Settings size={18} />, label: "Automatizações", path: "/automations" },
             ]
         }
     ];

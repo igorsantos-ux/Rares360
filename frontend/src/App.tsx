@@ -19,6 +19,7 @@ import DocumentsPage from './pages/Documents';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
+import Automations from './pages/Automations';
 import { useAuth } from './contexts/AuthContext';
 
 function App() {
@@ -73,6 +74,7 @@ function App() {
               <Route path="/goals" element={<Goals />} />
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/documents" element={<DocumentsPage />} />
+              <Route path="/automations" element={<Automations />} />
             </Route>
 
             {/* Redirects */}
