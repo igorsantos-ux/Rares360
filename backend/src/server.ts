@@ -11,6 +11,7 @@ import reportingRoutes from './routes/reportingRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import historyRoutes from './routes/historyRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
+import importRoutes from './routes/importRoutes.js';
 import { SeedService } from './services/SeedService.js';
 
 dotenv.config();
@@ -48,6 +49,7 @@ app.use('/api/reporting', reportingRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/integrations', integrationRoutes);
+app.use('/api/import', importRoutes);
 
 process.on('SIGTERM', () => {
     console.log('SIGTERM recebido. Encerrando graciosamente...');

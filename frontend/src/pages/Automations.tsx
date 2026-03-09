@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Settings, CheckCircle2, XCircle, Loader2, Link2, ExternalLink, ShieldCheck } from 'lucide-react';
+import { Settings, CheckCircle2, XCircle, Loader2, Link2, ExternalLink, ShieldCheck, FileSpreadsheet, Download, UploadCloud, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import api from '../services/api';
 
@@ -188,7 +188,120 @@ const Automations = () => {
                     </div>
                 </motion.div>
 
-                {/* Coming Soon Card */}
+                {/* Excel Import Card */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 overflow-hidden"
+                >
+                    <div className="bg-[#8A9A5B]/10 p-8 border-b border-[#8A9A5B]/10 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-[#8A9A5B]/20">
+                                <FileSpreadsheet className="text-[#8A9A5B]" size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-800">Importação de Dados</h3>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-slate-200 text-slate-600">
+                                        Excel / CSV
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-8 space-y-6">
+                        <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                            Suba seus dados históricos de fluxo de caixa em segundos. Use nosso modelo padrão para garantir a compatibilidade.
+                        </p>
+
+                        <div className="flex flex-col gap-4">
+                            <a
+                                href="/templates/modelo_fluxo_caixa.xlsx"
+                                download
+                                className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-[#8A9A5B] transition-all"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white rounded-xl shadow-sm group-hover:bg-[#8A9A5B]/10 transition-colors">
+                                        <Download className="text-slate-400 group-hover:text-[#8A9A5B]" size={18} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-xs font-bold text-slate-700">Modelo Fluxo de Caixa</p>
+                                        <p className="text-[10px] text-slate-400">Download em .xlsx</p>
+                                    </div>
+                                </div>
+                                <ArrowRight className="text-slate-300 group-hover:text-[#8A9A5B] transition-all group-hover:translate-x-1" size={16} />
+                            </a>
+                        </div>
+
+                        <div className="relative">
+                            <input
+                                type="file"
+                                id="excel-upload"
+                                className="hidden"
+                                accept=".xlsx, .xls, .csv"
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+
+                                    setLoading(true);
+                                    setStatus(null);
+
+                                    const formData = new FormData();
+                                    formData.append('file', file);
+
+                                    try {
+                                        const response = await api.post('/import/transactions', formData, {
+                                            headers: { 'Content-Type': 'multipart/form-data' }
+                                        });
+                                        setStatus({ type: 'success', message: response.data.message });
+                                    } catch (error: any) {
+                                        setStatus({
+                                            type: 'error',
+                                            message: error.response?.data?.message || 'Erro ao processar arquivo.'
+                                        });
+                                    } finally {
+                                        setLoading(false);
+                                        // Reset input
+                                        e.target.value = '';
+                                    }
+                                }}
+                            />
+                            <label
+                                htmlFor="excel-upload"
+                                className={`w-full py-8 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${loading
+                                    ? 'bg-slate-50 border-slate-200 cursor-not-allowed'
+                                    : 'bg-white border-slate-200 hover:border-[#8A9A5B] hover:bg-[#8A9A5B]/5'
+                                    }`}
+                            >
+                                <div className={`p-4 rounded-full ${loading ? 'bg-slate-100' : 'bg-[#8A9A5B]/10 text-[#8A9A5B]'}`}>
+                                    {loading ? <Loader2 className="animate-spin" size={32} /> : <UploadCloud size={32} />}
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-sm font-bold text-slate-700">Clique para selecionar ou arraste o arquivo</p>
+                                    <p className="text-xs text-slate-400 mt-1">XLSX, XLS ou CSV (Máx 5MB)</p>
+                                </div>
+                            </label>
+                        </div>
+
+                        {status && status.message.includes('transações') && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className={`p-4 rounded-2xl flex items-center gap-3 border ${status.type === 'success'
+                                    ? 'bg-green-50 border-green-100 text-green-700'
+                                    : 'bg-red-50 border-red-100 text-red-700'
+                                    }`}
+                            >
+                                {status.type === 'success' ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
+                                <span className="text-xs font-bold tracking-tight">{status.message}</span>
+                            </motion.div>
+                        )}
+                    </div>
+                </motion.div>
+
+                {/* RD Station integration card */}
                 <div className="bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 p-8 flex flex-col items-center justify-center text-center space-y-4">
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm text-slate-300">
                         <Link2 size={32} />
