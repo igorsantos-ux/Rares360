@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { financialApi } from '../../services/api';
 import {
     Wallet,
     Search,
@@ -8,19 +10,42 @@ import {
     Plus,
     MoreVertical,
     TrendingUp,
-    Briefcase
+    Briefcase,
+    Loader2
 } from 'lucide-react';
 
 const IncomePage = () => {
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Mock de recebimentos do caixa
-    const displayIncome = [
-        { id: '1', description: 'Consulta Ana Oliveira', value: 250, date: '2026-03-05', status: 'RECEIVED', method: 'Dinheiro' },
-        { id: '2', description: 'Venda de Protetor Bucal', value: 120, date: '2026-03-05', status: 'RECEIVED', method: 'Pix' },
-        { id: '3', description: 'Procedimento Estético', value: 1500, date: '2026-03-05', status: 'RECEIVED', method: 'Cartão' },
-        { id: '4', description: 'Consulta Bruno Santos', value: 250, date: '2026-03-04', status: 'RECEIVED', method: 'Dinheiro' },
-    ].filter(i => i.description.toLowerCase().includes(searchTerm.toLowerCase()));
+    const { data: summaryResponse, isLoading: isSummaryLoading } = useQuery({
+        queryKey: ['financial-summary'],
+        queryFn: () => financialApi.getSummary()
+    });
+
+    const summary = summaryResponse?.data;
+
+    const { data: transactionsResponse, isLoading: isTransactionsLoading } = useQuery({
+        queryKey: ['financial-transactions'],
+        queryFn: () => financialApi.getTransactions()
+    });
+
+    const transactions = transactionsResponse?.data || [];
+
+    // Filtrar apenas receitas (INCOME) para o caixa
+    const displayIncome = transactions
+        .filter((t: any) => t.type === 'INCOME')
+        .filter((i: any) => i.description.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const isLoading = isSummaryLoading || isTransactionsLoading;
+
+    if (isLoading) {
+        return (
+            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
+                <Loader2 className="animate-spin text-[#8A9A5B]" size={48} />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Carregando recebimentos...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -42,26 +67,23 @@ const IncomePage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <IncomeStatCard
                     title="Saldo em Caixa"
-                    value="R$ 1.870,00"
+                    value={`R$ ${summary?.netProfit?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`}
                     icon={<Wallet size={20} />}
-                    color="moss"
                 />
                 <IncomeStatCard
                     title="Entradas Hoje"
-                    value="R$ 1.870,00"
+                    value={`R$ ${summary?.revenue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`}
                     icon={<TrendingUp size={20} />}
-                    color="moss"
                 />
                 <IncomeStatCard
                     title="Fechamento Anterior"
-                    value="R$ 12.450,00"
+                    value="R$ 0,00"
                     icon={<Briefcase size={20} />}
-                    color="moss"
                 />
             </div>
 
             {/* List Section */}
-            <div className="bg-white/70 backdrop-blur-md rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm overflow-hidden">
+            <div className="bg-white/70 backdrop-blur-md rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm overflow-hidden min-h-[400px]">
                 <div className="p-8 border-b border-[#8A9A5B]/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="relative flex-1 max-w-md">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
@@ -79,56 +101,65 @@ const IncomePage = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="bg-slate-50/50">
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descrição</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data/Hora</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Forma</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[#8A9A5B]/5">
-                            {displayIncome.map((item: any) => (
-                                <tr key={item.id} className="hover:bg-[#8A9A5B]/5 transition-colors group cursor-pointer">
-                                    <td className="px-8 py-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-[#8A9A5B]/10 text-[#697D58] rounded-xl flex items-center justify-center font-black text-xs">
-                                                <ArrowRightLeft size={20} />
-                                            </div>
-                                            <div>
-                                                <p className="font-black text-slate-700 text-sm">{item.description}</p>
-                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Entrada de Caixa</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <p className="text-xs font-bold text-slate-600">
-                                            {new Date(item.date).toLocaleDateString('pt-BR')}
-                                        </p>
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <p className="text-sm font-black text-emerald-600">R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                                    </td>
-                                    <td className="px-8 py-6 text-xs font-bold text-slate-500 uppercase tracking-widest">
-                                        {item.method}
-                                    </td>
-                                    <td className="px-8 py-6">
-                                        <span className="flex items-center gap-1.5 px-3 py-1 bg-[#8A9A5B]/10 text-[#697D58] rounded-full text-[10px] font-black uppercase tracking-widest w-fit">
-                                            <CheckCircle2 size={12} /> Confirmado
-                                        </span>
-                                    </td>
-                                    <td className="px-8 py-6 text-right">
-                                        <button className="p-2 hover:bg-white rounded-lg transition-all text-slate-400 hover:text-[#8A9A5B]">
-                                            <MoreVertical size={18} />
-                                        </button>
-                                    </td>
+                    {displayIncome.length === 0 ? (
+                        <div className="py-20 flex flex-col items-center justify-center gap-4">
+                            <Briefcase size={48} className="text-slate-200" />
+                            <p className="text-slate-400 font-bold text-sm uppercase tracking-widest text-center">
+                                Nenhum recebimento registrado
+                            </p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-slate-50/50">
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descrição</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Data/Hora</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Forma</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                    <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-[#8A9A5B]/5">
+                                {displayIncome.map((item: any) => (
+                                    <tr key={item.id} className="hover:bg-[#8A9A5B]/5 transition-colors group cursor-pointer">
+                                        <td className="px-8 py-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-[#8A9A5B]/10 text-[#697D58] rounded-xl flex items-center justify-center font-black text-xs">
+                                                    <ArrowRightLeft size={20} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-black text-slate-700 text-sm">{item.description}</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.category || 'Entrada de Caixa'}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <p className="text-xs font-bold text-slate-600">
+                                                {new Date(item.date).toLocaleDateString('pt-BR')}
+                                            </p>
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <p className="text-sm font-black text-emerald-600">R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                        </td>
+                                        <td className="px-8 py-6 text-xs font-bold text-slate-500 uppercase tracking-widest">
+                                            {item.category || 'Dinheiro'}
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <span className="flex items-center gap-1.5 px-3 py-1 bg-[#8A9A5B]/10 text-[#697D58] rounded-full text-[10px] font-black uppercase tracking-widest w-fit">
+                                                <CheckCircle2 size={12} /> Confirmado
+                                            </span>
+                                        </td>
+                                        <td className="px-8 py-6 text-right">
+                                            <button className="p-2 hover:bg-white rounded-lg transition-all text-slate-400 hover:text-[#8A9A5B]">
+                                                <MoreVertical size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
         </div>

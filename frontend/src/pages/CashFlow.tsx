@@ -18,19 +18,27 @@ const CashFlow = () => {
     const queryClient = useQueryClient();
 
     // Fetch summary for headers
-    const { data: summary } = useQuery({
+    const { data: summaryResponse, isLoading: isSummaryLoading } = useQuery({
         queryKey: ['financial-summary'],
-        queryFn: async () => {
-            const response = await financialApi.getSummary();
-            return response.data;
-        }
+        queryFn: () => financialApi.getSummary()
     });
+
+    const summary = summaryResponse?.data;
+
+    // Fetch real transactions
+    const { data: transactionsResponse, isLoading: isTransactionsLoading } = useQuery({
+        queryKey: ['financial-transactions'],
+        queryFn: () => financialApi.getTransactions()
+    });
+
+    const transactions = transactionsResponse?.data || [];
 
     // Create mutation
     const createMutation = useMutation({
         mutationFn: (newTransaction: any) => financialApi.createTransaction(newTransaction),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
+            queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
             setIsModalOpen(false);
         }
     });
@@ -43,9 +51,21 @@ const CashFlow = () => {
             amount: Number(formData.get('amount')),
             type: formData.get('type'),
             category: formData.get('category'),
+            date: new Date().toISOString()
         };
         createMutation.mutate(data);
     };
+
+    const isLoading = isSummaryLoading || isTransactionsLoading;
+
+    if (isLoading) {
+        return (
+            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
+                <Loader2 className="animate-spin text-[#10b981]" size={48} />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Carregando fluxo de caixa...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in slide-in-from-bottom duration-500">
@@ -68,13 +88,13 @@ const CashFlow = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FlowCard title="Saldo em Caixa" value={`R$ ${summary?.netProfit?.toLocaleString() || '0'}`} icon={<Wallet className="text-blue-500" />} />
-                <FlowCard title="Entradas (Mês)" value={`R$ ${summary?.revenue?.toLocaleString() || '0'}`} icon={<ArrowUpCircle className="text-emerald-500" />} />
-                <FlowCard title="Saídas (Mês)" value={`R$ ${summary?.expenses?.toLocaleString() || '0'}`} icon={<ArrowDownCircle className="text-red-500" />} />
+                <FlowCard title="Saldo em Caixa" value={`R$ ${summary?.netProfit?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`} icon={<Wallet className="text-blue-500" />} />
+                <FlowCard title="Entradas (Mês)" value={`R$ ${summary?.revenue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`} icon={<ArrowUpCircle className="text-emerald-500" />} />
+                <FlowCard title="Saídas (Mês)" value={`R$ ${summary?.expenses?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`} icon={<ArrowDownCircle className="text-red-500" />} />
             </div>
 
             {/* Transactions List */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm min-h-[400px]">
                 <div className="p-8 border-b border-slate-200 flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <h3 className="font-bold text-xl text-slate-800">Transações Recentes</h3>
@@ -90,20 +110,36 @@ const CashFlow = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <tbody className="divide-y divide-slate-100">
-                            {/* Aqui idealmente teríamos uma query para listar transações, mas usaremos os dados de exemplo integrados aos novos endpoints em breve */}
-                            <TransactionRow date="Hoje, 14:20" title="Procedimento Dermatológico" category="Receita Profissional" amount="+ R$ 1.200" type="income" />
-                            <TransactionRow date="Hoje, 10:15" title="Compra de Material Cirúrgico" category="Suprimentos" amount="- R$ 350" type="expense" />
-                            <TransactionRow date="Ontem, 16:45" title="Pagamento de Energia Elétrica" category="Custos Fixos" amount="- R$ 890" type="expense" />
-                            <TransactionRow date="02 Mar, 11:00" title="Consulta Dr. Marcelo" category="Receita Consulta" amount="+ R$ 300" type="income" />
-                        </tbody>
-                    </table>
+                    {transactions.length === 0 ? (
+                        <div className="py-20 flex flex-col items-center justify-center gap-4">
+                            <ArrowRightLeft size={48} className="text-slate-200" />
+                            <p className="text-slate-400 font-bold text-sm uppercase tracking-widest text-center">
+                                Nenhuma transação encontrada no período
+                            </p>
+                        </div>
+                    ) : (
+                        <table className="w-full text-left">
+                            <tbody className="divide-y divide-slate-100">
+                                {transactions.slice(0, 5).map((t: any) => (
+                                    <TransactionRow
+                                        key={t.id}
+                                        date={new Date(t.date).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                        title={t.description}
+                                        category={t.category}
+                                        amount={`${t.type === 'INCOME' ? '+' : '-'} R$ ${t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                                        type={t.type.toLowerCase()}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
 
-                <div className="p-6 border-t border-slate-200 text-center">
-                    <button className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-all">Ver extrato completo</button>
-                </div>
+                {transactions.length > 0 && (
+                    <div className="p-6 border-t border-slate-200 text-center">
+                        <button className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-all">Ver extrato completo</button>
+                    </div>
+                )}
             </div>
 
             {/* Modal Nova Transação */}
@@ -205,6 +241,22 @@ const TransactionRow = ({ date, title, category, amount, type }: any) => (
             {amount}
         </td>
     </tr>
+);
+
+const ArrowRightLeft = ({ size, className }: any) => (
+    <svg
+        width={size}
+        height={size}
+        className={className}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+    >
+        <path d="m16 3 4 4-4 4" /><path d="M20 7H4" /><path d="m8 21-4-4 4-4" /><path d="M4 17h16" />
+    </svg>
 );
 
 export default CashFlow;

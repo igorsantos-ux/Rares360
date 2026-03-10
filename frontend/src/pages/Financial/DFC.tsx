@@ -1,5 +1,5 @@
-// import { useQuery } from '@tanstack/react-query';
-// import { reportingApi } from '../../services/api';
+import { useQuery } from '@tanstack/react-query';
+import { reportingApi } from '../../services/api';
 import {
     Activity,
     TrendingUp,
@@ -8,52 +8,52 @@ import {
     Wallet,
     Calendar,
     ArrowUpRight,
-    ArrowDownRight
+    ArrowDownRight,
+    Loader2
 } from 'lucide-react';
 
 const DFCPage = () => {
-    // const clinicId = "default-clinic-id";
+    // Busca os dados reais do DFC (reutilizando motor do DRE se necessário ou endpoint específico)
+    const { data: response, isLoading } = useQuery({
+        queryKey: ['dfc-report'],
+        queryFn: () => reportingApi.getDRE() // O DRE já processa entradas e saídas de forma similar ao DFC direto
+    });
 
-    // Dados Fictícios para Visualização (DFC Mock)
+    const dreData = response?.data;
+
+    // Adaptar dados do DRE para a visualização do DFC
     const dfc = {
-        initialBalance: 45000,
-        finalBalance: 72000,
-        netChange: 27000,
+        initialBalance: dreData?.summary?.initialBalance || 0,
+        finalBalance: dreData?.summary?.netProfit || 0,
+        netChange: dreData?.summary?.netProfit || 0,
         operational: {
-            total: 35000,
-            inflow: 90000,
-            outflow: 55000,
-            details: [
-                { category: 'Recebimento de Clientes', value: 90000, type: 'inflow' },
-                { category: 'Pagamento de Fornecedores', value: 30000, type: 'outflow' },
-                { category: 'Folha de Pagamento', value: 25000, type: 'outflow' }
-            ]
+            total: dreData?.summary?.netProfit || 0,
+            inflow: dreData?.summary?.revenue || 0,
+            outflow: dreData?.summary?.expenses || 0,
+            details: (dreData?.categories || [])
+                .filter((cat: any) => cat.total !== 0)
+                .map((cat: any) => ({
+                    category: cat.name,
+                    value: Math.abs(cat.total),
+                    type: cat.total >= 0 ? 'inflow' : 'outflow'
+                }))
         },
         investing: {
-            total: -8000,
+            total: 0,
             inflow: 0,
-            outflow: 8000,
-            details: [
-                { category: 'Compra de Equipamento Laser', value: 8000, type: 'outflow' }
-            ]
+            outflow: 0,
+            details: []
         }
     };
 
-    /*
-    const { data: realDfc, isLoading } = useQuery({ ... });
-    */
-    const isLoading = false;
-
-    // Reutilizando lógica de reports para DFC
-    // const { data: dre, isLoading } = useQuery({
-    //     queryKey: ['dre', clinicId],
-    //     queryFn: async () => {
-    //         const response = await reportingApi.getDRE(clinicId);
-    //         return response.data;
-    //     }
-    // });
-
-    if (isLoading) return <div className="p-10 text-[#697D58] font-bold">Gerando relatório DFC...</div>;
+    if (isLoading) {
+        return (
+            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
+                <Loader2 className="animate-spin text-[#697D58]" size={48} />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Gerando relatório DFC real...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -80,18 +80,18 @@ const DFCPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <CashStatCard
                     label="Saldo Inicial"
-                    value="R$ 145.200,00"
+                    value={`R$ ${dfc.initialBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<Wallet size={20} />}
                 />
                 <CashStatCard
                     label="Geração de Caixa"
-                    value={`R$ ${dfc.operational.total.toLocaleString()}`}
+                    value={`R$ ${dfc.operational.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<TrendingUp size={20} />}
-                    positive
+                    positive={dfc.operational.total > 0}
                 />
                 <CashStatCard
-                    label="Saldo Final (Projetado)"
-                    value={`R$ ${dfc.finalBalance.toLocaleString()}`}
+                    label="Saldo Final (Real)"
+                    value={`R$ ${dfc.finalBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<ArrowRightLeft size={20} />}
                 />
             </div>
@@ -99,15 +99,19 @@ const DFCPage = () => {
             {/* DFC Content */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Entradas e Saídas */}
-                <div className="bg-white/70 backdrop-blur-md p-10 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm">
+                <div className="bg-white/70 backdrop-blur-md p-10 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm min-h-[400px]">
                     <h3 className="font-extrabold text-2xl text-[#697D58] mb-8">Atividades Operacionais</h3>
                     <div className="space-y-4">
-                        {dfc.operational.details.map((item, idx) => (
-                            <DFCRow key={idx} label={item.category} value={item.value} type={item.type === 'inflow' ? 'in' : 'out'} />
-                        ))}
+                        {dfc.operational.details.length === 0 ? (
+                            <p className="text-slate-400 text-sm italic py-10 text-center">Nenhuma atividade operacional registrada no período.</p>
+                        ) : (
+                            dfc.operational.details.map((item: any, idx: number) => (
+                                <DFCRow key={idx} label={item.category} value={item.value} type={item.type === 'inflow' ? 'in' : 'out'} />
+                            ))
+                        )}
                         <div className="pt-4 border-t border-[#8A9A5B]/10 mt-6 font-black flex justify-between text-[#697D58]">
                             <span>(=) Fluxo Operacional Líquido</span>
-                            <span>R$ {dfc.operational.total.toLocaleString()}</span>
+                            <span>R$ {dfc.operational.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                 </div>
@@ -117,16 +121,20 @@ const DFCPage = () => {
                     <div className="bg-white/70 backdrop-blur-md p-10 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm">
                         <h3 className="font-extrabold text-2xl text-[#697D58] mb-8">Atividades de Investimento</h3>
                         <div className="space-y-4">
-                            {dfc.investing.details.map((item, idx) => (
-                                <DFCRow key={idx} label={item.category} value={item.value} type={item.type === 'inflow' ? 'in' : 'out'} />
-                            ))}
+                            {dfc.investing.details.length === 0 ? (
+                                <p className="text-slate-400 text-sm italic py-4">Nenhum investimento registrado.</p>
+                            ) : (
+                                dfc.investing.details.map((item: any, idx: number) => (
+                                    <DFCRow key={idx} label={item.category} value={item.value} type={item.type === 'inflow' ? 'in' : 'out'} />
+                                ))
+                            )}
                         </div>
                     </div>
 
                     <div className="bg-[#697D58] text-white p-10 rounded-[2.5rem] shadow-2xl">
                         <h3 className="text-2xl font-black mb-6">Conciliação de Caixa</h3>
                         <p className="text-[#F0EAD6]/80 text-sm mb-8 leading-relaxed">
-                            O fluxo de caixa operacional demonstra que o modelo de negócio é auto-sustentável e gera liquidez imediata para novos investimentos tecnológicos.
+                            O fluxo de caixa operacional demonstra a saúde financeira real da clínica baseada em recebimentos e pagamentos efetivados.
                         </p>
                         <div className="flex items-center gap-4 bg-white/10 p-5 rounded-2xl border border-white/10">
                             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-[#DEB587]">
@@ -134,7 +142,7 @@ const DFCPage = () => {
                             </div>
                             <div>
                                 <p className="text-[10px] font-black uppercase tracking-widest text-[#F0EAD6]/60">Disponibilidade</p>
-                                <p className="text-xl font-black">94.2% do Planejado</p>
+                                <p className="text-xl font-black">Fluxo Consolidado</p>
                             </div>
                         </div>
                     </div>
@@ -152,7 +160,11 @@ const CashStatCard = ({ label, value, icon, positive }: any) => (
         <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
             <h5 className="text-2xl font-black text-[#697D58]">{value}</h5>
-            {positive && <p className="text-[10px] font-bold text-[#8A9A5B]">+4.2% vs mês ant.</p>}
+            {positive !== undefined && (
+                <p className={`text-[10px] font-bold ${positive ? 'text-[#8A9A5B]' : 'text-[#DEB587]'}`}>
+                    {positive ? 'Fluxo Positivo' : 'Fluxo Negativo'}
+                </p>
+            )}
         </div>
     </div>
 );
@@ -162,7 +174,7 @@ const DFCRow = ({ label, value, type }: any) => (
         <span className="text-sm font-medium text-slate-600">{label}</span>
         <div className="flex items-center gap-3">
             <span className={`text-sm font-black ${type === 'in' ? 'text-[#8A9A5B]' : 'text-[#DEB587]'}`}>
-                {type === 'in' ? '+' : '-'} R$ {(value || 0).toLocaleString()}
+                {type === 'in' ? '+' : '-'} R$ {(value || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </span>
             {type === 'in' ? <ArrowUpRight size={14} className="text-[#8A9A5B]" /> : <ArrowDownRight size={14} className="text-[#DEB587]" />}
         </div>
