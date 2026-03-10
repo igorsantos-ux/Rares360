@@ -5,9 +5,9 @@
   "type": "module",
   "main": "dist/server.js",
   "scripts": {
-    "dev": "npx prisma generate && npx prisma db push --accept-data-loss && tsx src/server.ts",
+    "dev": "tsx src/server.ts",
     "build": "tsc",
-    "start": "npx prisma generate && npx prisma db push --accept-data-loss && npx tsx src/server.ts",
+    "start": "npx tsx src/server.ts",
     "prisma:generate": "prisma generate",
     "prisma:seed": "tsx prisma/seed.ts"
   },

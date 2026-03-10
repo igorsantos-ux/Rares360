@@ -1,9 +1,19 @@
+import { execSync } from 'child_process';
 import prisma from '../lib/prisma.js';
 import { AuthService } from './AuthService.js';
 
 export class SeedService {
     static async autoSeedIfEmpty() {
         try {
+            // Sincroniza o banco em background para não travar o deploy/startup
+            try {
+                console.log('Sincronizando schema com o banco de dados (em background)...');
+                execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
+                console.log('✅ Schema sincronizado com sucesso.');
+            } catch (dbError) {
+                console.warn('Aviso na sincronização do banco (pode ser ignorado se já estiver atualizado):', dbError);
+            }
+
             console.log('Verificando status do banco de dados...');
             const adminEmail = 'admin@heathfinance.com.br';
             const adminPassword = 'admin123';
