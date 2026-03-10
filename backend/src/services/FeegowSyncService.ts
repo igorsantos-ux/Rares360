@@ -60,31 +60,37 @@ export class FeegowSyncService {
                     continue;
                 }
                 
-                await prisma.customer.upsert({
-                    where: {
-                        externalId_externalSource_clinicId: {
-                            externalId: feegowId.toString(),
+                const externalId = feegowId.toString();
+                
+                // Fallback Manual Upsert (evita erro 42P10 caso índice único não exista)
+                const existing = await prisma.customer.findFirst({
+                    where: { externalId, externalSource: 'FEEGOW', clinicId }
+                });
+
+                const patientData = {
+                    name: patient.nome,
+                    email: patient.email,
+                    phone: patient.telefone || patient.celular,
+                    birthDate: patient.data_nascimento || patient.nascimento ? new Date(patient.data_nascimento || patient.nascimento) : undefined,
+                };
+
+                if (existing) {
+                    await prisma.customer.update({
+                        where: { id: existing.id },
+                        data: patientData
+                    });
+                    updatedCount++;
+                } else {
+                    await prisma.customer.create({
+                        data: {
+                            ...patientData,
+                            externalId,
                             externalSource: 'FEEGOW',
                             clinicId
                         }
-                    },
-                    update: {
-                        name: patient.nome,
-                        email: patient.email,
-                        phone: patient.telefone || patient.celular,
-                        birthDate: patient.data_nascimento || patient.nascimento ? new Date(patient.data_nascimento || patient.nascimento) : undefined,
-                    },
-                    create: {
-                        name: patient.nome,
-                        email: patient.email,
-                        phone: patient.telefone || patient.celular,
-                        birthDate: patient.data_nascimento || patient.nascimento ? new Date(patient.data_nascimento || patient.nascimento) : undefined,
-                        externalId: feegowId.toString(),
-                        externalSource: 'FEEGOW',
-                        clinicId
-                    }
-                });
-                createdCount++;
+                    });
+                    createdCount++;
+                }
             }
 
             return { success: true, count: patients.length, created: createdCount, updated: updatedCount };
@@ -137,63 +143,67 @@ export class FeegowSyncService {
                             continue;
                         }
 
-                        await prisma.transaction.upsert({
-                            where: {
-                                externalId_externalSource_clinicId: {
-                                    externalId: `pay-${payId}`,
+                        const externalId = `pay-${payId}`;
+                        const existing = await prisma.transaction.findFirst({
+                            where: { externalId, externalSource: 'FEEGOW', clinicId }
+                        });
+
+                        const transactionData = {
+                            amount: Number(pay.valor),
+                            date: new Date(pay.data),
+                            description: pay.descricao || inv.detalhes?.descricao || 'Sincronização Feegow',
+                            category: categoryMap[pay.tipo_conta] || 'Geral',
+                            status: 'PAID' as any
+                        };
+
+                        if (existing) {
+                            await prisma.transaction.update({
+                                where: { id: existing.id },
+                                data: transactionData
+                            });
+                        } else {
+                            await prisma.transaction.create({
+                                data: {
+                                    ...transactionData,
+                                    type: inv.tipo_transacao === 'C' ? 'INCOME' : 'EXPENSE',
+                                    externalId,
                                     externalSource: 'FEEGOW',
                                     clinicId
                                 }
-                            },
-                            update: {
-                                amount: Number(pay.valor),
-                                date: new Date(pay.data),
-                                description: pay.descricao || inv.detalhes?.descricao || 'Sincronização Feegow',
-                                category: categoryMap[pay.tipo_conta] || 'Geral',
-                                status: 'PAID'
-                            },
-                            create: {
-                                amount: Number(pay.valor),
-                                date: new Date(pay.data),
-                                description: pay.descricao || inv.detalhes?.descricao || 'Sincronização Feegow',
-                                category: categoryMap[pay.tipo_conta] || 'Geral',
+                            });
+                        }
+                        syncedCount++;
+                    }
+                } else {
+                    const externalId = `inv-${invId}`;
+                    const existing = await prisma.transaction.findFirst({
+                        where: { externalId, externalSource: 'FEEGOW', clinicId }
+                    });
+
+                    const transactionData = {
+                        amount: Number(inv.valor),
+                        date: new Date(inv.data),
+                        description: inv.detalhes?.descricao || 'Sincronização Feegow (Fatura)',
+                        category: categoryMap[inv.detalhes?.tipo_conta] || 'Geral',
+                        status: 'PENDING' as any
+                    };
+
+                    if (existing) {
+                        await prisma.transaction.update({
+                            where: { id: existing.id },
+                            data: transactionData
+                        });
+                    } else {
+                        await prisma.transaction.create({
+                            data: {
+                                ...transactionData,
                                 type: inv.tipo_transacao === 'C' ? 'INCOME' : 'EXPENSE',
-                                status: 'PAID',
-                                externalId: `pay-${payId}`,
+                                externalId,
                                 externalSource: 'FEEGOW',
                                 clinicId
                             }
                         });
-                        syncedCount++;
                     }
-                } else {
-                    await prisma.transaction.upsert({
-                        where: {
-                            externalId_externalSource_clinicId: {
-                                externalId: `inv-${invId}`,
-                                externalSource: 'FEEGOW',
-                                clinicId
-                            }
-                        },
-                        update: {
-                            amount: Number(inv.valor),
-                            date: new Date(inv.data),
-                            description: inv.detalhes?.descricao || 'Sincronização Feegow (Fatura)',
-                            category: categoryMap[inv.detalhes?.tipo_conta] || 'Geral',
-                            status: 'PENDING'
-                        },
-                        create: {
-                            amount: Number(inv.valor),
-                            date: new Date(inv.data),
-                            description: inv.detalhes?.descricao || 'Sincronização Feegow (Fatura)',
-                            category: categoryMap[inv.detalhes?.tipo_conta] || 'Geral',
-                            type: inv.tipo_transacao === 'C' ? 'INCOME' : 'EXPENSE',
-                            status: 'PENDING',
-                            externalId: `inv-${invId}`,
-                            externalSource: 'FEEGOW',
-                            clinicId
-                        }
-                    });
                     syncedCount++;
                 }
             }

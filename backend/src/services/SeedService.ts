@@ -12,7 +12,13 @@ export class SeedService {
             console.log('Iniciando sincronização de schema em background...');
             
             // Se houver DIRECT_URL (Supabase), usamos ela para o push, pois o Pooler (6543) falha com prepared statements
-            const dbUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+            let dbUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || '';
+            
+            // Se for Supabase (6543) e não tiver pgbouncer=true, adicionamos para o Prisma não reclamar
+            if (dbUrl.includes('6543') && !dbUrl.includes('pgbouncer=true')) {
+                dbUrl += dbUrl.includes('?') ? '&pgbouncer=true' : '?pgbouncer=true';
+            }
+
             const command = `DATABASE_URL="${dbUrl}" npx prisma db push --accept-data-loss`;
             
             execAsync(command)
@@ -23,6 +29,7 @@ export class SeedService {
                 })
                 .catch(err => {
                     console.error('❌ ERRO CRÍTICO na sincronização do banco:', err.message);
+                    console.error('Stack:', err.stack);
                 });
 
             console.log('Verificando status do banco de dados...');
