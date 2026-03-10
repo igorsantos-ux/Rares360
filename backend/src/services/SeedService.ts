@@ -11,8 +11,15 @@ export class SeedService {
             // Sincroniza o banco em background TOTAL para não travar o loop de eventos
             console.log('Iniciando sincronização de schema em background...');
             execAsync('npx prisma db push --accept-data-loss')
-                .then(() => console.log('✅ Schema sincronizado com sucesso.'))
-                .catch(err => console.warn('Aviso na sincronização do banco:', err.message));
+                .then(({ stdout, stderr }) => {
+                    if (stdout) console.log('[PRISMA DB PUSH OUT]:', stdout);
+                    if (stderr) console.warn('[PRISMA DB PUSH ERR]:', stderr);
+                    console.log('✅ Tentativa de sincronização de schema finalizada.');
+                })
+                .catch(err => {
+                    console.error('❌ ERRO CRÍTICO na sincronização do banco:', err.message);
+                    console.error('Stack:', err.stack);
+                });
 
             console.log('Verificando status do banco de dados...');
             const adminEmail = 'admin@heathfinance.com.br';
