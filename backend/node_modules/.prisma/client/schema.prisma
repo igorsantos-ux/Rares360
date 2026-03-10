@@ -98,6 +98,9 @@ model Transaction {
   cost          Float    @default(0)
   date          DateTime @default(now())
   
+  externalId     String?
+  externalSource String?
+
   doctorId      String?
   doctor        Doctor?  @relation(fields: [doctorId], references: [id])
   
@@ -106,6 +109,8 @@ model Transaction {
   
   clinicId      String
   clinic        Clinic   @relation(fields: [clinicId], references: [id])
+
+  @@unique([externalId, externalSource, clinicId])
 }
 
 model Doctor {

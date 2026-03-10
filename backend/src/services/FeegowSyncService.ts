@@ -40,6 +40,11 @@ export class FeegowSyncService {
             let updatedCount = 0;
 
             for (const patient of patients) {
+                if (!patient || !patient.id) {
+                    console.warn('Paciente ignorado por falta de ID:', patient);
+                    continue;
+                }
+
                 await prisma.customer.upsert({
                     where: {
                         externalId_externalSource_clinicId: {
@@ -98,10 +103,20 @@ export class FeegowSyncService {
             let syncedCount = 0;
 
             for (const inv of allInvoices) {
+                if (!inv || !inv.id) {
+                    console.warn('Fatura ignorada por falta de ID:', inv);
+                    continue;
+                }
+
                 const payments = inv.pagamentos || [];
 
                 if (payments.length > 0) {
                     for (const pay of payments) {
+                        if (!pay || !pay.id) {
+                            console.warn('Pagamento ignorado por falta de ID na fatura:', inv.id);
+                            continue;
+                        }
+
                         await prisma.transaction.upsert({
                             where: {
                                 externalId_externalSource_clinicId: {
