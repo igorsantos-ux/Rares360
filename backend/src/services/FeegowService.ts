@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 export class FeegowService {
-    private static BASE_URL = 'https://api.feegow.com.br/v1/api';
+    private static BASE_URL = 'https://api.feegow.com/v1/api';
 
     /**
      * Valida o token x-access-token fazendo uma chamada simples à API do Feegow.
@@ -9,18 +9,22 @@ export class FeegowService {
      */
     static async validateToken(token: string): Promise<boolean> {
         try {
-            const response = await axios.get(`${this.BASE_URL}/company/list-unity`, {
+            const response = await axios.get(`${this.BASE_URL}/unidades/listar`, {
                 headers: {
                     'x-access-token': token,
                     'Content-Type': 'application/json'
-                }
+                },
+                validateStatus: (status) => status < 500 // Aceita 422 como resposta válida do servidor
             });
 
-            // Se a API responder (mesmo que vazio), o token é válido.
-            // A documentação diz que erros de auth retornam 401 ou 403.
+            // Se retornar JSON com a estrutura do Feegow, o token foi Aceito pelo gateway
+            if (response.data && typeof response.data.success !== 'undefined') {
+                return true;
+            }
+
             return response.status === 200;
-        } catch (error: any) {
-            console.error('Erro ao validar token Feegow:', error.response?.data || error.message);
+        } catch (error) {
+            console.error('Erro ao validar token Feegow:', error);
             return false;
         }
     }
