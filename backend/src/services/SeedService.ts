@@ -15,7 +15,7 @@ export class SeedService {
             });
 
             if (!existingAdmin) {
-                console.log('Admin global não encontrado. Criando com senha padrão (admin123)...');
+                console.log('Admin global não encontrado. Criando...');
                 await prisma.user.create({
                     data: {
                         name: 'Igor Admin',
@@ -24,9 +24,12 @@ export class SeedService {
                         role: 'ADMIN_GLOBAL'
                     }
                 });
-                console.log('✅ Admin global criado com sucesso!');
             } else {
-                console.log(`✅ Admin global já existe: ${adminEmail.substring(0, 3)}***. Mantendo credenciais atuais.`);
+                console.log('Atualizando Admin global para garantir senha padrão...');
+                await prisma.user.update({
+                    where: { email: adminEmail },
+                    data: { password: hashedPassword }
+                });
             }
 
             // Verifica Roberta Alamino
@@ -37,17 +40,26 @@ export class SeedService {
 
             if (!existingRoberta) {
                 console.log('Usuário Roberta não encontrado. Criando...');
+                const clinic = await prisma.clinic.findFirst();
                 await prisma.user.create({
                     data: {
                         name: 'Roberta Alamino',
                         email: robertaEmail,
                         password: hashedPassword,
-                        role: 'CLINIC_ADMIN'
+                        role: 'CLINIC_ADMIN',
+                        clinicId: clinic?.id
                     }
                 });
-                console.log('✅ Usuário Roberta Alamino criado!');
             } else {
-                console.log(`✅ Usuário Roberta Alamino já existe: ${robertaEmail.substring(0, 3)}***.`);
+                console.log('Sincronizando usuário Roberta (Clínica e Senha)...');
+                const clinic = await prisma.clinic.findFirst();
+                await prisma.user.update({
+                    where: { email: robertaEmail },
+                    data: {
+                        password: hashedPassword,
+                        clinicId: clinic?.id
+                    }
+                });
             }
 
             // Se for a primeira vez (sem outras clínicas), roda o seed completo
