@@ -14,11 +14,11 @@ export class FeegowService {
                     'x-access-token': token,
                     'Content-Type': 'application/json'
                 },
-                validateStatus: (status) => status < 500 // Aceita 422 como resposta válida do servidor
+                validateStatus: (status: number) => status < 500 // Aceita 422 como resposta válida do servidor
             });
 
             // Se retornar JSON com a estrutura do Feegow, o token foi Aceito pelo gateway
-            if (response.data && typeof response.data.success !== 'undefined') {
+            if (response.data && typeof (response.data as any).success !== 'undefined') {
                 return true;
             }
 
@@ -32,12 +32,16 @@ export class FeegowService {
     /**
      * Exemplo de busca de pacientes (pode ser usado futuramente para sincronização)
      */
-    static async getPatients(token: string) {
+    static async getPatients(token: string, offset: number = 0, limit: number = 50) {
         try {
             const response = await axios.get(`${this.BASE_URL}/patient/list`, {
                 headers: {
                     'x-access-token': token,
                     'Content-Type': 'application/json'
+                },
+                params: {
+                    offset,
+                    limit
                 }
             });
             return response.data;

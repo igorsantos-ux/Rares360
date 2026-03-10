@@ -45,13 +45,13 @@ export class FeegowSyncService {
 
     private static async syncPatients(clinicId: string, token: string) {
         try {
-            const data = await FeegowService.getPatients(token);
-            const patients = data?.content || [];
+            const data = await FeegowService.getPatients(token, 0, 500);
+            const records = (data as any)?.content || [];
 
             let createdCount = 0;
             let updatedCount = 0;
 
-            for (const patient of patients) {
+            for (const patient of records) {
                 // Feegow usa patient_id na listagem
                 const feegowId = patient.patient_id || patient.id;
                 
@@ -93,7 +93,8 @@ export class FeegowSyncService {
                 }
             }
 
-            return { success: true, count: patients.length, created: createdCount, updated: updatedCount };
+            console.log(`[FEEGOW SYNC C] Processados ${records.length} pacientes. Incluídos: ${createdCount}, Atualizados: ${updatedCount}`);
+            return { success: true, count: records.length, created: createdCount, updated: updatedCount };
         } catch (error: any) {
             console.error('Erro na sincronização de pacientes:', error);
             return { success: false, error: error.message };
@@ -112,7 +113,7 @@ export class FeegowSyncService {
             const expenseCats = await FeegowService.getFinancialCategories(token, 'expense');
             
             const categoryMap: Record<string, string> = {};
-            [...(incomeCats?.content || []), ...(expenseCats?.content || [])].forEach((c: any) => {
+            [...((incomeCats as any)?.content || []), ...((expenseCats as any)?.content || [])].forEach((c: any) => {
                 categoryMap[c.id] = c.nome;
             });
 
@@ -121,8 +122,8 @@ export class FeegowSyncService {
             const invoicesD = await FeegowService.getInvoices(token, 'D', dataStart, dataEnd);
             
             const allInvoices = [
-                ...(invoicesC?.content || []).map((i: any) => ({ ...i, tipo_transacao: 'C' })),
-                ...(invoicesD?.content || []).map((i: any) => ({ ...i, tipo_transacao: 'D' }))
+                ...((invoicesC as any)?.content || []).map((i: any) => ({ ...i, tipo_transacao: 'C' })),
+                ...((invoicesD as any)?.content || []).map((i: any) => ({ ...i, tipo_transacao: 'D' }))
             ];
             let syncedCount = 0;
 
