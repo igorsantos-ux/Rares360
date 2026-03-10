@@ -12,12 +12,15 @@ import {
     Wallet,
     Percent,
     PieChart,
-    ArrowRight
+    ArrowRight,
+    Loader2
 } from 'lucide-react';
-// import { useQuery } from '@tanstack/react-query';
-// import { financialApi, reportingApi } from '../services/api';
+import { useQuery } from '@tanstack/react-query';
+import { financialApi, reportingApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
+    const { user } = useAuth();
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
     const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
     const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
@@ -33,26 +36,21 @@ const Dashboard = () => {
     });
     const [isSaving, setIsSaving] = useState(false);
 
-    // Dados Fictícios para Visualização (Mock Data)
-    const summary = {
-        revenue: 125400,
-        balance: 98200,
-        pendingPayables: 15400,
-        pendingReceivables: 42300,
-        margin: 78.4,
-        projections: { estimatedBalance: 112000 },
-        expenses: 27200
-    };
+    // Buscando Dados Reais via React Query
+    const { data: summary, isLoading: isLoadingSummary } = useQuery({
+        queryKey: ['dashboard-kpis'],
+        queryFn: () => reportingApi.getDashboardKPIs().then(res => res.data)
+    });
 
-    const evolution = [
-        { month: 'Set', income: 85000, expenses: 45000 },
-        { month: 'Out', income: 92000, expenses: 42000 },
-        { month: 'Nov', income: 78000, expenses: 38000 },
-        { month: 'Dez', income: 110000, expenses: 55000 },
-        { month: 'Jan', income: 95000, expenses: 48000 },
-        { month: 'Fev', income: 105000, expenses: 42000 },
-        { month: 'Mar', income: 125400, expenses: 27200 }
-    ];
+    const { data: evolution, isLoading: isLoadingEvolution } = useQuery({
+        queryKey: ['financial-evolution'],
+        queryFn: () => financialApi.getEvolution().then(res => res.data)
+    });
+
+    const { data: goals, isLoading: isLoadingGoals } = useQuery({
+        queryKey: ['financial-goals'],
+        queryFn: () => reportingApi.getGoals().then(res => res.data)
+    });
 
     const handleSaveTransaction = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -60,11 +58,11 @@ const Dashboard = () => {
 
         setIsSaving(true);
         try {
-            // Em uma implementação real, chamaríamos:
-            // await financialApi.createTransaction({ ...formData, type: transactionType, clinicId: 'default' });
-
-            // Simulação de sucesso para demonstração
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await financialApi.createTransaction({
+                ...formData,
+                amount: Number(formData.amount),
+                type: transactionType === 'income' ? 'INCOME' : 'EXPENSE'
+            });
 
             console.log('Transaction saved:', { ...formData, type: transactionType });
             setIsTransactionModalOpen(false);
@@ -85,13 +83,24 @@ const Dashboard = () => {
         }
     };
 
+    const isLoading = isLoadingSummary || isLoadingEvolution || isLoadingGoals;
+
+    if (isLoading) {
+        return (
+            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
+                <Loader2 className="animate-spin text-[#8A9A5B]" size={48} />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Carregando painel financeiro...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
             {/* Top Bar / Welcome */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-4xl font-extrabold tracking-tight text-[#697D58]">
-                        Olá, <span className="text-[#8A9A5B]">Roberta</span>!
+                        Olá, <span className="text-[#8A9A5B]">{user?.name?.split(' ')[0] || 'Gestor'}</span>!
                     </h2>
                     <p className="text-slate-500 font-medium mt-1">Aqui está a visão geral da sua clínica hoje.</p>
                 </div>
@@ -118,28 +127,28 @@ const Dashboard = () => {
                 <KPICard
                     title="Faturamento Total"
                     value={`R$ ${summary?.revenue?.toLocaleString() || '0'}`}
-                    change="+12%"
+                    change="+0%"
                     trend="up"
                     icon={<DollarSign size={20} />}
                 />
                 <KPICard
                     title="Recebimentos Líquidos"
-                    value={`R$ ${summary?.balance?.toLocaleString() || '0'}`}
-                    change="+8%"
+                    value={`R$ ${summary?.netProfit?.toLocaleString() || '0'}`}
+                    change="+0%"
                     trend="up"
                     icon={<Wallet size={20} />}
                 />
                 <KPICard
                     title="Contas a Pagar"
                     value={`R$ ${summary?.pendingPayables?.toLocaleString() || '0'}`}
-                    change="-2%"
+                    change="0%"
                     trend="down"
                     icon={<TrendingDown size={20} />}
                 />
                 <KPICard
                     title="Contas a Receber"
                     value={`R$ ${summary?.pendingReceivables?.toLocaleString() || '0'}`}
-                    change="+15%"
+                    change="+0%"
                     trend="up"
                     icon={<TrendingUp size={20} />}
                 />
@@ -155,7 +164,7 @@ const Dashboard = () => {
                 />
                 <MetricCard
                     title="Fluxo de Caixa Projetado"
-                    value={`R$ ${summary?.projections?.estimatedBalance?.toLocaleString() || '0'}`}
+                    value={`R$ ${summary?.estimatedBalance?.toLocaleString() || '0'}`}
                     description="Expectativa para o fim do mês"
                     icon={<PieChart size={18} />}
                 />
@@ -188,7 +197,7 @@ const Dashboard = () => {
 
                     <div className="h-80 flex items-end justify-between gap-4 px-2">
                         {evolution?.map((item: any, i: number) => {
-                            const maxVal = Math.max(...evolution.map((e: any) => e.income), 1000);
+                            const maxVal = Math.max(...evolution.map((e: any) => e.income), ...evolution.map((e: any) => e.expenses), 1000);
                             const incomeH = (item.income / maxVal) * 100;
                             const expenseH = (item.expenses / maxVal) * 100;
 
@@ -234,16 +243,23 @@ const Dashboard = () => {
                         </div>
                         <h4 className="text-2xl font-black mb-4">Metas do Negócio</h4>
                         <p className="text-[#F0EAD6]/80 font-medium leading-relaxed mb-8">
-                            Você atingiu <span className="text-white font-bold">65%</span> da sua meta de faturamento anual. Faltam R$ 120k para o próximo nível.
+                            {goals?.[0] ? (
+                                <>Você atingiu <span className="text-white font-bold">{goals[0].achieved}%</span> da sua meta. Faltam R$ {(goals[0].target - goals[0].current).toLocaleString()} para o próximo nível.</>
+                            ) : (
+                                <>Defina suas metas financeiras para acompanhar o crescimento da sua clínica em tempo real.</>
+                            )}
                         </p>
 
                         <div className="space-y-4">
                             <div className="flex justify-between text-xs font-bold uppercase tracking-wider">
                                 <span className="text-[#F0EAD6]/60">Progresso Atual</span>
-                                <span>65%</span>
+                                <span>{goals?.[0]?.achieved || 0}%</span>
                             </div>
                             <div className="h-3 bg-black/20 rounded-full overflow-hidden">
-                                <div className="h-full bg-[#DEB587] w-[65%] rounded-full shadow-lg shadow-[#DEB587]/30 transition-all duration-1000"></div>
+                                <div
+                                    className="h-full bg-[#DEB587] rounded-full shadow-lg shadow-[#DEB587]/30 transition-all duration-1000"
+                                    style={{ width: `${goals?.[0]?.achieved || 0}%` }}
+                                ></div>
                             </div>
                         </div>
                     </div>

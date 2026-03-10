@@ -45,4 +45,13 @@ export class FinancialController {
             res.status(500).json({ error: 'Internal server error' });
         }
     }
+
+    static async getTransactions(req: any, res: Response) {
+        try {
+            const transactions = await FinancialService.getTransactions(req.clinicId);
+            res.json(transactions);
+        } catch (error) {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
 }

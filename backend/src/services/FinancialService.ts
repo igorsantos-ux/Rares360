@@ -67,7 +67,7 @@ export class FinancialService {
         const evolution = [];
         const now = new Date();
 
-        for (let i = 5; i >= 0; i--) {
+        for (let i = 6; i >= 0; i--) {
             const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
             const nextDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
 
@@ -129,6 +129,17 @@ export class FinancialService {
                 customerId: data.customerId || null,
                 clinicId: data.clinicId,
                 date: new Date()
+            }
+        });
+    }
+
+    static async getTransactions(clinicId: string) {
+        return await prisma.transaction.findMany({
+            where: { clinicId },
+            orderBy: { date: 'desc' },
+            include: {
+                doctor: true,
+                customer: true
             }
         });
     }

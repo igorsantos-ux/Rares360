@@ -1,5 +1,5 @@
-// import { useQuery } from '@tanstack/react-query';
-// import { reportingApi } from '../../services/api';
+import { useQuery } from '@tanstack/react-query';
+import { reportingApi } from '../../services/api';
 import {
     FileText,
     TrendingUp,
@@ -8,46 +8,25 @@ import {
     Download,
     Percent,
     DollarSign,
-    Calculator
+    Calculator,
+    Loader2
 } from 'lucide-react';
 
 const DREPage = () => {
-    // const clinicId = "default-clinic-id";
-
-    // Dados Fictícios para Visualização (DRE Mock)
-    const dre = {
-        revenue: 150000,
-        variableCosts: 45000,
-        contributionMargin: 105000,
-        fixedCosts: 35000,
-        netProfit: 70000,
-        netMargin: 46.6,
-        ebitda: 75000,
-        details: [
-            { category: 'Procedimentos Dentários', value: 90000, type: 'revenue' },
-            { category: 'Cirurgias Estéticas', value: 45000, type: 'revenue' },
-            { category: 'Venda de Produtos', value: 15000, type: 'revenue' },
-            { category: 'Materiais Cirúrgicos', value: 25000, type: 'variable' },
-            { category: 'Laboratório Protético', value: 15000, type: 'variable' },
-            { category: 'Taxas de Cartão', value: 5000, type: 'variable' },
-            { category: 'Aluguel & Condomínio', value: 12000, type: 'fixed' },
-            { category: 'Salários & Encargos', value: 18000, type: 'fixed' },
-            { category: 'Marketing Digital', value: 5000, type: 'fixed' }
-        ]
-    };
-
-    /*
-    const { data: realDre, isLoading } = useQuery({
-        queryKey: ['dre', clinicId],
-        queryFn: async () => {
-            const response = await reportingApi.getDRE(clinicId);
-            return response.data;
-        }
+    // Buscando Dados Reais do DRE
+    const { data: dre, isLoading } = useQuery({
+        queryKey: ['financial-dre'],
+        queryFn: () => reportingApi.getDRE().then(res => res.data)
     });
-    */
-    const isLoading = false;
 
-    if (isLoading) return <div className="p-10 text-[#697D58] font-bold">Gerando relatório DRE...</div>;
+    if (isLoading) {
+        return (
+            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
+                <Loader2 className="animate-spin text-[#8A9A5B]" size={48} />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Gerando relatório DRE...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -74,19 +53,19 @@ const DREPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <SummaryCard
                     label="Faturamento Bruto"
-                    value={`R$ ${dre?.revenue?.toLocaleString() || '0'}`}
+                    value={`R$ ${dre?.revenue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`}
                     icon={<DollarSign size={20} />}
                     color="moss"
                 />
                 <SummaryCard
                     label="Margem de Contribuição"
-                    value={`${dre?.contributionMargin?.toFixed(1) || '0'}%`}
+                    value={`${dre?.margin?.toFixed(1) || '0'}%`}
                     icon={<Percent size={20} />}
                     color="moss"
                 />
                 <SummaryCard
                     label="Resultado Líquido"
-                    value={`R$ ${dre?.netProfit?.toLocaleString() || '0'}`}
+                    value={`R$ ${dre?.netProfit?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`}
                     icon={<TrendingUp size={20} />}
                     color="moss"
                 />
@@ -101,19 +80,10 @@ const DREPage = () => {
 
                 <div className="space-y-2">
                     <DRERow label="(+) Receita Operacional Bruta" value={dre?.revenue} isMain />
-                    <DRERow label="(-) Deduções e Impostos" value={dre?.revenue * 0.08} isNegative />
+                    <DRERow label="(-) Custos e Despesas Variáveis" value={dre?.expenses} isNegative />
                     <div className="h-px bg-[#8A9A5B]/10 my-4"></div>
 
-                    <DRERow label="(=) Receita Líquida" value={dre?.revenue * 0.92} isSubtotal />
-                    <DRERow label="(-) Custos Variáveis (Insumos/Lab)" value={dre?.variableCosts} isNegative />
-                    <div className="h-px bg-[#8A9A5B]/10 my-4"></div>
-
-                    <DRERow label="(=) Margem de Contribuição" value={dre?.revenue * 0.92 - dre?.variableCosts} isSubtotal />
-                    <DRERow label="(-) Despesas Operacionais Fixas" value={dre?.fixedCosts} isNegative />
-                    <DRERow label="(-) Despesas Administrativas" value={dre?.fixedCosts * 0.3} isNegative />
-                    <div className="h-px bg-[#8A9A5B]/10 my-4"></div>
-
-                    <DRERow label="(=) RESULTADO OPERACIONAL (EBITDA)" value={dre?.netProfit} isTotal />
+                    <DRERow label="(=) RESULTADO OPERACIONAL" value={dre?.netProfit} isTotal />
                 </div>
 
                 <div className="mt-12 bg-[#8A9A5B]/5 p-8 rounded-3xl border border-[#8A9A5B]/10 flex items-start gap-4">
@@ -123,8 +93,11 @@ const DREPage = () => {
                     <div>
                         <h4 className="font-black text-[#697D58] text-sm mb-1 uppercase tracking-widest">Insight de Performance</h4>
                         <p className="text-slate-600 font-medium text-sm leading-relaxed">
-                            Sua lucratividade atual de <span className="font-bold">{(dre?.netProfit / (dre?.revenue || 1) * 100).toFixed(1)}%</span> está acima da média do setor (18%).
-                            Considere reinvestir parte do resultado em marketing para aumentar o volume de pacientes particulares.
+                            {dre?.netProfit > 0 ? (
+                                <>Sua lucratividade atual de <span className="font-bold">{dre.margin.toFixed(1)}%</span> indica um desempenho saudável. Continue monitorando seus custos fixos e variáveis.</>
+                            ) : (
+                                <>Sua clínica ainda não atingiu lucro operacional neste período. Verifique seus lançamentos de custos e receitas para identificar oportunidades de melhoria.</>
+                            )}
                         </p>
                     </div>
                 </div>
