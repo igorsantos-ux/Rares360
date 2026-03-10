@@ -10,7 +10,12 @@ export class SeedService {
         try {
             // Sincroniza o banco em background TOTAL para não travar o loop de eventos
             console.log('Iniciando sincronização de schema em background...');
-            execAsync('npx prisma db push --accept-data-loss')
+            
+            // Se houver DIRECT_URL (Supabase), usamos ela para o push, pois o Pooler (6543) falha com prepared statements
+            const dbUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
+            const command = `DATABASE_URL="${dbUrl}" npx prisma db push --accept-data-loss`;
+            
+            execAsync(command)
                 .then(({ stdout, stderr }) => {
                     if (stdout) console.log('[PRISMA DB PUSH OUT]:', stdout);
                     if (stderr) console.warn('[PRISMA DB PUSH ERR]:', stderr);
@@ -18,7 +23,6 @@ export class SeedService {
                 })
                 .catch(err => {
                     console.error('❌ ERRO CRÍTICO na sincronização do banco:', err.message);
-                    console.error('Stack:', err.stack);
                 });
 
             console.log('Verificando status do banco de dados...');
