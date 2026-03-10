@@ -93,4 +93,96 @@ export class FeegowService {
             throw new Error(`Erro ao buscar categorias Feegow: ${error.response?.data?.message || error.message}`);
         }
     }
+
+    /**
+     * Busca os Convênios e Planos.
+     */
+    static async getInsurances(token: string) {
+        try {
+            const response = await axios.get(`${this.BASE_URL}/insurance/list`, {
+                headers: {
+                    'x-access-token': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Erro ao buscar convênios Feegow: ${error.response?.data?.message || error.message}`);
+        }
+    }
+
+    /**
+     * Busca as Especialidades.
+     */
+    static async getSpecialties(token: string) {
+        try {
+            const response = await axios.get(`${this.BASE_URL}/specialties/list`, {
+                headers: {
+                    'x-access-token': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Erro ao buscar especialidades Feegow: ${error.response?.data?.message || error.message}`);
+        }
+    }
+
+    /**
+     * Busca os Procedimentos.
+     */
+    static async getProcedures(token: string) {
+        try {
+            const response = await axios.get(`${this.BASE_URL}/procedures/list`, {
+                headers: {
+                    'x-access-token': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Erro ao buscar procedimentos Feegow: ${error.response?.data?.message || error.message}`);
+        }
+    }
+
+    /**
+     * Busca os Profissionais (Médicos).
+     */
+    static async getProfessionals(token: string) {
+        try {
+            const response = await axios.get(`${this.BASE_URL}/professional/list`, {
+                headers: {
+                    'x-access-token': token,
+                    'Content-Type': 'application/json'
+                },
+                params: {
+                    ativo: 1
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Erro ao buscar profissionais Feegow: ${error.response?.data?.message || error.message}`);
+        }
+    }
+
+    /**
+     * Busca os Agendamentos em um intervalo de datas.
+     */
+    static async getAppointments(token: string, dataStart: string, dataEnd: string) {
+        try {
+            const response = await axios.get(`${this.BASE_URL}/appoints/search`, {
+                headers: {
+                    'x-access-token': token,
+                    'Content-Type': 'application/json'
+                },
+                params: {
+                    data_start: dataStart,
+                    data_end: dataEnd
+                }
+            });
+            return response.data;
+        } catch (error: any) {
+            throw new Error(`Erro ao buscar agendamentos Feegow: ${error.response?.data?.message || error.message}`);
+        }
+    }
 }
