@@ -61,6 +61,7 @@ export class SeedService {
                     }
                 });
             }
+            console.log('✅ Sincronização de credenciais de teste concluída.');
 
             // Se for a primeira vez (sem outras clínicas), roda o seed completo
             const clinicCount = await prisma.clinic.count();
