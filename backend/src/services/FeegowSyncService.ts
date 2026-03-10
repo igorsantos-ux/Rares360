@@ -40,15 +40,18 @@ export class FeegowSyncService {
             let updatedCount = 0;
 
             for (const patient of patients) {
-                if (!patient || !patient.id) {
+                // Feegow usa patient_id na listagem
+                const feegowId = patient.patient_id || patient.id;
+                
+                if (!feegowId) {
                     console.warn('Paciente ignorado por falta de ID:', patient);
                     continue;
                 }
-
+                
                 await prisma.customer.upsert({
                     where: {
                         externalId_externalSource_clinicId: {
-                            externalId: patient.id.toString(),
+                            externalId: feegowId.toString(),
                             externalSource: 'FEEGOW',
                             clinicId
                         }
@@ -56,15 +59,15 @@ export class FeegowSyncService {
                     update: {
                         name: patient.nome,
                         email: patient.email,
-                        phone: patient.telefone,
-                        birthDate: patient.data_nascimento ? new Date(patient.data_nascimento) : undefined,
+                        phone: patient.telefone || patient.celular,
+                        birthDate: patient.data_nascimento || patient.nascimento ? new Date(patient.data_nascimento || patient.nascimento) : undefined,
                     },
                     create: {
                         name: patient.nome,
                         email: patient.email,
-                        phone: patient.telefone,
-                        birthDate: patient.data_nascimento ? new Date(patient.data_nascimento) : undefined,
-                        externalId: patient.id.toString(),
+                        phone: patient.telefone || patient.celular,
+                        birthDate: patient.data_nascimento || patient.nascimento ? new Date(patient.data_nascimento || patient.nascimento) : undefined,
+                        externalId: feegowId.toString(),
                         externalSource: 'FEEGOW',
                         clinicId
                     }
@@ -89,7 +92,7 @@ export class FeegowSyncService {
             // 1. Buscar categorias para mapeamento
             const incomeCats = await FeegowService.getFinancialCategories(token, 'income');
             const expenseCats = await FeegowService.getFinancialCategories(token, 'expense');
-
+            
             const categoryMap: Record<string, string> = {};
             [...(incomeCats?.content || []), ...(expenseCats?.content || [])].forEach((c: any) => {
                 categoryMap[c.id] = c.nome;
@@ -98,29 +101,34 @@ export class FeegowSyncService {
             // 2. Buscar Faturas (Receber e Pagar)
             const invoicesC = await FeegowService.getInvoices(token, 'C', dataStart, dataEnd);
             const invoicesD = await FeegowService.getInvoices(token, 'D', dataStart, dataEnd);
-
+            
             const allInvoices = [...(invoicesC?.content || []), ...(invoicesD?.content || [])];
             let syncedCount = 0;
 
             for (const inv of allInvoices) {
-                if (!inv || !inv.id) {
+                // Feegow costuma usar 'id' ou 'invoice_id'
+                const invId = inv.id || inv.invoice_id;
+                
+                if (!invId) {
                     console.warn('Fatura ignorada por falta de ID:', inv);
                     continue;
                 }
 
                 const payments = inv.pagamentos || [];
-
+                
                 if (payments.length > 0) {
                     for (const pay of payments) {
-                        if (!pay || !pay.id) {
-                            console.warn('Pagamento ignorado por falta de ID na fatura:', inv.id);
+                        const payId = pay.id || pay.payment_id || pay.movimento_id;
+                        
+                        if (!payId) {
+                            console.warn('Pagamento ignorado por falta de ID na fatura:', invId);
                             continue;
                         }
 
                         await prisma.transaction.upsert({
                             where: {
                                 externalId_externalSource_clinicId: {
-                                    externalId: `pay-${pay.id}`,
+                                    externalId: `pay-${payId}`,
                                     externalSource: 'FEEGOW',
                                     clinicId
                                 }
@@ -139,7 +147,7 @@ export class FeegowSyncService {
                                 category: categoryMap[pay.tipo_conta] || 'Geral',
                                 type: inv.tipo_transacao === 'C' ? 'INCOME' : 'EXPENSE',
                                 status: 'PAID',
-                                externalId: `pay-${pay.id}`,
+                                externalId: `pay-${payId}`,
                                 externalSource: 'FEEGOW',
                                 clinicId
                             }
@@ -150,7 +158,7 @@ export class FeegowSyncService {
                     await prisma.transaction.upsert({
                         where: {
                             externalId_externalSource_clinicId: {
-                                externalId: `inv-${inv.id}`,
+                                externalId: `inv-${invId}`,
                                 externalSource: 'FEEGOW',
                                 clinicId
                             }
@@ -169,7 +177,7 @@ export class FeegowSyncService {
                             category: categoryMap[inv.detalhes?.tipo_conta] || 'Geral',
                             type: inv.tipo_transacao === 'C' ? 'INCOME' : 'EXPENSE',
                             status: 'PENDING',
-                            externalId: `inv-${inv.id}`,
+                            externalId: `inv-${invId}`,
                             externalSource: 'FEEGOW',
                             clinicId
                         }
