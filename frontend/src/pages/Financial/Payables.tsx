@@ -62,25 +62,36 @@ const PayablesPage = () => {
         );
     }
 
-    const payablesData = payablesResponse?.items || [];
-    const payablesSummary = payablesResponse?.summary || { totalPending: 0, totalOverdue: 0, totalDueToday: 0 };
+    // Garante que items é um array, seja o objeto novo {items: []} ou o array antigo []
+    const payablesData = Array.isArray(payablesResponse?.items) 
+        ? payablesResponse.items 
+        : Array.isArray(payablesResponse) 
+            ? payablesResponse 
+            : [];
+            
+    const payablesSummary = {
+        totalPending: payablesResponse?.summary?.totalPending || 0,
+        totalOverdue: payablesResponse?.summary?.totalOverdue || 0,
+        totalDueToday: payablesResponse?.summary?.totalDueToday || 0
+    };
     
     // Achatar contas -> parcelas para exibir em forma de tabela
     const displayPayables = useMemo(() => {
         if (!payablesData) return [];
         
-        const flattened = payablesData.flatMap((account: any) => 
-            account.installments.map((inst: any) => ({
-                id: inst.id,
-                accountId: account.id,
-                description: account.description + (account.isInstallment ? ` (Parcela ${inst.installmentNumber}/${account.installmentsCount})` : ''),
-                category: account.documentNumber ? `NF: ${account.documentNumber}` : 'Despesa',
-                amount: inst.amount,
-                date: inst.dueDate,
-                status: inst.status,
-                paymentMethod: inst.paymentMethod || account.paymentMethod
-            }))
-        );
+        const flattened = payablesData.flatMap((account: any) => {
+            const installments = Array.isArray(account?.installments) ? account.installments : [];
+            return installments.map((inst: any) => ({
+                id: inst?.id,
+                accountId: account?.id,
+                description: (account?.description || 'Despesa') + (account?.isInstallment ? ` (Parcela ${inst?.installmentNumber || 1}/${account?.installmentsCount || 1})` : ''),
+                category: account?.documentNumber ? `NF: ${account.documentNumber}` : 'Despesa',
+                amount: Number(inst?.amount || 0),
+                date: inst?.dueDate || new Date().toISOString(),
+                status: inst?.status || 'PENDING',
+                paymentMethod: inst?.paymentMethod || account?.paymentMethod || 'Não informado'
+            }));
+        });
 
         return flattened.filter((t: any) =>
             t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -186,7 +197,7 @@ const PayablesPage = () => {
                                                 </p>
                                             </td>
                                             <td className="px-8 py-6">
-                                                <p className="text-sm font-black text-slate-800">R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                                <p className="text-sm font-black text-slate-800">R$ {Number(item.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                                             </td>
                                             <td className="px-8 py-6">
                                                 <div className="flex items-center gap-2">
