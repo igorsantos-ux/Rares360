@@ -122,20 +122,20 @@ const PayablesPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                     title="Total Pendente"
-                    value={`R$ ${payablesSummary.totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    value={`R$ ${Number(payablesSummary.totalPending || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<DollarSign size={20} />}
                     color="moss"
                 />
                 <StatCard
                     title="Atrasados"
-                    value={`R$ ${payablesSummary.totalOverdue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    value={`R$ ${Number(payablesSummary.totalOverdue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<AlertCircle size={20} />}
                     color="dun"
                     alert={payablesSummary.totalOverdue > 0}
                 />
                 <StatCard
                     title="Vencendo Hoje"
-                    value={`R$ ${payablesSummary.totalDueToday.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    value={`R$ ${Number(payablesSummary.totalDueToday || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<Calendar size={20} />}
                     color="moss"
                 />

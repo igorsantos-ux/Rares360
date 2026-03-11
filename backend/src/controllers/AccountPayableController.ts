@@ -47,12 +47,13 @@ export class AccountPayableController {
                 }
 
                 if (inst.status === 'PENDING' || inst.status === 'OVERDUE') {
-                    totalPending += inst.amount;
+                    const amt = Number(inst.amount) || 0;
+                    totalPending += amt;
 
                     if (dueDate < today) {
-                        totalOverdue += inst.amount;
+                        totalOverdue += amt;
                     } else if (dueDate.getTime() === today.getTime()) {
-                        totalDueToday += inst.amount;
+                        totalDueToday += amt;
                     }
                 }
             });
