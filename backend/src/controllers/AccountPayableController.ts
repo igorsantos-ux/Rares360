@@ -26,7 +26,45 @@ export class AccountPayableController {
                 orderBy: { createdAt: 'desc' }
             });
 
-            return res.json(accounts);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            let totalPending = 0;
+            let totalOverdue = 0;
+            let totalDueToday = 0;
+
+            const allInstallments = accounts.flatMap(a => a.installments);
+
+            // Calcula totalizadores e marca vencidos
+            allInstallments.forEach(inst => {
+                const dueDate = new Date(inst.dueDate);
+                dueDate.setHours(0, 0, 0, 0);
+
+                if (inst.status === 'PENDING') {
+                    if (dueDate < today) {
+                        inst.status = 'OVERDUE';
+                    }
+                }
+
+                if (inst.status === 'PENDING' || inst.status === 'OVERDUE') {
+                    totalPending += inst.amount;
+
+                    if (dueDate < today) {
+                        totalOverdue += inst.amount;
+                    } else if (dueDate.getTime() === today.getTime()) {
+                        totalDueToday += inst.amount;
+                    }
+                }
+            });
+
+            return res.json({
+                items: accounts,
+                summary: {
+                    totalPending,
+                    totalOverdue,
+                    totalDueToday
+                }
+            });
         } catch (error: any) {
             console.error('Erro ao listar contas a pagar:', error);
             return res.status(500).json({ message: 'Erro interno ao buscar contas a pagar', error: error.message });

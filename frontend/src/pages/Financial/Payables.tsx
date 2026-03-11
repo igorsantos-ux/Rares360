@@ -13,34 +13,43 @@ import {
     DollarSign,
     Loader2
 } from 'lucide-react';
+import { Toaster, toast } from 'react-hot-toast';
+import { useMemo } from 'react';
 
 const PayablesPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const queryClient = useQueryClient();
 
-    const { data: summary, isLoading: isLoadingSummary } = useQuery({
+    const { isLoading: isLoadingSummary } = useQuery({
         queryKey: ['financial-summary'],
         queryFn: () => financialApi.getSummary().then(res => res.data)
     });
 
-    const { data: transactions, isLoading: isLoadingTransactions } = useQuery({
-        queryKey: ['financial-transactions'],
-        queryFn: () => financialApi.getTransactions().then(res => res.data)
+    const { data: payablesResponse, isLoading: isLoadingPayables } = useQuery({
+        queryKey: ['payables-list'],
+        queryFn: () => payablesApi.getPayables().then(res => res.data)
     });
 
-    const isLoading = isLoadingSummary || isLoadingTransactions;
+    const isLoading = isLoadingSummary || isLoadingPayables;
 
     const handleSaveAccount = async (data: any) => {
         try {
             await payablesApi.createPayable(data);
-            // Invalida e recarrega as listas do balanço
             queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
-            queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
-            alert("Conta a pagar salva com sucesso!"); // Pode ser trocado por um toast futuramente
+            queryClient.invalidateQueries({ queryKey: ['payables-list'] });
+            
+            toast.success("Conta a pagar salva com sucesso!", {
+                duration: 4000,
+                position: 'top-right'
+            });
+            setIsSheetOpen(false);
         } catch (error) {
             console.error(error);
-            alert("Ocorreu um erro ao salvar a conta.");
+            toast.error("Ocorreu um erro ao salvar a conta.", {
+                duration: 4000,
+                position: 'top-right'
+            });
         }
     };
 
@@ -53,21 +62,35 @@ const PayablesPage = () => {
         );
     }
 
-    // Filtrar apenas despesas e aplicar busca
-    const displayPayables = (transactions || [])
-        .filter((t: any) => t.type === 'EXPENSE')
-        .filter((t: any) =>
-            t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            t.category.toLowerCase().includes(searchTerm.toLowerCase())
+    const payablesData = payablesResponse?.items || [];
+    const payablesSummary = payablesResponse?.summary || { totalPending: 0, totalOverdue: 0, totalDueToday: 0 };
+    
+    // Achatar contas -> parcelas para exibir em forma de tabela
+    const displayPayables = useMemo(() => {
+        if (!payablesData) return [];
+        
+        const flattened = payablesData.flatMap((account: any) => 
+            account.installments.map((inst: any) => ({
+                id: inst.id,
+                accountId: account.id,
+                description: account.description + (account.isInstallment ? ` (Parcela ${inst.installmentNumber}/${account.installmentsCount})` : ''),
+                category: account.documentNumber ? `NF: ${account.documentNumber}` : 'Despesa',
+                amount: inst.amount,
+                date: inst.dueDate,
+                status: inst.status,
+                paymentMethod: inst.paymentMethod || account.paymentMethod
+            }))
         );
 
-    // Calcular atrasados (apenas como exemplo visual baseado no status, já que temos o resumo do backend)
-    const overdueValue = displayPayables
-        .filter((t: any) => t.status === 'OVERDUE')
-        .reduce((acc: number, t: any) => acc + t.amount, 0);
+        return flattened.filter((t: any) =>
+            t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            t.category.toLowerCase().includes(searchTerm.toLowerCase())
+        ).sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    }, [payablesData, searchTerm]);
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+            <Toaster />
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -88,20 +111,20 @@ const PayablesPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                     title="Total Pendente"
-                    value={`R$ ${summary?.pendingPayables?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`}
+                    value={`R$ ${payablesSummary.totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<DollarSign size={20} />}
                     color="moss"
                 />
                 <StatCard
                     title="Atrasados"
-                    value={`R$ ${overdueValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    value={`R$ ${payablesSummary.totalOverdue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<AlertCircle size={20} />}
                     color="dun"
-                    alert={overdueValue > 0}
+                    alert={payablesSummary.totalOverdue > 0}
                 />
                 <StatCard
                     title="Vencendo Hoje"
-                    value="R$ 0,00"
+                    value={`R$ ${payablesSummary.totalDueToday.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<Calendar size={20} />}
                     color="moss"
                 />
