@@ -179,6 +179,8 @@ model AccountPayable {
   isInstallment       Boolean                     @default(false)
   installmentsCount   Int                         @default(1)
   installmentInterval String?                     // "MONTHLY", "BIWEEKLY", "WEEKLY", "CUSTOM" ou dias
+  costCenter          String?                     // Centro de Custo
+  costType            String?                     // Tipo de Custo (Fixo, Variável, etc)
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
   

@@ -17,6 +17,8 @@ const accountPayableSchema = z.object({
   bank: z.string().optional(),
   observation: z.string().optional(),
   fileUrl: z.string().optional(),
+  costCenter: z.string().optional(),
+  costType: z.string().optional(),
   paymentMethod: z.string().min(1, 'Selecione a forma de pagamento'),
   date: z.string().optional(), // Data para à vista
   isInstallment: z.boolean(),
@@ -55,6 +57,8 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
       bank: '',
       observation: '',
       fileUrl: '',
+      costCenter: '',
+      costType: 'Variável',
       paymentMethod: '',
       date: new Date().toISOString().split('T')[0],
       isInstallment: false,
@@ -153,6 +157,8 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
         bank: data.bank,
         observation: data.observation,
         fileUrl: data.fileUrl,
+        costCenter: data.costCenter,
+        costType: data.costType,
         paymentMethod: data.paymentMethod,
         isInstallment: data.isInstallment,
         // Mantemos o arquivo no payload para que o onSave possa processar
@@ -318,6 +324,35 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                       <option value="Cartão de Crédito">Cartão de Crédito</option>
                     </select>
                     {errors.paymentMethod && <span className="text-red-500 text-xs font-bold">{errors.paymentMethod.message}</span>}
+                  </div>
+
+                  {/* Centro de Custo */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Centro de Custo</label>
+                    <select
+                      {...register('costCenter')}
+                      className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all"
+                    >
+                      <option value="Geral">Geral</option>
+                      <option value="Administrativo">Administrativo</option>
+                      <option value="Comercial">Comercial</option>
+                      <option value="Operacional">Operacional</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="TI">TI</option>
+                      <option value="RH">RH</option>
+                    </select>
+                  </div>
+
+                  {/* Tipo de Custo */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Tipo de Custo</label>
+                    <select
+                      {...register('costType')}
+                      className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all"
+                    >
+                      <option value="Fixo">Fixo</option>
+                      <option value="Variável">Variável</option>
+                    </select>
                   </div>
                 </div>
 

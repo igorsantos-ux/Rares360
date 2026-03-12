@@ -3,7 +3,7 @@ import prisma from '../lib/prisma.js';
 
 export class AccountPayableController {
     
-    // Lista todas as Contas a Pagar (com parcelas)
+    // Lista todas as Contas a Pagar (Parcelas individuais) com paginação e filtros
     static async list(req: Request, res: Response) {
         try {
             let clinicId = (req as any).user?.clinicId;
@@ -16,50 +16,96 @@ export class AccountPayableController {
                 return res.status(401).json({ message: 'Clínica não identificada.' });
             }
 
-            const accounts = await prisma.accountPayable.findMany({
-                where: { clinicId },
-                include: {
-                    installments: {
-                        orderBy: { dueDate: 'asc' }
-                    }
-                },
-                orderBy: { createdAt: 'desc' }
-            });
+            const { 
+                page = 1, 
+                limit = 20, 
+                filter, 
+                search = '' 
+            } = req.query;
+
+            const skip = (Number(page) - 1) * Number(limit);
+            const take = Number(limit);
 
             const today = new Date();
             today.setHours(0, 0, 0, 0);
+
+            // Filtro base
+            let where: any = {
+                accountPayable: { clinicId }
+            };
+
+            // Filtros rápidos por status de vencimento
+            if (filter === 'overdue') {
+                where.status = 'PENDING';
+                where.dueDate = { lt: today };
+            } else if (filter === 'today') {
+                where.status = 'PENDING';
+                where.dueDate = {
+                    gte: today,
+                    lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+                };
+            } else if (filter === 'upcoming') {
+                where.status = 'PENDING';
+                where.dueDate = { gte: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
+            }
+
+            // Busca por descrição ou fornecedor (se houver termo)
+            if (search) {
+                where.accountPayable = {
+                    ...where.accountPayable,
+                    OR: [
+                        { description: { contains: String(search), mode: 'insensitive' } },
+                        { supplierName: { contains: String(search), mode: 'insensitive' } }
+                    ]
+                };
+            }
+
+            // 1. Busca os itens paginados (Parcelas)
+            const installments = await prisma.accountPayableInstallment.findMany({
+                where,
+                include: {
+                    accountPayable: true
+                },
+                orderBy: { dueDate: 'asc' },
+                skip,
+                take
+            });
+
+            // 2. Conta total para paginação
+            const totalItems = await prisma.accountPayableInstallment.count({ where });
+
+            // 3. Busca Totalizadores Globais (Sem paginação/filtro de status para o resumo fixo)
+            const allUnpaid = await prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    status: 'PENDING'
+                },
+                select: { amount: true, dueDate: true }
+            });
 
             let totalPending = 0;
             let totalOverdue = 0;
             let totalDueToday = 0;
 
-            const allInstallments = accounts.flatMap(a => a.installments);
-
-            // Calcula totalizadores e marca vencidos
-            allInstallments.forEach(inst => {
+            allUnpaid.forEach(inst => {
                 const dueDate = new Date(inst.dueDate);
                 dueDate.setHours(0, 0, 0, 0);
+                const amt = Number(inst.amount) || 0;
 
-                if (inst.status === 'PENDING') {
-                    if (dueDate < today) {
-                        inst.status = 'OVERDUE';
-                    }
-                }
+                totalPending += amt;
 
-                if (inst.status === 'PENDING' || inst.status === 'OVERDUE') {
-                    const amt = Number(inst.amount) || 0;
-                    totalPending += amt;
-
-                    if (dueDate < today) {
-                        totalOverdue += amt;
-                    } else if (dueDate.getTime() === today.getTime()) {
-                        totalDueToday += amt;
-                    }
+                if (dueDate < today) {
+                    totalOverdue += amt;
+                } else if (dueDate.getTime() === today.getTime()) {
+                    totalDueToday += amt;
                 }
             });
 
             return res.json({
-                items: accounts,
+                items: installments,
+                totalItems,
+                totalPages: Math.ceil(totalItems / Number(limit)),
+                currentPage: Number(page),
                 summary: {
                     totalPending,
                     totalOverdue,
@@ -100,6 +146,8 @@ export class AccountPayableController {
                 bank,
                 observation,
                 fileUrl,
+                costCenter,
+                costType,
                 installments // Array de parcelas vindas do front
             } = req.body;
 
@@ -107,10 +155,7 @@ export class AccountPayableController {
                 return res.status(400).json({ message: 'Dados incompletos. Informe descrição, valor e as parcelas.' });
             }
 
-            // Usar uma transação para garantir a integridade da conta e suas parcelas
             const result = await prisma.$transaction(async (tx) => {
-                
-                // 1. Cria a Conta Pai
                 const account = await tx.accountPayable.create({
                     data: {
                         description,
@@ -127,11 +172,12 @@ export class AccountPayableController {
                         bank: bank || null,
                         observation: observation || null,
                         fileUrl: fileUrl || null,
+                        costCenter: costCenter || null,
+                        costType: costType || null,
                         clinicId
                     }
                 });
 
-                // 2. Cria as parcelas
                 const installmentsData = installments.map((inst: any, index: number) => {
                     return {
                         accountPayableId: account.id,
@@ -139,7 +185,7 @@ export class AccountPayableController {
                         amount: Number(inst.amount),
                         dueDate: new Date(inst.dueDate),
                         status: inst.status || 'PENDING',
-                        paymentMethod: paymentMethod || null // Herda da conta pai
+                        paymentMethod: paymentMethod || null
                     };
                 });
 
@@ -147,7 +193,6 @@ export class AccountPayableController {
                     data: installmentsData
                 });
 
-                // Retorna a conta completa para o front
                 return tx.accountPayable.findUnique({
                     where: { id: account.id },
                     include: { installments: true }
@@ -161,4 +206,5 @@ export class AccountPayableController {
             return res.status(500).json({ message: 'Erro ao cadastrar conta a pagar', error: error.message });
         }
     }
+}
 }

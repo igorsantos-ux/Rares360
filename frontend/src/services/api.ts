@@ -70,7 +70,8 @@ export const financialApi = {
 };
 
 export const payablesApi = {
-    getPayables: () => api.get('contas-a-pagar'),
+    getPayables: (params?: { page?: number; limit?: number; filter?: string; search?: string }) => 
+        api.get('contas-a-pagar', { params }),
     createPayable: (data: any) => api.post('contas-a-pagar', data),
 };
 
