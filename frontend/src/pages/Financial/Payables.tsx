@@ -1,19 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { financialApi, payablesApi } from '../../services/api';
+import { payablesApi } from '../../services/api';
 import {
-    ArrowDownCircle,
     Calendar,
     AlertCircle,
-    CheckCircle2,
     Plus,
-    Search,
-    MoreVertical,
     DollarSign,
-    Loader2,
-    FileText
+    Loader2
 } from 'lucide-react';
-import { Toaster } from 'react-hot-toast';
 
 const StatCard = ({ title, value, icon, color, alert }: any) => (
     <div className={`bg-white p-6 rounded-3xl border ${alert ? 'border-[#DEB587]/30 shadow-lg shadow-[#DEB587]/5' : 'border-[#8A9A5B]/10 shadow-sm'} flex items-center gap-5 group`}>
@@ -28,25 +22,45 @@ const StatCard = ({ title, value, icon, color, alert }: any) => (
     </div>
 );
 
-const PayablesUIContent = ({ 
-    payablesSummary, 
-    displayPayables, 
-    searchTerm, 
-    setSearchTerm, 
-    setIsSheetOpen, 
-    formatDateSafe 
-}: any) => {
+const PayablesPage = () => {
+    const [_isSheetOpen, _setIsSheetOpen] = useState(false);
+
+    const { data: payablesResponse, isLoading } = useQuery({
+        queryKey: ['payables-list-v1'],
+        queryFn: async () => {
+            const res = await payablesApi.getPayables();
+            return res.data;
+        },
+        staleTime: 60000, 
+    });
+
+    const payablesSummary = useMemo(() => {
+        return {
+            totalPending: payablesResponse?.summary?.totalPending || 0,
+            totalOverdue: payablesResponse?.summary?.totalOverdue || 0,
+            totalDueToday: payablesResponse?.summary?.totalDueToday || 0
+        };
+    }, [payablesResponse]);
+
+    if (isLoading) {
+        return (
+            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
+                <Loader2 className="animate-spin text-[#8A9A5B]" size={48} />
+                <p className="text-[#8A9A5B] font-black uppercase tracking-widest text-xs">Carregando dados financeiros...</p>
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-10 pb-12">
-            <Toaster />
+        <div className="space-y-10 pb-12 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Contas a Pagar</h2>
-                    <p className="text-slate-500 font-medium mt-1">Gestão de compromissos financeiros e fornecedores.</p>
+                    <p className="text-slate-500 font-medium mt-1">Gestão de fornecedores (Etapa 1: Estabilidade).</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button 
-                        onClick={() => setIsSheetOpen(true)}
+                        onClick={() => _setIsSheetOpen(true)}
                         className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
                         <Plus size={20} />
                         Nova Conta
@@ -57,215 +71,35 @@ const PayablesUIContent = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                     title="Total Pendente"
-                    value={`R$ ${Number(payablesSummary.totalPending || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    value={`R$ ${Number(payablesSummary.totalPending).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<DollarSign size={20} />}
                     color="moss"
                 />
                 <StatCard
                     title="Atrasados"
-                    value={`R$ ${Number(payablesSummary.totalOverdue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    value={`R$ ${Number(payablesSummary.totalOverdue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<AlertCircle size={20} />}
                     color="dun"
                     alert={payablesSummary.totalOverdue > 0}
                 />
                 <StatCard
                     title="Vencendo Hoje"
-                    value={`R$ ${Number(payablesSummary.totalDueToday || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                    value={`R$ ${Number(payablesSummary.totalDueToday).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
                     icon={<Calendar size={20} />}
                     color="moss"
                 />
             </div>
 
-            <div className="bg-white/70 backdrop-blur-md rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm overflow-hidden text-center py-10">
-                <div className="p-8 border-b border-[#8A9A5B]/5 flex flex-col md:flex-row md:items-center justify-between gap-4 text-left">
-                    <div className="relative flex-1 max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                        <input
-                            type="text"
-                            placeholder="Buscar conta ou fornecedor..."
-                            className="w-full pl-12 pr-4 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/20 transition-all font-medium text-sm"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+            <div className="p-20 text-center bg-white/50 rounded-[2.5rem] border border-dashed border-slate-200">
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">A tabela será reintroduzida na próxima etapa.</p>
+                <div className="mt-4 flex justify-center gap-2">
+                    <div className="w-2 h-2 bg-[#8A9A5B] rounded-full animate-bounce" />
+                    <div className="w-2 h-2 bg-[#8A9A5B] rounded-full animate-bounce [animation-delay:-0.15s]" />
+                    <div className="w-2 h-2 bg-[#8A9A5B] rounded-full animate-bounce [animation-delay:-0.3s]" />
                 </div>
-
-                {displayPayables.length === 0 ? (
-                    <div className="py-20 flex flex-col items-center gap-4">
-                        <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-300">
-                            <CheckCircle2 size={32} />
-                        </div>
-                        <p className="text-slate-400 font-bold text-sm uppercase tracking-widest">Nenhuma conta encontrada</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto text-left">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="bg-slate-50/50">
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descrição</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fornecedor</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vencimento</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
-                                    <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-[#8A9A5B]/5">
-                                {displayPayables.map((item: any) => (
-                                    <tr key={item.id} className="hover:bg-[#8A9A5B]/5 transition-colors group">
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.status === 'OVERDUE' ? 'bg-[#DEB587]/20 text-[#DEB587]' : 'bg-[#8A9A5B]/10 text-[#697D58]'
-                                                    }`}>
-                                                    <ArrowDownCircle size={20} />
-                                                </div>
-                                                <div>
-                                                    <p className="font-black text-slate-700 text-sm">{item.description}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.category}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6 text-xs font-bold text-slate-600">
-                                            {item.supplierName || '-'}
-                                        </td>
-                                        <td className="px-8 py-6 text-xs font-bold text-slate-600">
-                                            {formatDateSafe(item.date)}
-                                        </td>
-                                        <td className="px-8 py-6 text-sm font-black text-slate-800">
-                                            R$ {Number(item.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                        </td>
-                                        <td className="px-8 py-6 text-[10px] font-black uppercase tracking-widest">
-                                            {item.status === 'PAID' ? 'Pago' : item.status === 'OVERDUE' ? 'Atrasado' : 'Pendente'}
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                {item.fileUrl && (
-                                                    <a href={item.fileUrl} target="_blank" rel="noreferrer" className="p-2 text-[#8A9A5B] hover:bg-[#8A9A5B]/10 rounded-lg">
-                                                        <FileText size={18} />
-                                                    </a>
-                                                )}
-                                                <button className="p-2 text-slate-400 hover:text-slate-600">
-                                                    <MoreVertical size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
             </div>
         </div>
     );
-};
-
-const PayablesPage = () => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [_isSheetOpen, setIsSheetOpen] = useState(false);
-
-    const { isLoading: isLoadingSummary } = useQuery({
-        queryKey: ['financial-summary'],
-        queryFn: () => financialApi.getSummary().then(res => res.data)
-    });
-
-    const { data: payablesResponse, isLoading: isLoadingPayables } = useQuery({
-        queryKey: ['payables-list'],
-        queryFn: () => payablesApi.getPayables().then(res => res.data)
-    });
-
-    const isLoading = isLoadingSummary || isLoadingPayables;
-
-    if (isLoading) {
-        return (
-            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
-                <Loader2 className="animate-spin text-[#8A9A5B]" size={48} />
-                <p>Carregando...</p>
-            </div>
-        );
-    }
-
-    const payablesData = Array.isArray(payablesResponse?.items) 
-        ? payablesResponse.items 
-        : Array.isArray(payablesResponse) 
-            ? payablesResponse 
-            : [];
-            
-    const payablesSummary = {
-        totalPending: payablesResponse?.summary?.totalPending || 0,
-        totalOverdue: payablesResponse?.summary?.totalOverdue || 0,
-        totalDueToday: payablesResponse?.summary?.totalDueToday || 0
-    };
-    
-    const displayPayables = useMemo(() => {
-        try {
-            if (!payablesData || !Array.isArray(payablesData)) return [];
-            
-            const flattened = payablesData.flatMap((account: any) => {
-                if (!account) return [];
-                const installments = Array.isArray(account?.installments) ? account.installments : [];
-                
-                return installments.map((inst: any) => {
-                  if (!inst) return null;
-                  return {
-                    id: inst?.id || `temp-${Math.random()}`,
-                    description: String(account?.description || 'Despesa') + (account?.isInstallment ? ` (Parcela ${inst?.installmentNumber || 1}/${account?.installmentsCount || 1})` : ''),
-                    category: String(account?.documentNumber ? `NF: ${account.documentNumber}` : (account?.supplierName ? `Fornecedor: ${account.supplierName}` : 'Despesa')),
-                    amount: Number(inst?.amount || 0),
-                    date: inst?.dueDate || new Date().toISOString(),
-                    status: String(inst?.status || 'PENDING'),
-                    fileUrl: account?.fileUrl,
-                    supplierName: account?.supplierName
-                  };
-                }).filter(Boolean);
-            });
-
-            return flattened.filter((t: any) =>
-                (String(t?.description || '').toLowerCase().includes((searchTerm || '').toLowerCase())) ||
-                (String(t?.category || '').toLowerCase().includes((searchTerm || '').toLowerCase()))
-            ).sort((a: any, b: any) => {
-                const dA = new Date(a?.date).getTime();
-                const dB = new Date(b?.date).getTime();
-                return (isNaN(dA) ? 0 : dA) - (isNaN(dB) ? 0 : dB);
-            });
-        } catch (error) {
-            console.error('❌ Crash no Mapeamento de Payables:', error);
-            return [];
-        }
-    }, [payablesResponse, searchTerm, payablesData]);
-
-    const formatDateSafe = (dateStr: any) => {
-        try {
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return 'Data Inválida';
-            return d.toLocaleDateString('pt-BR');
-        } catch {
-            return 'Data Inválida';
-        }
-    };
-
-    try {
-        return (
-            <PayablesUIContent 
-                payablesSummary={payablesSummary}
-                displayPayables={displayPayables}
-                searchTerm={searchTerm}
-                setSearchTerm={setSearchTerm}
-                setIsSheetOpen={setIsSheetOpen}
-                formatDateSafe={formatDateSafe}
-            />
-        );
-    } catch (error: any) {
-        return (
-            <div className="p-20 bg-red-50 text-red-600 border border-red-200 m-10 rounded-2xl">
-                <h1 className="text-2xl font-bold">Erro de Renderização!</h1>
-                <p className="mt-2 font-mono text-sm">{error?.message || 'Erro desconhecido'}</p>
-                <div className="mt-4 p-4 bg-white rounded text-xs overflow-auto max-h-60 border border-red-100">
-                    {error?.stack}
-                </div>
-            </div>
-        );
-    }
 };
 
 export default PayablesPage;
