@@ -35,18 +35,24 @@ export class AccountPayableController {
             };
 
             // Filtros rápidos por status de vencimento
+            const todayISO = new Date().toISOString().split('T')[0]; // "2026-03-12"
+            const nextDay = new Date();
+            nextDay.setDate(nextDay.getDate() + 1);
+            const nextDayISO = nextDay.toISOString().split('T')[0];
+
+            // Filtros rápidos por status de vencimento
             if (filter === 'overdue') {
                 where.status = 'PENDENTE';
-                where.dueDate = { lt: today };
+                where.dueDate = { lt: new Date(todayISO) }; 
             } else if (filter === 'today') {
                 where.status = 'PENDENTE';
                 where.dueDate = {
-                    gte: today,
-                    lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+                    gte: new Date(todayISO),
+                    lt: new Date(nextDayISO)
                 };
             } else if (filter === 'upcoming') {
                 where.status = 'PENDENTE';
-                where.dueDate = { gte: new Date(today.getTime() + 24 * 60 * 60 * 1000) };
+                where.dueDate = { gte: new Date(nextDayISO) };
             } else if (filter === 'pagas') {
                 where.status = 'PAGO';
             }
@@ -94,15 +100,14 @@ export class AccountPayableController {
                 });
 
                 allUnpaid.forEach(inst => {
-                    const dueDate = new Date(inst.dueDate);
-                    dueDate.setHours(0, 0, 0, 0);
+                    const instDateISO = inst.dueDate.toISOString().split('T')[0];
                     const amt = Number(inst.amount) || 0;
 
                     totalPending += amt;
 
-                    if (dueDate < today) {
+                    if (instDateISO < todayISO) {
                         totalOverdue += amt;
-                    } else if (dueDate.getTime() === today.getTime()) {
+                    } else if (instDateISO === todayISO) {
                         totalDueToday += amt;
                     }
                 });

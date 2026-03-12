@@ -18,15 +18,23 @@ import { toast, Toaster } from 'react-hot-toast';
 import { useMutation } from '@tanstack/react-query';
 
 const StatusBadge = ({ status, dueDate }: { status: string; dueDate: string }) => {
+    // Para comparação de status dinâmico (Atrasado), usamos a data atual no fuso do usuário
+    // mas normalizada para 00:00:00 para comparar apenas o 'dia'.
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    // Fallback seguro para data inválida
+    // Convertemos a data do banco (UTC 00:00) para um objeto Date.
+    // Como o banco envia YYYY-MM-DDTHH:mm:ss.sssZ, o JS lê como UTC.
+    // Para evitar que o fuso local subtraia horas (ex: 12/03 virar 11/03), 
+    // criamos o objeto e ignoramos o fuso local na lógica de exibição/comparação.
     const date = dueDate ? new Date(dueDate) : new Date();
-    date.setHours(0, 0, 0, 0);
+    
+    // Se a data do banco é "2026-03-12T00:00:00Z", queremos compará-la como "12/03".
+    // Criamos um objeto local representando o "Dia UTC" para comparar com o "Hoje Local".
+    const normalizedDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
 
-    // Lógica dinâmica: Se não estiver Pago e a data for anterior a hoje, está ATRASADO
-    const isOverdue = status !== 'PAGO' && date < today;
+    // Lógica dinâmica: Se não estiver Pago e o dia for anterior a hoje
+    const isOverdue = status !== 'PAGO' && normalizedDate < today;
     const currentStatus = isOverdue ? 'ATRASADO' : status;
 
     const styles: any = {
@@ -157,7 +165,10 @@ const PayablesPage = () => {
         try {
             const d = new Date(dateStr);
             if (isNaN(d.getTime())) return 'Data Inválida';
-            return d.toLocaleDateString('pt-BR');
+            // Ignoramos fuso local e usamos UTC para garantir que o 'Dia' lido seja o 'Dia' salvo.
+            return d.getUTCDate().toString().padStart(2, '0') + '/' + 
+                   (d.getUTCMonth() + 1).toString().padStart(2, '0') + '/' + 
+                   d.getUTCFullYear();
         } catch {
             return 'Data Inválida';
         }
