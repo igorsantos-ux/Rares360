@@ -1,16 +1,4 @@
 services:
-  db:
-    image: postgres:15
-    restart: always
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: adminpassword
-      POSTGRES_DB: heath_finance
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   backend:
     build:
       context: ./backend
@@ -18,11 +6,9 @@ services:
     ports:
       - "5000:3001"
     environment:
-      DATABASE_URL: "postgresql://admin:adminpassword@db:5432/heath_finance?schema=public"
+      # DATABASE_URL deve ser injetada pelo Easypanel/Ambiente para o Supabase
       PORT: 3001
       NODE_ENV: production
-    depends_on:
-      - db
 
   frontend:
     build:
@@ -32,6 +18,3 @@ services:
       - "3000:3000"
     depends_on:
       - backend
-
-volumes:
-  postgres_data:

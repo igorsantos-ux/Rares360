@@ -173,9 +173,12 @@ model AccountPayable {
   interestValue       Float                       @default(0) // Juros
   penaltyValue        Float                       @default(0) // Multa
   paymentMethod       String?
+  bank                String?                     // Banco (Itaú, Bradesco, etc)
+  observation         String?                     // Observações
+  fileUrl             String?                     // URL do ficheiro no Supabase Storage
   isInstallment       Boolean                     @default(false)
   installmentsCount   Int                         @default(1)
-  installmentInterval String?                     // "MONTHLY", "BIWEEKLY", "WEEKLY", "CUSTOM"
+  installmentInterval String?                     // "MONTHLY", "BIWEEKLY", "WEEKLY", "CUSTOM" ou dias
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
   

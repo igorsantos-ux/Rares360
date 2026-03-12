@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, Calendar, Plus, Save, DollarSign, FileText, Loader2, ListOrdered, CalendarDays, RefreshCw } from 'lucide-react';
+import { X, Calendar, Plus, Save, DollarSign, FileText, Loader2, ListOrdered, CalendarDays, RefreshCw, Upload, File, Trash2, Building2, MessageSquare, ExternalLink } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const accountPayableSchema = z.object({
@@ -13,11 +14,15 @@ const accountPayableSchema = z.object({
   totalAmount: z.number().min(0.01, 'O valor deve ser maior que zero'),
   interestValue: z.number().optional(),
   penaltyValue: z.number().optional(),
+  bank: z.string().optional(),
+  observation: z.string().optional(),
+  fileUrl: z.string().optional(),
   paymentMethod: z.string().min(1, 'Selecione a forma de pagamento'),
   date: z.string().optional(), // Data para à vista
   isInstallment: z.boolean(),
   installmentsCount: z.number().min(1, 'Mínimo de 1 parcela').optional(),
   installmentInterval: z.string().optional(),
+  customIntervalDays: z.number().min(1).optional(),
   installments: z.array(z.object({
     installmentNumber: z.number(),
     amount: z.number(),
@@ -46,14 +51,21 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
       totalAmount: 0,
       interestValue: 0,
       penaltyValue: 0,
+      bank: '',
+      observation: '',
+      fileUrl: '',
       paymentMethod: '',
       date: new Date().toISOString().split('T')[0],
       isInstallment: false,
       installmentsCount: 3,
       installmentInterval: 'MONTHLY',
+      customIntervalDays: 30,
       installments: []
     }
   });
+
+  const [uploading, setUploading] = useState(false);
+  const [fileName, setFileName] = useState('');
 
   const { fields, replace } = useFieldArray({
     control,
@@ -66,9 +78,44 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
   const watchPenalty = Number(watch('penaltyValue')) || 0;
   const watchInstallmentsCount = watch('installmentsCount') || 1;
   const watchInterval = watch('installmentInterval');
+  const watchCustomDays = watch('customIntervalDays') || 30;
+  const watchFileUrl = watch('fileUrl');
 
   // Lógica de Soma Dinâmica para o Total a Pagar
   const calculatedGrandTotal = Number((watchTotalAmount + watchInterest + watchPenalty).toFixed(2));
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      setUploading(true);
+      setFileName(file.name);
+
+      const fileExt = file.name.split('.').pop();
+      const fileNameUnique = `${Math.random()}.${fileExt}`;
+      const filePath = `${Date.now()}_${fileNameUnique}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('payables')
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('payables')
+        .getPublicUrl(filePath);
+
+      reset({ ...watch(), fileUrl: publicUrl });
+      alert('Arquivo carregado com sucesso!');
+    } catch (error: any) {
+      alert('Erro ao carregar arquivo: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   // Função para gerar as parcelas automaticamente
   const handleGenerateInstallments = () => {
@@ -90,6 +137,8 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
         dueDate.setDate(dueDate.getDate() + (15 * i));
       } else if (watchInterval === 'WEEKLY') {
         dueDate.setDate(dueDate.getDate() + (7 * i));
+      } else if (watchInterval === 'CUSTOM') {
+        dueDate.setDate(dueDate.getDate() + (watchCustomDays * i));
       }
 
       // Adiciona o remainder (centavos) na última parcela
@@ -122,6 +171,9 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
         totalAmount: calculatedGrandTotal,
         interestValue: data.interestValue || 0,
         penaltyValue: data.penaltyValue || 0,
+        bank: data.bank,
+        observation: data.observation,
+        fileUrl: data.fileUrl,
         paymentMethod: data.paymentMethod,
         isInstallment: data.isInstallment,
       };
@@ -250,6 +302,28 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                     />
                   </div>
 
+                  {/* Banco */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider flex items-center gap-2">
+                       <Building2 size={14} /> Banco
+                    </label>
+                    <select
+                      {...register('bank')}
+                      className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all"
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="Itaú">Itaú</option>
+                      <option value="Bradesco">Bradesco</option>
+                      <option value="Santander">Santander</option>
+                      <option value="Banco do Brasil">Banco do Brasil</option>
+                      <option value="Nubank">Nubank</option>
+                      <option value="Inter">Inter</option>
+                      <option value="Outro">Outro</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Forma de Pagto</label>
                     <select
@@ -264,6 +338,75 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                     </select>
                     {errors.paymentMethod && <span className="text-red-500 text-xs font-bold">{errors.paymentMethod.message}</span>}
                   </div>
+                </div>
+
+                {/* Upload de Arquivo */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider flex items-center gap-2">
+                    <Upload size={14} /> Anexar Boleto / NF
+                  </label>
+                  <div className="relative">
+                    {!watchFileUrl ? (
+                      <div className="border-2 border-dashed border-[#8A9A5B]/30 rounded-2xl p-6 text-center hover:bg-[#8A9A5B]/5 transition-all cursor-pointer relative group">
+                        <input
+                          type="file"
+                          onChange={handleFileUpload}
+                          disabled={uploading}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        />
+                        <div className="flex flex-col items-center gap-2">
+                          {uploading ? (
+                            <Loader2 className="animate-spin text-[#8A9A5B]" size={24} />
+                          ) : (
+                            <Upload className="text-slate-400 group-hover:text-[#8A9A5B] transition-colors" size={24} />
+                          )}
+                          <p className="text-xs font-bold text-slate-500">
+                            {uploading ? `Enviando ${fileName}...` : 'Clique ou arraste para enviar arquivo'}
+                          </p>
+                          <p className="text-[10px] text-slate-400 uppercase font-medium">PDF, PNG, JPG (Max 5MB)</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between p-4 bg-white border border-[#8A9A5B]/20 rounded-2xl">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-[#8A9A5B]/10 rounded-xl flex items-center justify-center text-[#8A9A5B]">
+                            <File size={20} />
+                          </div>
+                          <div className="max-w-[180px]">
+                            <p className="text-xs font-black text-slate-700 truncate">Comprovante Anexado</p>
+                            <a 
+                              href={watchFileUrl} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              className="text-[10px] text-[#8A9A5B] font-bold flex items-center gap-1 hover:underline"
+                            >
+                              Ver Arquivo <ExternalLink size={10} />
+                            </a>
+                          </div>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={() => reset({ ...watch(), fileUrl: '' })}
+                          className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Observação */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider flex items-center gap-2">
+                    <MessageSquare size={14} /> Observações
+                  </label>
+                  <textarea
+                    {...register('observation')}
+                    placeholder="Adicione detalhes extras aqui..."
+                    rows={3}
+                    className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all resize-none"
+                  />
                 </div>
 
                 {/* Bloco de Valores (Original, Juros, Multas, Total) */}
@@ -383,8 +526,20 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                           <option value="MONTHLY">Mensal</option>
                           <option value="BIWEEKLY">Quinzenal</option>
                           <option value="WEEKLY">Semanal</option>
+                          <option value="CUSTOM">Personalizado (Dias)</option>
                         </select>
                       </div>
+
+                      {watchInterval === 'CUSTOM' && (
+                        <div className="space-y-1.5 flex-1 animate-in slide-in-from-left-2 duration-300">
+                          <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">A cada quantos dias?</label>
+                          <input
+                            type="number"
+                            {...register('customIntervalDays', { valueAsNumber: true })}
+                            className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     <button

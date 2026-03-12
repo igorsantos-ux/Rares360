@@ -11,7 +11,8 @@ import {
     Search,
     MoreVertical,
     DollarSign,
-    Loader2
+    Loader2,
+    FileText
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
 import { useMemo } from 'react';
@@ -89,7 +90,9 @@ const PayablesPage = () => {
                 amount: Number(inst?.amount || 0),
                 date: inst?.dueDate || new Date().toISOString(),
                 status: String(inst?.status || 'PENDING'),
-                paymentMethod: String(inst?.paymentMethod || account?.paymentMethod || 'Não informado')
+                paymentMethod: String(inst?.paymentMethod || account?.paymentMethod || 'Não informado'),
+                fileUrl: account?.fileUrl,
+                supplierName: account?.supplierName
             }));
         });
 
@@ -184,6 +187,7 @@ const PayablesPage = () => {
                                 <thead>
                                     <tr className="bg-slate-50/50">
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Descrição</th>
+                                        <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fornecedor</th>
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vencimento</th>
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor</th>
                                         <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
@@ -204,6 +208,11 @@ const PayablesPage = () => {
                                                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.category}</p>
                                                     </div>
                                                 </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <p className="text-xs font-bold text-slate-600 truncate max-w-[120px]">
+                                                    {item.supplierName || '-'}
+                                                </p>
                                             </td>
                                             <td className="px-8 py-6">
                                                 <p className="text-xs font-bold text-slate-600">
@@ -231,9 +240,21 @@ const PayablesPage = () => {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6 text-right">
-                                                <button className="p-2 hover:bg-white rounded-lg transition-all text-slate-400 hover:text-[#8A9A5B]">
-                                                    <MoreVertical size={18} />
-                                                </button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    {item.fileUrl && (
+                                                        <a 
+                                                            href={item.fileUrl} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="p-2 hover:bg-[#8A9A5B]/10 rounded-lg transition-all text-[#8A9A5B] title='Ver Anexo'"
+                                                        >
+                                                            <FileText size={18} />
+                                                        </a>
+                                                    )}
+                                                    <button className="p-2 hover:bg-white rounded-lg transition-all text-slate-400 hover:text-[#8A9A5B]">
+                                                        <MoreVertical size={18} />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

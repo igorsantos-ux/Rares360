@@ -71,7 +71,7 @@ export class AccountPayableController {
             if (!clinicId) {
                 return res.status(401).json({ message: 'Clínica não identificada.' });
             }
-            const { description, documentNumber, totalAmount, paymentMethod, isInstallment, installmentsCount, installmentInterval, supplierName, supplierCnpj, interestValue, penaltyValue, installments // Array de parcelas vindas do front
+            const { description, documentNumber, totalAmount, paymentMethod, isInstallment, installmentsCount, installmentInterval, supplierName, supplierCnpj, interestValue, penaltyValue, bank, observation, fileUrl, installments // Array de parcelas vindas do front
              } = req.body;
             if (!description || !totalAmount || !installments || !Array.isArray(installments) || installments.length === 0) {
                 return res.status(400).json({ message: 'Dados incompletos. Informe descrição, valor e as parcelas.' });
@@ -92,6 +92,9 @@ export class AccountPayableController {
                         supplierCnpj: supplierCnpj || null,
                         interestValue: Number(interestValue) || 0,
                         penaltyValue: Number(penaltyValue) || 0,
+                        bank: bank || null,
+                        observation: observation || null,
+                        fileUrl: fileUrl || null,
                         clinicId
                     }
                 });

@@ -97,6 +97,9 @@ export class AccountPayableController {
                 supplierCnpj,
                 interestValue,
                 penaltyValue,
+                bank,
+                observation,
+                fileUrl,
                 installments // Array de parcelas vindas do front
             } = req.body;
 
@@ -121,6 +124,9 @@ export class AccountPayableController {
                         supplierCnpj: supplierCnpj || null,
                         interestValue: Number(interestValue) || 0,
                         penaltyValue: Number(penaltyValue) || 0,
+                        bank: bank || null,
+                        observation: observation || null,
+                        fileUrl: fileUrl || null,
                         clinicId
                     }
                 });
