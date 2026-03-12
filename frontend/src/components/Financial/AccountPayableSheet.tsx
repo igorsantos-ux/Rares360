@@ -40,6 +40,7 @@ interface Props {
 
 export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const { register, handleSubmit, watch, formState: { errors }, control, reset } = useForm<AccountPayableFormData>({
     resolver: zodResolver(accountPayableSchema),
@@ -79,45 +80,20 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
   const watchInstallmentsCount = watch('installmentsCount') || 1;
   const watchInterval = watch('installmentInterval');
   const watchCustomDays = watch('customIntervalDays') || 30;
-  const watchFileUrl = watch('fileUrl');
 
   // Lógica de Soma Dinâmica para o Total a Pagar
   const calculatedGrandTotal = Number((watchTotalAmount + watchInterest + watchPenalty).toFixed(2));
 
-  const handleFileUpload = async (_event: React.ChangeEvent<HTMLInputElement>) => {
-    /* 
-    try {
-      const file = event.target.files?.[0];
-      if (!file) return;
-
-      setUploading(true);
-      setFileName(file.name);
-
-      const fileExt = file.name.split('.').pop();
-      const fileNameUnique = `${Math.random()}.${fileExt}`;
-      const filePath = `${Date.now()}_${fileNameUnique}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('payables')
-        .upload(filePath, file);
-
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('payables')
-        .getPublicUrl(filePath);
-
-      reset({ ...watch(), fileUrl: publicUrl });
-      alert('Arquivo carregado com sucesso!');
-    } catch (error: any) {
-      alert('Erro ao carregar arquivo: ' + error.message);
-    } finally {
-      setUploading(false);
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      console.log('Arquivo selecionado:', file.name);
     }
-    */
-    console.log('Upload temporariamente desativado para debug.');
+  };
+
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
   };
 
   // Função para gerar as parcelas automaticamente
@@ -179,6 +155,8 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
         fileUrl: data.fileUrl,
         paymentMethod: data.paymentMethod,
         isInstallment: data.isInstallment,
+        // Mantemos o arquivo no payload para que o onSave possa processar
+        attachment: selectedFile 
       };
 
       if (data.isInstallment) {
@@ -230,7 +208,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 h-full w-full max-w-md bg-[#FDFBF7] shadow-2xl shadow-slate-900/20 z-50 flex flex-col border-l border-[#8A9A5B]/20"
+            className="fixed top-0 right-0 h-full w-full max-w-2xl bg-[#FDFBF7] shadow-2xl shadow-slate-900/20 z-50 flex flex-col border-l border-[#8A9A5B]/20"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-6 bg-[#8A9A5B] text-white">
@@ -268,7 +246,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                   {errors.description && <span className="text-red-500 text-xs font-bold">{errors.description.message}</span>}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   {/* Numero NF/Doc */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">
@@ -292,7 +270,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   {/* CNPJ */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">
@@ -326,7 +304,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Forma de Pagto</label>
                     <select
@@ -349,50 +327,43 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                     <File size={14} /> Anexar Boleto / NF
                   </label>
                   <div className="relative">
-                    {!watchFileUrl ? (
-                      <div className="border-2 border-dashed border-[#8A9A5B]/30 rounded-2xl p-6 text-center hover:bg-[#8A9A5B]/5 transition-all cursor-pointer relative group">
+                    {!selectedFile ? (
+                      <div className="border-2 border-dashed border-[#8A9A5B]/30 rounded-2xl p-8 text-center hover:bg-[#8A9A5B]/5 transition-all cursor-pointer relative group">
                         <input
                           type="file"
                           onChange={handleFileUpload}
-                          disabled={false}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         />
-                        <div className="flex flex-col items-center gap-2">
-                          {false ? (
-                            <Loader2 className="animate-spin text-[#8A9A5B]" size={24} />
-                          ) : (
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="w-12 h-12 bg-[#8A9A5B]/10 rounded-full flex items-center justify-center text-[#8A9A5B] group-hover:scale-110 transition-transform">
                             <File className="text-slate-400 group-hover:text-[#8A9A5B] transition-colors" size={24} />
-                          )}
-                          <p className="text-xs font-bold text-slate-500">
-                            {'Clique ou arraste para enviar arquivo'}
+                          </div>
+                          <p className="text-sm font-bold text-slate-500">
+                            Clique ou arraste para enviar o boleto/NF
                           </p>
-                          <p className="text-[10px] text-slate-400 uppercase font-medium">PDF, PNG, JPG (Max 5MB)</p>
+                          <p className="text-[10px] text-slate-400 uppercase font-bold tracking-widest">PDF, PNG, JPG (Max 5MB)</p>
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between p-4 bg-white border border-[#8A9A5B]/20 rounded-2xl">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-[#8A9A5B]/10 rounded-xl flex items-center justify-center text-[#8A9A5B]">
-                            <File size={20} />
+                      <div className="flex items-center justify-between p-5 bg-white border border-[#8A9A5B]/30 rounded-2xl shadow-sm animate-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-[#8A9A5B]/10 rounded-2xl flex items-center justify-center text-[#8A9A5B]">
+                            <FileText size={24} />
                           </div>
-                          <div className="max-w-[180px]">
-                            <p className="text-xs font-black text-slate-700 truncate">Comprovante Anexado</p>
-                            <a 
-                              href={watchFileUrl} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              className="text-[10px] text-[#8A9A5B] font-bold flex items-center gap-1 hover:underline"
-                            >
-                              Ver Arquivo <Plus size={10} />
-                            </a>
+                          <div className="max-w-[280px]">
+                            <p className="text-sm font-black text-slate-700 truncate">{selectedFile.name}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                              {(selectedFile.size / 1024 / 1024).toFixed(2)} MB • Pronto para upload
+                            </p>
                           </div>
                         </div>
                         <button 
                           type="button"
-                          onClick={() => reset({ ...watch(), fileUrl: '' })}
-                          className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
+                          onClick={handleRemoveFile}
+                          className="p-2.5 text-red-500 hover:bg-red-50 rounded-xl transition-colors border border-transparent hover:border-red-100"
+                          title="Remover arquivo"
                         >
-                          <Plus size={18} />
+                          <X size={20} />
                         </button>
                       </div>
                     )}
@@ -414,7 +385,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
 
                 {/* Bloco de Valores (Original, Juros, Multas, Total) */}
                 <div className="bg-slate-50/80 p-5 rounded-2xl border border-slate-200/60 space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-3 gap-6">
                     {/* Valor Original */}
                     <div className="space-y-1.5 col-span-1">
                       <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
@@ -475,7 +446,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-6">
 
                   {/* Data Vencimento (À Vista) */}
                   {!watchIsInstallment && (
@@ -511,7 +482,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                     animate={{ opacity: 1, height: 'auto' }} 
                     className="space-y-6 pt-2 border-t border-[#8A9A5B]/10"
                   >
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-1.5">
                         <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Quantidade</label>
                         <input
