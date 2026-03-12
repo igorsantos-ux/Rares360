@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, Calendar, Plus, Save, DollarSign, FileText, Loader2, ListOrdered, CalendarDays, RefreshCw, Upload, File, Trash2, Building2, MessageSquare, ExternalLink } from 'lucide-react';
+import { X, Calendar, Plus, Save, DollarSign, FileText, Loader2, ListOrdered, CalendarDays, RefreshCw, File } from 'lucide-react';
 // import { supabase } from '../../lib/supabase';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -308,7 +308,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                   {/* Banco */}
                   <div className="space-y-1.5">
                     <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider flex items-center gap-2">
-                       <Building2 size={14} /> Banco
+                       <Plus size={14} /> Banco
                     </label>
                     <select
                       {...register('bank')}
@@ -346,7 +346,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                 {/* Upload de Arquivo */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider flex items-center gap-2">
-                    <Upload size={14} /> Anexar Boleto / NF
+                    <File size={14} /> Anexar Boleto / NF
                   </label>
                   <div className="relative">
                     {!watchFileUrl ? (
@@ -361,7 +361,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                           {uploading ? (
                             <Loader2 className="animate-spin text-[#8A9A5B]" size={24} />
                           ) : (
-                            <Upload className="text-slate-400 group-hover:text-[#8A9A5B] transition-colors" size={24} />
+                            <File className="text-slate-400 group-hover:text-[#8A9A5B] transition-colors" size={24} />
                           )}
                           <p className="text-xs font-bold text-slate-500">
                             {uploading ? `Enviando ${fileName}...` : 'Clique ou arraste para enviar arquivo'}
@@ -383,7 +383,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                               rel="noopener noreferrer" 
                               className="text-[10px] text-[#8A9A5B] font-bold flex items-center gap-1 hover:underline"
                             >
-                              Ver Arquivo <ExternalLink size={10} />
+                              Ver Arquivo <Plus size={10} />
                             </a>
                           </div>
                         </div>
@@ -392,7 +392,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                           onClick={() => reset({ ...watch(), fileUrl: '' })}
                           className="p-2 text-red-400 hover:bg-red-50 rounded-lg transition-colors"
                         >
-                          <Trash2 size={18} />
+                          <Plus size={18} />
                         </button>
                       </div>
                     )}
@@ -402,7 +402,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                 {/* Observação */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider flex items-center gap-2">
-                    <MessageSquare size={14} /> Observações
+                    <FileText size={14} /> Observações
                   </label>
                   <textarea
                     {...register('observation')}
