@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { payablesApi } from '../../services/api';
 import { AccountPayableSheet } from '../../components/Financial/AccountPayableSheet';
 import {
@@ -15,8 +15,15 @@ import {
     Paperclip
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
-import { useMutation } from '@tanstack/react-query';
 import { DeleteConfirmationModal } from '../../components/Financial/DeleteConfirmationModal';
+import { 
+    PieChart, 
+    Pie, 
+    Cell, 
+    ResponsiveContainer, 
+    Tooltip, 
+    Legend 
+} from 'recharts';
 
 const StatusBadge = ({ status, dueDate }: { status: string; dueDate: string }) => {
     // Para comparação de status dinâmico (Atrasado), usamos a data atual no fuso do usuário
@@ -49,6 +56,67 @@ const StatusBadge = ({ status, dueDate }: { status: string; dueDate: string }) =
         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${styles[currentStatus] || styles['PENDENTE']}`}>
             {currentStatus === 'PENDING' ? 'PENDENTE' : currentStatus}
         </span>
+    );
+};
+
+const CostCenterChart = ({ data }: { data: any[] }) => {
+    // Paleta Premium: Sage, Sand, Soft Orange, Slate, Rose, Amber
+    const COLORS = ['#8A9A5B', '#DEB587', '#E5A988', '#64748B', '#F43F5E', '#F59E0B', '#10B981'];
+
+    if (!data || data.length === 0) {
+        return (
+            <div className="h-[300px] flex items-center justify-center bg-white/50 rounded-[2.5rem] border border-dashed border-[#8A9A5B]/20">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Dados analíticos insuficientes</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="bg-white/80 backdrop-blur-md p-8 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex flex-col items-center h-full min-h-[300px]">
+            <h3 className="text-[10px] font-black text-[#697D58] uppercase tracking-[0.2em] mb-6">Distribuição por Centro de Custo</h3>
+            <div className="w-full h-full min-h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={data}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={85}
+                            paddingAngle={5}
+                            dataKey="value"
+                        >
+                            {data.map((_, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                        </Pie>
+                        <Tooltip 
+                            contentStyle={{ 
+                                borderRadius: '1.5rem', 
+                                border: 'none', 
+                                boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+                                fontWeight: '900',
+                                fontSize: '10px',
+                                textTransform: 'uppercase',
+                                padding: '12px 16px'
+                            }}
+                            formatter={(value: number) => [`R$ ${value.toLocaleString('pt-BR')}`, 'Total']}
+                        />
+                        <Legend 
+                            layout="vertical"
+                            align="right"
+                            verticalAlign="middle"
+                            iconType="circle"
+                            formatter={(value, entry: any) => (
+                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider ml-2">
+                                    {value}: {entry.payload.percentage}%
+                                </span>
+                            )}
+                        />
+                    </PieChart>
+                </ResponsiveContainer>
+            </div>
+        </div>
     );
 };
 
@@ -130,7 +198,8 @@ const PayablesPage = () => {
         return {
             totalPending: payablesResponse?.summary?.totalPending ?? 0,
             totalOverdue: payablesResponse?.summary?.totalOverdue ?? 0,
-            totalDueToday: payablesResponse?.summary?.totalDueToday ?? 0
+            totalDueToday: payablesResponse?.summary?.totalDueToday ?? 0,
+            costCenterDistribution: payablesResponse?.summary?.costCenterDistribution ?? []
         };
     }, [payablesResponse]);
 
@@ -214,10 +283,33 @@ const PayablesPage = () => {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard title="Total Pendente" value={`R$ ${Number(payablesSummary.totalPending).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={<DollarSign size={20} />} color="moss" />
-                <StatCard title="Atrasados" value={`R$ ${Number(payablesSummary.totalOverdue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={<AlertCircle size={20} />} color="dun" alert={payablesSummary.totalOverdue > 0} />
-                <StatCard title="Vencendo Hoje" value={`R$ ${Number(payablesSummary.totalDueToday).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={<Calendar size={20} />} color="moss" />
+            {/* Dashboard Analítico Superior */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+                {/* Métricas Principais */}
+                <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+                    <StatCard 
+                        title="Total Pendente" 
+                        value={`R$ ${Number(payablesSummary.totalPending).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+                        icon={<DollarSign size={20} />} 
+                        color="moss" 
+                    />
+                    <StatCard 
+                        title="Vencendo Hoje" 
+                        value={`R$ ${Number(payablesSummary.totalDueToday).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+                        icon={<Calendar size={20} />} 
+                        color="moss" 
+                    />
+                    <StatCard 
+                        title="Atrasados" 
+                        value={`R$ ${Number(payablesSummary.totalOverdue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+                        icon={<AlertCircle size={20} />} 
+                        color="dun" 
+                        alert={payablesSummary.totalOverdue > 0} 
+                    />
+                </div>
+
+                {/* Gráfico de Distribuição */}
+                <CostCenterChart data={payablesSummary.costCenterDistribution || []} />
             </div>
 
             <div className="bg-white/70 backdrop-blur-md rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm overflow-hidden py-2">

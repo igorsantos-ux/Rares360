@@ -96,12 +96,21 @@ export class AccountPayableController {
                         accountPayable: { clinicId },
                         status: { not: 'PAGO' } // PENDENTE, ATRASADO, etc.
                     },
-                    select: { amount: true, dueDate: true }
+                    select: { 
+                        amount: true, 
+                        dueDate: true,
+                        accountPayable: {
+                            select: { costCenter: true }
+                        }
+                    }
                 });
+
+                const costCenterMap: Record<string, number> = {};
 
                 allUnpaid.forEach(inst => {
                     const instDateISO = inst.dueDate.toISOString().split('T')[0];
                     const amt = Number(inst.amount) || 0;
+                    const center = inst.accountPayable?.costCenter || 'Geral';
 
                     totalPending += amt;
 
@@ -110,22 +119,33 @@ export class AccountPayableController {
                     } else if (instDateISO === todayISO) {
                         totalDueToday += amt;
                     }
+
+                    // Agrupamento para distribuição
+                    costCenterMap[center] = (costCenterMap[center] || 0) + amt;
+                });
+
+                // Formatar Distribuição por Centro de Custo
+                const distribution = Object.entries(costCenterMap).map(([name, value]) => ({
+                    name,
+                    value,
+                    percentage: totalPending > 0 ? Number(((value / totalPending) * 100).toFixed(1)) : 0
+                })).sort((a, b) => b.value - a.value);
+
+                return res.json({
+                    items: installments,
+                    totalItems,
+                    totalPages: Math.ceil(totalItems / Number(limit)),
+                    currentPage: Number(page),
+                    summary: {
+                        totalPending,
+                        totalOverdue,
+                        totalDueToday,
+                        costCenterDistribution: distribution
+                    }
                 });
             } catch (summaryError) {
                 console.error('Erro ao calcular resumo:', summaryError);
             }
-
-            return res.json({
-                items: installments,
-                totalItems,
-                totalPages: Math.ceil(totalItems / Number(limit)),
-                currentPage: Number(page),
-                summary: {
-                    totalPending,
-                    totalOverdue,
-                    totalDueToday
-                }
-            });
         } catch (error: any) {
             console.error('Erro ao listar contas a pagar:', error);
             return res.status(500).json({ message: 'Erro interno ao buscar contas a pagar', error: error.message });
@@ -167,6 +187,11 @@ export class AccountPayableController {
 
             if (!description || !totalAmount || !installments || !Array.isArray(installments) || installments.length === 0) {
                 return res.status(400).json({ message: 'Dados incompletos. Informe descrição, valor e as parcelas.' });
+            }
+
+            // Obrigatoriedade de Centro de Custo e Tipo (v14.0)
+            if (!costCenter || !costType) {
+                return res.status(400).json({ message: 'Centro de Custo e Tipo de Custo são obrigatórios.' });
             }
 
             const result = await prisma.$transaction(async (tx) => {

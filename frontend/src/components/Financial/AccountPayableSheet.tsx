@@ -18,8 +18,8 @@ const accountPayableSchema = z.object({
   bank: z.string().optional(),
   observation: z.string().optional(),
   fileUrl: z.string().optional(),
-  costCenter: z.string().optional(),
-  costType: z.string().optional(),
+  costCenter: z.string().min(1, 'Centro de custo é obrigatório'),
+  costType: z.string().min(1, 'Tipo de custo é obrigatório'),
   paymentMethod: z.string().min(1, 'Selecione a forma de pagamento'),
   date: z.string().optional(), // Data para à vista
   isInstallment: z.boolean(),
@@ -344,11 +344,12 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
 
                   {/* Centro de Custo */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Centro de Custo</label>
+                    <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Centro de Custo <span className="text-red-500">*</span></label>
                     <select
                       {...register('costCenter')}
                       className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all"
                     >
+                      <option value="">Selecione...</option>
                       <option value="Geral">Geral</option>
                       <option value="Administrativo">Administrativo</option>
                       <option value="Comercial">Comercial</option>
@@ -357,18 +358,21 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                       <option value="TI">TI</option>
                       <option value="RH">RH</option>
                     </select>
+                    {errors.costCenter && <span className="text-red-500 text-xs font-bold">{errors.costCenter.message}</span>}
                   </div>
 
                   {/* Tipo de Custo */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Tipo de Custo</label>
+                    <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Tipo de Custo <span className="text-red-500">*</span></label>
                     <select
                       {...register('costType')}
                       className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-slate-700 font-medium focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all"
                     >
+                      <option value="">Selecione...</option>
                       <option value="Fixo">Fixo</option>
                       <option value="Variável">Variável</option>
                     </select>
+                    {errors.costType && <span className="text-red-500 text-xs font-bold">{errors.costType.message}</span>}
                   </div>
                 </div>
 
