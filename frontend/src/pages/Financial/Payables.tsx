@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { financialApi, payablesApi } from '../../services/api';
-import { AccountPayableSheet } from '../../components/Financial/AccountPayableSheet';
 import {
     ArrowDownCircle,
     Calendar,
@@ -14,123 +13,31 @@ import {
     Loader2,
     FileText
 } from 'lucide-react';
-import { Toaster, toast } from 'react-hot-toast';
+import { Toaster } from 'react-hot-toast';
 
-const PayablesPage = () => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [isSheetOpen, setIsSheetOpen] = useState(false);
-    const queryClient = useQueryClient();
+const StatCard = ({ title, value, icon, color, alert }: any) => (
+    <div className={`bg-white p-6 rounded-3xl border ${alert ? 'border-[#DEB587]/30 shadow-lg shadow-[#DEB587]/5' : 'border-[#8A9A5B]/10 shadow-sm'} flex items-center gap-5 group`}>
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${color === 'moss' ? 'bg-[#8A9A5B]/10 text-[#8A9A5B]' : 'bg-[#DEB587]/10 text-[#DEB587]'
+            }`}>
+            {icon}
+        </div>
+        <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+            <h5 className={`text-2xl font-black ${alert ? 'text-[#DEB587]' : 'text-[#1A202C]'}`}>{value}</h5>
+        </div>
+    </div>
+);
 
-    const { isLoading: isLoadingSummary } = useQuery({
-        queryKey: ['financial-summary'],
-        queryFn: () => financialApi.getSummary().then(res => res.data)
-    });
-
-    const { data: payablesResponse, isLoading: isLoadingPayables } = useQuery({
-        queryKey: ['payables-list'],
-        queryFn: () => payablesApi.getPayables().then(res => res.data)
-    });
-
-    const isLoading = isLoadingSummary || isLoadingPayables;
-
-    const handleSaveAccount = async (data: any) => {
-        try {
-            await payablesApi.createPayable(data);
-            queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
-            queryClient.invalidateQueries({ queryKey: ['payables-list'] });
-            
-            toast.success("Conta a pagar salva com sucesso!", {
-                duration: 4000,
-                position: 'top-right'
-            });
-            setIsSheetOpen(false);
-        } catch (error) {
-            console.error(error);
-            toast.error("Ocorreu um erro ao salvar a conta.", {
-                duration: 4000,
-                position: 'top-right'
-            });
-        }
-    };
-
-    if (isLoading) {
-        return (
-            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
-                <Loader2 className="animate-spin text-[#8A9A5B]" size={48} />
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Carregando contas a pagar...</p>
-            </div>
-        );
-    }
-
-    const payablesData = Array.isArray(payablesResponse?.items) 
-        ? payablesResponse.items 
-        : Array.isArray(payablesResponse) 
-            ? payablesResponse 
-            : [];
-            
-    const payablesSummary = {
-        totalPending: payablesResponse?.summary?.totalPending || 0,
-        totalOverdue: payablesResponse?.summary?.totalOverdue || 0,
-        totalDueToday: payablesResponse?.summary?.totalDueToday || 0
-    };
-    
-    const displayPayables = useMemo(() => {
-        try {
-            if (!payablesData || !Array.isArray(payablesData)) return [];
-            
-            const flattened = payablesData.flatMap((account: any) => {
-                if (!account) return [];
-                const installments = Array.isArray(account?.installments) ? account.installments : [];
-                
-                return installments.map((inst: any) => {
-                  if (!inst) return null;
-                  return {
-                    id: inst?.id || `temp-${Math.random()}`,
-                    accountId: account?.id,
-                    description: String(account?.description || 'Despesa') + (account?.isInstallment ? ` (Parcela ${inst?.installmentNumber || 1}/${account?.installmentsCount || 1})` : ''),
-                    category: String(account?.documentNumber ? `NF: ${account.documentNumber}` : (account?.supplierName ? `Fornecedor: ${account.supplierName}` : 'Despesa')),
-                    amount: Number(inst?.amount || 0),
-                    date: inst?.dueDate || new Date().toISOString(),
-                    status: String(inst?.status || 'PENDING'),
-                    paymentMethod: String(inst?.paymentMethod || account?.paymentMethod || 'Não informado'),
-                    fileUrl: account?.fileUrl,
-                    supplierName: account?.supplierName
-                  };
-                }).filter(Boolean);
-            });
-
-            return flattened.filter((t: any) =>
-                (String(t?.description || '').toLowerCase().includes((searchTerm || '').toLowerCase())) ||
-                (String(t?.category || '').toLowerCase().includes((searchTerm || '').toLowerCase()))
-            ).sort((a: any, b: any) => {
-                const dA = new Date(a?.date).getTime();
-                const dB = new Date(b?.date).getTime();
-                return (isNaN(dA) ? 0 : dA) - (isNaN(dB) ? 0 : dB);
-            });
-        } catch (error) {
-            console.error('❌ Crash no Mapeamento de Payables:', error);
-            return [];
-        }
-    }, [payablesResponse, searchTerm, payablesData]);
-
-    useEffect(() => {
-      if (payablesResponse) {
-        console.log('📦 Payables API Response:', payablesResponse);
-      }
-    }, [payablesResponse]);
-
-    const formatDateSafe = (dateStr: any) => {
-        try {
-            const d = new Date(dateStr);
-            if (isNaN(d.getTime())) return 'Data Inválida';
-            return d.toLocaleDateString('pt-BR');
-        } catch {
-            return 'Data Inválida';
-        }
-    };
-
+const PayablesUIContent = ({ 
+    payablesSummary, 
+    displayPayables, 
+    searchTerm, 
+    setSearchTerm, 
+    setIsSheetOpen, 
+    formatDateSafe 
+}: any) => {
     return (
-        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
+        <div className="space-y-10 pb-12">
             <Toaster />
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
@@ -225,9 +132,9 @@ const PayablesPage = () => {
                                             {formatDateSafe(item.date)}
                                         </td>
                                         <td className="px-8 py-6 text-sm font-black text-slate-800">
-                                            R$ {item.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                            R$ {Number(item.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                         </td>
-                                        <td className="px-8 py-6 uppercase text-[10px] font-black tracking-widest">
+                                        <td className="px-8 py-6 text-[10px] font-black uppercase tracking-widest">
                                             {item.status === 'PAID' ? 'Pago' : item.status === 'OVERDUE' ? 'Atrasado' : 'Pendente'}
                                         </td>
                                         <td className="px-8 py-6 text-right">
@@ -249,27 +156,116 @@ const PayablesPage = () => {
                     </div>
                 )}
             </div>
-
-            <AccountPayableSheet 
-                isOpen={isSheetOpen}
-                onClose={() => setIsSheetOpen(false)}
-                onSave={handleSaveAccount}
-            />
         </div>
     );
 };
 
-const StatCard = ({ title, value, icon, color, alert }: any) => (
-    <div className={`bg-white p-6 rounded-3xl border ${alert ? 'border-[#DEB587]/30 shadow-lg shadow-[#DEB587]/5' : 'border-[#8A9A5B]/10 shadow-sm'} flex items-center gap-5 group`}>
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${color === 'moss' ? 'bg-[#8A9A5B]/10 text-[#8A9A5B]' : 'bg-[#DEB587]/10 text-[#DEB587]'
-            }`}>
-            {icon}
-        </div>
-        <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
-            <h5 className={`text-2xl font-black ${alert ? 'text-[#DEB587]' : 'text-[#1A202C]'}`}>{value}</h5>
-        </div>
-    </div>
-);
+const PayablesPage = () => {
+    const [searchTerm, setSearchTerm] = useState('');
+    const [_isSheetOpen, setIsSheetOpen] = useState(false);
+
+    const { isLoading: isLoadingSummary } = useQuery({
+        queryKey: ['financial-summary'],
+        queryFn: () => financialApi.getSummary().then(res => res.data)
+    });
+
+    const { data: payablesResponse, isLoading: isLoadingPayables } = useQuery({
+        queryKey: ['payables-list'],
+        queryFn: () => payablesApi.getPayables().then(res => res.data)
+    });
+
+    const isLoading = isLoadingSummary || isLoadingPayables;
+
+    if (isLoading) {
+        return (
+            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
+                <Loader2 className="animate-spin text-[#8A9A5B]" size={48} />
+                <p>Carregando...</p>
+            </div>
+        );
+    }
+
+    const payablesData = Array.isArray(payablesResponse?.items) 
+        ? payablesResponse.items 
+        : Array.isArray(payablesResponse) 
+            ? payablesResponse 
+            : [];
+            
+    const payablesSummary = {
+        totalPending: payablesResponse?.summary?.totalPending || 0,
+        totalOverdue: payablesResponse?.summary?.totalOverdue || 0,
+        totalDueToday: payablesResponse?.summary?.totalDueToday || 0
+    };
+    
+    const displayPayables = useMemo(() => {
+        try {
+            if (!payablesData || !Array.isArray(payablesData)) return [];
+            
+            const flattened = payablesData.flatMap((account: any) => {
+                if (!account) return [];
+                const installments = Array.isArray(account?.installments) ? account.installments : [];
+                
+                return installments.map((inst: any) => {
+                  if (!inst) return null;
+                  return {
+                    id: inst?.id || `temp-${Math.random()}`,
+                    description: String(account?.description || 'Despesa') + (account?.isInstallment ? ` (Parcela ${inst?.installmentNumber || 1}/${account?.installmentsCount || 1})` : ''),
+                    category: String(account?.documentNumber ? `NF: ${account.documentNumber}` : (account?.supplierName ? `Fornecedor: ${account.supplierName}` : 'Despesa')),
+                    amount: Number(inst?.amount || 0),
+                    date: inst?.dueDate || new Date().toISOString(),
+                    status: String(inst?.status || 'PENDING'),
+                    fileUrl: account?.fileUrl,
+                    supplierName: account?.supplierName
+                  };
+                }).filter(Boolean);
+            });
+
+            return flattened.filter((t: any) =>
+                (String(t?.description || '').toLowerCase().includes((searchTerm || '').toLowerCase())) ||
+                (String(t?.category || '').toLowerCase().includes((searchTerm || '').toLowerCase()))
+            ).sort((a: any, b: any) => {
+                const dA = new Date(a?.date).getTime();
+                const dB = new Date(b?.date).getTime();
+                return (isNaN(dA) ? 0 : dA) - (isNaN(dB) ? 0 : dB);
+            });
+        } catch (error) {
+            console.error('❌ Crash no Mapeamento de Payables:', error);
+            return [];
+        }
+    }, [payablesResponse, searchTerm, payablesData]);
+
+    const formatDateSafe = (dateStr: any) => {
+        try {
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return 'Data Inválida';
+            return d.toLocaleDateString('pt-BR');
+        } catch {
+            return 'Data Inválida';
+        }
+    };
+
+    try {
+        return (
+            <PayablesUIContent 
+                payablesSummary={payablesSummary}
+                displayPayables={displayPayables}
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                setIsSheetOpen={setIsSheetOpen}
+                formatDateSafe={formatDateSafe}
+            />
+        );
+    } catch (error: any) {
+        return (
+            <div className="p-20 bg-red-50 text-red-600 border border-red-200 m-10 rounded-2xl">
+                <h1 className="text-2xl font-bold">Erro de Renderização!</h1>
+                <p className="mt-2 font-mono text-sm">{error?.message || 'Erro desconhecido'}</p>
+                <div className="mt-4 p-4 bg-white rounded text-xs overflow-auto max-h-60 border border-red-100">
+                    {error?.stack}
+                </div>
+            </div>
+        );
+    }
+};
 
 export default PayablesPage;
