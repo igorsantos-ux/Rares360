@@ -87,7 +87,7 @@ const PayablesPage = () => {
         }
     });
 
-    const { data: payablesResponse, isLoading, isFetching } = useQuery({
+    const { data: payablesResponse, isLoading } = useQuery({
         queryKey: ['payables-list-v4', currentPage, activeFilter, searchTerm],
         queryFn: async () => {
             const res = await payablesApi.getPayables({
