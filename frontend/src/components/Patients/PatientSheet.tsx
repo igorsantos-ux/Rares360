@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { coreApi } from '../../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
 
 const patientSchema = z.object({
   fullName: z.string().min(3, 'Nome completo é obrigatório'),
@@ -137,15 +138,19 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
 
       if (patient?.id) {
         await coreApi.updatePatient(patient.id, payload);
+        toast.success('Paciente atualizado com sucesso!');
       } else {
         await coreApi.createPatient(payload);
+        toast.success('Paciente cadastrado com sucesso!');
       }
       
       onSave();
       onClose();
       reset();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao salvar paciente:", error);
+      const message = error.response?.data?.error || "Erro ao salvar paciente. Verifique os dados e tente novamente.";
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }

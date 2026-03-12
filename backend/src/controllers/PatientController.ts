@@ -123,6 +123,22 @@ export class PatientController {
             const data = req.body;
 
             const cleanData = { ...data };
+            
+            // Campos que NUNCA devem ser atualizados via formulário
+            delete (cleanData as any).id;
+            delete (cleanData as any).clinicId;
+            delete (cleanData as any).transactions;
+            delete (cleanData as any).createdAt;
+            delete (cleanData as any).updatedAt;
+            
+            // Campos analíticos calculados no list
+            delete (cleanData as any).totalSpent;
+            delete (cleanData as any).visitCount;
+            delete (cleanData as any).lastVisit;
+            delete (cleanData as any).averageTicket;
+            delete (cleanData as any).procedures;
+            delete (cleanData as any).classification;
+
             if (cleanData.weight === '') cleanData.weight = null;
             if (cleanData.height === '') cleanData.height = null;
 

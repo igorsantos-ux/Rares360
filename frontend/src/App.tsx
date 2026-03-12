@@ -21,6 +21,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
 import Automations from './pages/Automations';
 import { useAuth } from './contexts/AuthContext';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const location = useLocation();
@@ -41,6 +42,7 @@ function App() {
 
   return (
     <div className={`flex flex-col min-h-screen ${isPublicPage ? 'bg-white' : 'bg-[#F0EAD6]'}`}>
+      <Toaster position="top-right" />
       {showHeader && <Header />}
       <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'ml-0' : (showHeader ? 'pt-28 pb-12 px-8 lg:px-12 ml-0' : 'p-0')}`}>
         <div className={isPublicPage ? '' : (showHeader ? 'max-w-7xl mx-auto' : '')}>
