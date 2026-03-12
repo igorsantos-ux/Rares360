@@ -64,8 +64,8 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
     }
   });
 
-  const [uploading, setUploading] = useState(false);
-  const [fileName, setFileName] = useState('');
+  // const [uploading, setUploading] = useState(false);
+  // const [fileName, setFileName] = useState('');
 
   const { fields, replace } = useFieldArray({
     control,
@@ -84,7 +84,7 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
   // Lógica de Soma Dinâmica para o Total a Pagar
   const calculatedGrandTotal = Number((watchTotalAmount + watchInterest + watchPenalty).toFixed(2));
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (_event: React.ChangeEvent<HTMLInputElement>) => {
     /* 
     try {
       const file = event.target.files?.[0];
@@ -354,17 +354,17 @@ export function AccountPayableSheet({ isOpen, onClose, onSave }: Props) {
                         <input
                           type="file"
                           onChange={handleFileUpload}
-                          disabled={uploading}
+                          disabled={false}
                           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         />
                         <div className="flex flex-col items-center gap-2">
-                          {uploading ? (
+                          {false ? (
                             <Loader2 className="animate-spin text-[#8A9A5B]" size={24} />
                           ) : (
                             <File className="text-slate-400 group-hover:text-[#8A9A5B] transition-colors" size={24} />
                           )}
                           <p className="text-xs font-bold text-slate-500">
-                            {uploading ? `Enviando ${fileName}...` : 'Clique ou arraste para enviar arquivo'}
+                            {'Clique ou arraste para enviar arquivo'}
                           </p>
                           <p className="text-[10px] text-slate-400 uppercase font-medium">PDF, PNG, JPG (Max 5MB)</p>
                         </div>
