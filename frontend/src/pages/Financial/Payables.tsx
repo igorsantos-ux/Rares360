@@ -87,7 +87,7 @@ const PayablesPage = () => {
         }
     });
 
-    const { data: payablesResponse, isLoading } = useQuery({
+    const { data: payablesResponse, isLoading, isFetching } = useQuery({
         queryKey: ['payables-list-v4', currentPage, activeFilter, searchTerm],
         queryFn: async () => {
             const res = await payablesApi.getPayables({
@@ -103,9 +103,9 @@ const PayablesPage = () => {
 
     const payablesSummary = useMemo(() => {
         return {
-            totalPending: payablesResponse?.summary?.totalPending || 0,
-            totalOverdue: payablesResponse?.summary?.totalOverdue || 0,
-            totalDueToday: payablesResponse?.summary?.totalDueToday || 0
+            totalPending: payablesResponse?.summary?.totalPending ?? 0,
+            totalOverdue: payablesResponse?.summary?.totalOverdue ?? 0,
+            totalDueToday: payablesResponse?.summary?.totalDueToday ?? 0
         };
     }, [payablesResponse]);
 
@@ -125,8 +125,8 @@ const PayablesPage = () => {
                     category: String(account.documentNumber ? `NF: ${account.documentNumber}` : (account.supplierName ? `${account.supplierName}` : 'Despesa')),
                     amount: Number(inst.amount || 0),
                     date: inst.dueDate || new Date().toISOString(),
-                    status: String(inst.status || 'PENDING'),
-                    fileUrl: account.fileUrl,
+                    status: String(inst.status || 'PENDENTE'),
+                    fileUrl: account.fileUrl, // URL real do servidor
                     supplierName: account.supplierName,
                     costCenter: account.costCenter,
                     costType: account.costType
@@ -160,14 +160,8 @@ const PayablesPage = () => {
 
     const totalPages = payablesResponse?.totalPages || 1;
 
-    if (isLoading) {
-        return (
-            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20 text-[#8A9A5B]">
-                <Loader2 className="animate-spin" size={48} />
-                <p className="font-black uppercase tracking-widest text-xs">Carregando dados financeiros...</p>
-            </div>
-        );
-    }
+    // Loader SPA amigável: Não bloqueia a tela inteira se já temos dados (isFetching)
+    const showSkeleton = isLoading && !payablesResponse;
 
     return (
         <div className="space-y-10 pb-12 animate-in fade-in duration-500">
@@ -226,7 +220,12 @@ const PayablesPage = () => {
                     </div>
                 </div>
 
-                {displayPayables.length === 0 ? (
+                {showSkeleton ? (
+                    <div className="py-20 flex flex-col items-center gap-4 animate-pulse">
+                        <Loader2 className="animate-spin text-[#8A9A5B]" size={32} />
+                        <p className="text-slate-400 font-bold text-sm uppercase tracking-widest">Carregando dados...</p>
+                    </div>
+                ) : displayPayables.length === 0 ? (
                     <div className="py-20 flex flex-col items-center gap-4">
                         <CheckCircle2 className="text-slate-300" size={32} />
                         <p className="text-slate-400 font-bold text-sm uppercase tracking-widest">Nenhuma conta encontrada</p>
@@ -273,16 +272,29 @@ const PayablesPage = () => {
                                         </td>
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-2">
-                                                {item.accountPayable?.fileUrl && (
+                                                {/* Ação Rápida: Download de Anexo (Clip) */}
+                                                {item.fileUrl && (
                                                     <a 
-                                                        href={item.accountPayable.fileUrl} 
+                                                        href={item.fileUrl} 
                                                         target="_blank" 
                                                         rel="noreferrer" 
                                                         className="p-2.5 text-[#8A9A5B] hover:bg-[#8A9A5B]/10 rounded-xl transition-all"
-                                                        title="Baixar Boleto"
+                                                        title="Visualizar Anexo"
                                                     >
                                                         <FileDown size={18} />
                                                     </a>
+                                                )}
+                                                
+                                                {/* Ação Rápida: Dar Baixa (Check) */}
+                                                {item.status !== 'PAGO' && (
+                                                    <button 
+                                                        onClick={() => updateStatusMutation.mutate({ id: item.id, status: 'PAGO' })}
+                                                        disabled={updateStatusMutation.isPending}
+                                                        className="p-2.5 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all disabled:opacity-30"
+                                                        title="Marcar como Pago"
+                                                    >
+                                                        {updateStatusMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
+                                                    </button>
                                                 )}
                                                 
                                                 <div className="relative group/menu">
@@ -291,7 +303,7 @@ const PayablesPage = () => {
                                                     </button>
                                                     
                                                     {/* Custom DropdownMenu */}
-                                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all">
+                                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all pointer-events-none group-hover/menu:pointer-events-auto">
                                                         {item.status !== 'PAGO' && (
                                                             <button 
                                                                 onClick={() => updateStatusMutation.mutate({ id: item.id, status: 'PAGO' })}
@@ -309,12 +321,6 @@ const PayablesPage = () => {
                                                             className="w-full text-left px-5 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
                                                         >
                                                             Excluir
-                                                        </button>
-                                                        <button 
-                                                            disabled
-                                                            className="w-full text-left px-5 py-2.5 text-xs font-bold text-slate-300 cursor-not-allowed"
-                                                        >
-                                                            Editar (Breve)
                                                         </button>
                                                     </div>
                                                 </div>
