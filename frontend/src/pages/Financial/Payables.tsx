@@ -20,10 +20,13 @@ import { useMutation } from '@tanstack/react-query';
 const StatusBadge = ({ status, dueDate }: { status: string; dueDate: string }) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const date = new Date(dueDate);
+    
+    // Fallback seguro para data inválida
+    const date = dueDate ? new Date(dueDate) : new Date();
     date.setHours(0, 0, 0, 0);
 
-    const isOverdue = status === 'PENDENTE' && date < today;
+    // Lógica dinâmica: Se não estiver Pago e a data for anterior a hoje, está ATRASADO
+    const isOverdue = status !== 'PAGO' && date < today;
     const currentStatus = isOverdue ? 'ATRASADO' : status;
 
     const styles: any = {
@@ -35,7 +38,7 @@ const StatusBadge = ({ status, dueDate }: { status: string; dueDate: string }) =
 
     return (
         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${styles[currentStatus] || styles['PENDENTE']}`}>
-            {currentStatus}
+            {currentStatus === 'PENDING' ? 'PENDENTE' : currentStatus}
         </span>
     );
 };
@@ -117,6 +120,7 @@ const PayablesPage = () => {
             return rawItems.map((inst: any) => {
                 if (!inst) return null;
                 const account = inst.accountPayable || {};
+                const status = String(inst.status || 'PENDENTE').toUpperCase();
                 
                 return {
                     id: inst.id,
@@ -125,8 +129,9 @@ const PayablesPage = () => {
                     category: String(account.documentNumber ? `NF: ${account.documentNumber}` : (account.supplierName ? `${account.supplierName}` : 'Despesa')),
                     amount: Number(inst.amount || 0),
                     date: inst.dueDate || new Date().toISOString(),
-                    status: String(inst.status || 'PENDENTE'),
-                    fileUrl: account.fileUrl, // URL real do servidor
+                    dueDate: inst.dueDate, // Mantemos o campo original para o StatusBadge
+                    status: status === 'PENDING' ? 'PENDENTE' : status,
+                    fileUrl: account.fileUrl, 
                     supplierName: account.supplierName,
                     costCenter: account.costCenter,
                     costType: account.costType
@@ -249,7 +254,11 @@ const PayablesPage = () => {
                                     <tr key={item.id} className="hover:bg-[#8A9A5B]/5 transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.status === 'OVERDUE' ? 'bg-[#DEB587]/20 text-[#DEB587]' : 'bg-[#8A9A5B]/10 text-[#697D58]'}`}>
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                                                    (item.status === 'ATRASADO' || (item.status !== 'PAGO' && new Date(item.dueDate) < new Date(new Date().setHours(0,0,0,0)))) 
+                                                    ? 'bg-[#DEB587]/20 text-[#DEB587]' 
+                                                    : 'bg-[#8A9A5B]/10 text-[#697D58]'
+                                                }`}>
                                                     <ArrowDownCircle size={20} />
                                                 </div>
                                                 <div>

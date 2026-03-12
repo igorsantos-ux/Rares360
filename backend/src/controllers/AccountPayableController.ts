@@ -68,7 +68,10 @@ export class AccountPayableController {
                 include: {
                     accountPayable: true
                 },
-                orderBy: { dueDate: 'asc' },
+                orderBy: [
+                    { status: 'desc' }, // PENDENTE vem antes de PAGO alfabeticamente (desc)
+                    { dueDate: 'asc' }  // Mais antigas primeiro dentro do mesmo status
+                ],
                 skip,
                 take
             });
@@ -76,32 +79,36 @@ export class AccountPayableController {
             // 2. Conta total para paginação
             const totalItems = await prisma.accountPayableInstallment.count({ where });
 
-            // 3. Busca Totalizadores Globais (Sem paginação/filtro de status para o resumo fixo)
-            const allUnpaid = await prisma.accountPayableInstallment.findMany({
-                where: {
-                    accountPayable: { clinicId },
-                    status: { in: ['PENDENTE', 'ATRASADO'] }
-                },
-                select: { amount: true, dueDate: true }
-            });
-
+            // 3. Busca Totalizadores Globais
             let totalPending = 0;
             let totalOverdue = 0;
             let totalDueToday = 0;
 
-            allUnpaid.forEach(inst => {
-                const dueDate = new Date(inst.dueDate);
-                dueDate.setHours(0, 0, 0, 0);
-                const amt = Number(inst.amount) || 0;
+            try {
+                const allUnpaid = await prisma.accountPayableInstallment.findMany({
+                    where: {
+                        accountPayable: { clinicId },
+                        status: { not: 'PAGO' } // PENDENTE, ATRASADO, etc.
+                    },
+                    select: { amount: true, dueDate: true }
+                });
 
-                totalPending += amt;
+                allUnpaid.forEach(inst => {
+                    const dueDate = new Date(inst.dueDate);
+                    dueDate.setHours(0, 0, 0, 0);
+                    const amt = Number(inst.amount) || 0;
 
-                if (dueDate < today) {
-                    totalOverdue += amt;
-                } else if (dueDate.getTime() === today.getTime()) {
-                    totalDueToday += amt;
-                }
-            });
+                    totalPending += amt;
+
+                    if (dueDate < today) {
+                        totalOverdue += amt;
+                    } else if (dueDate.getTime() === today.getTime()) {
+                        totalDueToday += amt;
+                    }
+                });
+            } catch (summaryError) {
+                console.error('Erro ao calcular resumo:', summaryError);
+            }
 
             return res.json({
                 items: installments,
@@ -169,17 +176,17 @@ export class AccountPayableController {
                         installmentInterval: installmentInterval || null,
                         supplierName: supplierName || null,
                         supplierCnpj: supplierCnpj || null,
-                         interestValue: Number(interestValue) || 0,
-                         penaltyValue: Number(penaltyValue) || 0,
-                         bank: bank || null,
-                         observation: observation || null,
-                         fileUrl: fileUrl || null,
-                         costCenter: costCenter || null,
-                         costType: costType || null,
-                         status: 'PENDENTE',
-                         clinicId
-                     }
-                 });
+                        interestValue: Number(interestValue) || 0,
+                        penaltyValue: Number(penaltyValue) || 0,
+                        bank: bank || null,
+                        observation: observation || null,
+                        fileUrl: fileUrl || null,
+                        costCenter: costCenter || null,
+                        costType: costType || null,
+                        status: 'PENDENTE',
+                        clinicId
+                    }
+                });
  
                  const installmentsData = installments.map((inst: any, index: number) => {
                      return {
