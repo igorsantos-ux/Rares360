@@ -36,6 +36,7 @@ export function AccountReceivableSheet({ isOpen, onClose, onSave }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [patients, setPatients] = useState<any[]>([]);
+  const [isLoadingPatients, setIsLoadingPatients] = useState(false);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<ReceivableFormData>({
     resolver: zodResolver(receivableSchema),
@@ -58,10 +59,15 @@ export function AccountReceivableSheet({ isOpen, onClose, onSave }: Props) {
 
   const loadData = async () => {
     try {
+      setIsLoadingPatients(true);
       const res = await coreApi.getPatients();
-      setPatients(Array.isArray(res.data) ? res.data : []);
+      // O backend retorna { data: [...], summary: {...} }
+      const patientsData = res.data?.data || [];
+      setPatients(Array.isArray(patientsData) ? patientsData : []);
     } catch (error) {
       console.error("Erro ao carregar pacientes:", error);
+    } finally {
+      setIsLoadingPatients(false);
     }
   };
 
@@ -168,9 +174,9 @@ export function AccountReceivableSheet({ isOpen, onClose, onSave }: Props) {
                     <select
                       {...register('patientId')}
                       className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl px-5 py-4 text-slate-700 font-bold focus:ring-4 focus:ring-[#8A9A5B]/10 outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={patients.length === 0}
+                      disabled={isLoadingPatients}
                     >
-                      <option value="">{patients.length === 0 ? "Carregando pacientes..." : "Selecione um paciente..."}</option>
+                      <option value="">{isLoadingPatients ? "Carregando pacientes..." : (patients.length === 0 ? "Nenhum paciente cadastrado" : "Selecione um paciente...")}</option>
                       {patients.map(p => (
                         <option key={p.id} value={p.id}>{p.fullName || p.name}</option>
                       ))}
