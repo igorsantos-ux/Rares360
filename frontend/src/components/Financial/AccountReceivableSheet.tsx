@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useForm, SubmitHandler } from 'react-hook-form';
+import { useForm, type SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { X, Save, DollarSign, FileText, Loader2, File, User, Activity } from 'lucide-react';
-import { receivablesApi, coreApi, payablesApi } from '../../services/api';
+import { coreApi, payablesApi } from '../../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const receivableSchema = z.object({
@@ -12,11 +12,19 @@ const receivableSchema = z.object({
   procedureName: z.string().min(1, 'O procedimento é obrigatório'),
   amount: z.number().min(0.01, 'O valor deve ser maior que zero'),
   dueDate: z.string().min(1, 'A data de vencimento é obrigatória'),
-  status: z.string().default('PENDENTE'),
+  status: z.string(),
   fileUrl: z.string().optional(),
 });
 
-type ReceivableFormData = z.infer<typeof receivableSchema>;
+interface ReceivableFormData {
+  description: string;
+  customerId: string;
+  procedureName: string;
+  amount: number;
+  dueDate: string;
+  status: string;
+  fileUrl?: string;
+}
 
 interface Props {
   isOpen: boolean;
