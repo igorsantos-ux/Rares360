@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { financialApi, payablesApi } from '../../services/api';
 import { AccountPayableSheet } from '../../components/Financial/AccountPayableSheet';
@@ -15,7 +15,7 @@ import {
     FileText
 } from 'lucide-react';
 import { Toaster, toast } from 'react-hot-toast';
-import { useMemo } from 'react';
+
 
 const PayablesPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
@@ -78,33 +78,49 @@ const PayablesPage = () => {
     
     // Achatar contas -> parcelas para exibir em forma de tabela
     const displayPayables = useMemo(() => {
-        if (!payablesData) return [];
-        
-        const flattened = payablesData.flatMap((account: any) => {
-            const installments = Array.isArray(account?.installments) ? account.installments : [];
-            return installments.map((inst: any) => ({
-                id: inst?.id || Math.random().toString(),
-                accountId: account?.id,
-                description: String(account?.description || 'Despesa') + (account?.isInstallment ? ` (Parcela ${inst?.installmentNumber || 1}/${account?.installmentsCount || 1})` : ''),
-                category: String(account?.documentNumber ? `NF: ${account.documentNumber}` : (account?.supplierName ? `Fornecedor: ${account.supplierName}` : 'Despesa')),
-                amount: Number(inst?.amount || 0),
-                date: inst?.dueDate || new Date().toISOString(),
-                status: String(inst?.status || 'PENDING'),
-                paymentMethod: String(inst?.paymentMethod || account?.paymentMethod || 'Não informado'),
-                fileUrl: account?.fileUrl,
-                supplierName: account?.supplierName
-            }));
-        });
+        try {
+            if (!payablesData || !Array.isArray(payablesData)) return [];
+            
+            const flattened = payablesData.flatMap((account: any) => {
+                if (!account) return [];
+                const installments = Array.isArray(account?.installments) ? account.installments : [];
+                
+                return installments.map((inst: any) => {
+                  if (!inst) return null;
+                  return {
+                    id: inst?.id || `temp-${Math.random()}`,
+                    accountId: account?.id,
+                    description: String(account?.description || 'Despesa') + (account?.isInstallment ? ` (Parcela ${inst?.installmentNumber || 1}/${account?.installmentsCount || 1})` : ''),
+                    category: String(account?.documentNumber ? `NF: ${account.documentNumber}` : (account?.supplierName ? `Fornecedor: ${account.supplierName}` : 'Despesa')),
+                    amount: Number(inst?.amount || 0),
+                    date: inst?.dueDate || new Date().toISOString(),
+                    status: String(inst?.status || 'PENDING'),
+                    paymentMethod: String(inst?.paymentMethod || account?.paymentMethod || 'Não informado'),
+                    fileUrl: account?.fileUrl,
+                    supplierName: account?.supplierName
+                  };
+                }).filter(Boolean);
+            });
 
-        return flattened.filter((t: any) =>
-            (t?.description || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
-            (t?.category || '').toLowerCase().includes((searchTerm || '').toLowerCase())
-        ).sort((a: any, b: any) => {
-            const dA = new Date(a?.date).getTime();
-            const dB = new Date(b?.date).getTime();
-            return (isNaN(dA) ? 0 : dA) - (isNaN(dB) ? 0 : dB);
-        });
-    }, [payablesResponse, searchTerm]);
+            return flattened.filter((t: any) =>
+                (String(t?.description || '').toLowerCase().includes((searchTerm || '').toLowerCase())) ||
+                (String(t?.category || '').toLowerCase().includes((searchTerm || '').toLowerCase()))
+            ).sort((a: any, b: any) => {
+                const dA = new Date(a?.date).getTime();
+                const dB = new Date(b?.date).getTime();
+                return (isNaN(dA) ? 0 : dA) - (isNaN(dB) ? 0 : dB);
+            });
+        } catch (error) {
+            console.error('❌ Crash no Mapeamento de Payables:', error);
+            return [];
+        }
+    }, [payablesResponse, searchTerm, payablesData]);
+
+    useEffect(() => {
+      if (payablesResponse) {
+        console.log('📦 Payables API Response:', payablesResponse);
+      }
+    }, [payablesResponse]);
 
     const formatDateSafe = (dateStr: any) => {
         try {
