@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { CoreController } from '../controllers/CoreController.js';
+import { PatientController } from '../controllers/PatientController.js';
 
 import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.js';
 
@@ -11,5 +12,11 @@ router.get('/productivity', CoreController.getProductivity);
 router.post('/doctors', CoreController.createDoctor);
 router.get('/stock', CoreController.getStock);
 router.post('/stock', CoreController.createStock);
+
+// Pacientes
+router.get('/patients', PatientController.list);
+router.post('/patients', PatientController.create);
+router.patch('/patients/:id', PatientController.update);
+router.delete('/patients/:id', PatientController.delete);
 
 export default router;

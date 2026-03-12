@@ -50,7 +50,7 @@ model Clinic {
   users                 User[]
   transactions          Transaction[]
   doctors               Doctor[]
-  customers             Customer[]
+  patients              Patient[]
   stockItems            StockItem[]
   goals                 FinancialGoal[]
   documents             Document[]
@@ -90,8 +90,8 @@ model Transaction {
   fileUrl       String?  // URL do comprovante / anexo no Supabase Storage
   dueDate       DateTime? // Data de vencimento para pendenciais
   
-  customerId    String?
-  customer      Customer? @relation(fields: [customerId], references: [id])
+  patientId     String?
+  patient       Patient? @relation(fields: [patientId], references: [id])
   
   clinicId      String
   clinic        Clinic   @relation(fields: [clinicId], references: [id])
@@ -108,13 +108,33 @@ model Doctor {
   clinic       Clinic        @relation(fields: [clinicId], references: [id])
 }
 
-model Customer {
+model Patient {
   id             String        @id @default(uuid())
-  name           String
-  email          String?
-  phone          String?
+  fullName       String
+  socialName     String?
+  cpf            String?       @unique
+  rg             String?
   birthDate      DateTime?
-  lastVisit      DateTime?
+  gender         String?
+  color          String?
+  maritalStatus  String?
+  profession     String?
+  education      String?
+  religion       String?
+  phone          String?
+  email          String?
+  address        String?
+  origin         String?
+  weight         Float?
+  height         Float?
+  disability     String?
+  allergies      String?
+  smoker         Boolean       @default(false)
+  priority       String?
+  insurance      String?
+  insurancePlan  String?
+  photoUrl       String?
+  
   transactions   Transaction[]
   createdAt      DateTime      @default(now())
   

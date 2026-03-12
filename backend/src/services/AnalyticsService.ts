@@ -25,8 +25,8 @@ export class AnalyticsService {
             }))
             .sort((a, b) => b.profit - a.profit);
 
-        // 2. Clientes que mais compram & Gestão de Pacientes
-        const customers = await prisma.customer.findMany({
+        // 2. Pacientes que mais compram & Gestão de Pacientes
+        const patients = await prisma.patient.findMany({
             where: { clinicId },
             include: {
                 transactions: {
@@ -37,14 +37,13 @@ export class AnalyticsService {
             }
         });
 
-        const patientInsights = customers.map(c => {
+        const patientInsights = patients.map(c => {
             const totalSpent = c.transactions.reduce((acc, t) => acc + t.amount, 0);
-            const lastVisit = c.transactions[0]?.date || c.lastVisit;
             const lastValue = c.transactions[0]?.amount || 0;
 
             return {
                 id: c.id,
-                name: c.name,
+                name: c.fullName,
                 birthDate: c.birthDate,
                 lastVisit,
                 lastValue,

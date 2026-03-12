@@ -213,7 +213,7 @@ export class SaaSController {
             await prisma.$transaction([
                 prisma.transaction.deleteMany({ where: { clinicId: id } }),
                 prisma.doctor.deleteMany({ where: { clinicId: id } }),
-                prisma.customer.deleteMany({ where: { clinicId: id } }),
+                prisma.patient.deleteMany({ where: { clinicId: id } }),
                 prisma.stockItem.deleteMany({ where: { clinicId: id } }),
                 prisma.financialGoal.deleteMany({ where: { clinicId: id } }),
                 prisma.document.deleteMany({ where: { clinicId: id } }),

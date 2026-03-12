@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { coreApi, integrationApi } from '../../services/api';
+import { coreApi } from '../../services/api';
+import { PatientSheet } from '../../components/Patients/PatientSheet';
 import {
     Users,
     Search,
@@ -9,19 +10,40 @@ import {
     Filter,
     Calendar,
     Phone,
-    Mail,
-    ChevronRight,
     TrendingUp,
     Loader2,
-    RefreshCw
+    Gem,
+    Trophy,
+    Award,
+    Medal,
+    ChevronRight,
+    Cake,
+    Mail,
+    DollarSign
 } from 'lucide-react';
+
+const getClassificationConfig = (classification: string) => {
+    switch (classification) {
+        case 'DIAMANTE':
+            return { icon: <Gem size={12} />, label: 'Diamante', color: 'bg-cyan-50 text-cyan-600 border-cyan-200 shadow-sm shadow-cyan-100' };
+        case 'OURO':
+            return { icon: <Trophy size={12} />, label: 'Ouro', color: 'bg-amber-50 text-amber-600 border-amber-200 shadow-sm shadow-amber-100' };
+        case 'PRATA':
+            return { icon: <Award size={12} />, label: 'Prata', color: 'bg-slate-50 text-slate-500 border-slate-200 shadow-sm shadow-slate-100' };
+        case 'BRONZE':
+            return { icon: <Medal size={12} />, label: 'Bronze', color: 'bg-orange-50 text-orange-600 border-orange-200 shadow-sm shadow-orange-100' };
+        default:
+            return { icon: null, label: classification || 'Bronze', color: 'bg-slate-50 text-slate-400' };
+    }
+}
 
 const PatientsPage = () => {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
-    const [isSyncing, setIsSyncing] = useState(false);
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
-    const { data: patients, isLoading } = useQuery({
+    const { data, isLoading } = useQuery({
         queryKey: ['patients'],
         queryFn: async () => {
             const response = await coreApi.getPatients();
@@ -29,35 +51,31 @@ const PatientsPage = () => {
         }
     });
 
-    // Gatilho de Sincronização Automática On-Demand (Pacientes)
-    useEffect(() => {
-        const triggerSync = async () => {
-            try {
-                setIsSyncing(true);
-                await integrationApi.sync('patients');
-                queryClient.invalidateQueries({ queryKey: ['patients'] });
-                console.log('✅ Base de pacientes sincronizada com Feegow.');
-            } catch (error) {
-                console.warn('Auto-sync Pacientes ignorado ou falhou:', error);
-            } finally {
-                setIsSyncing(false);
-            }
-        };
+    const patients = data?.data || [];
+    const summary = data?.summary || { totalPatients: 0, monthlyBirthdays: 0, averageClinicTicket: 0 };
 
-        triggerSync();
-    }, [queryClient]);
-
-    // Filtrar dados reais
-    const displayPatients = (patients || []).filter((p: any) =>
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    // Filtragem local baseada na busca
+    const displayPatients = patients.filter((p: any) =>
+        p.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.cpf?.includes(searchTerm) ||
         p.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    const handleEditPatient = (patient: any) => {
+        setSelectedPatient(patient);
+        setIsSheetOpen(true);
+    };
+
+    const handleNewPatient = () => {
+        setSelectedPatient(null);
+        setIsSheetOpen(true);
+    };
 
     if (isLoading) {
         return (
             <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
                 <Loader2 className="animate-spin text-[#8A9A5B]" size={48} />
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Carregando base de pacientes...</p>
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Carregando base analítica...</p>
             </div>
         );
     }
@@ -68,43 +86,40 @@ const PatientsPage = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Pacientes</h2>
-                    <div className="flex items-center gap-4 mt-1">
-                        <p className="text-slate-500 font-medium">Gestão completa da base de clientes da clínica.</p>
-                        {isSyncing && (
-                            <div className="flex items-center gap-2 px-3 py-1 bg-[#8A9A5B]/10 border border-[#8A9A5B]/20 rounded-full animate-in fade-in zoom-in duration-300">
-                                <RefreshCw className="w-3 h-3 text-[#8A9A5B] animate-spin" />
-                                <span className="text-[10px] font-black text-[#697D58] uppercase tracking-widest">Sincronizando...</span>
-                            </div>
-                        )}
-                    </div>
+                    <p className="text-slate-500 font-medium mt-1">Gestão inteligente e análise de LTV da base de clientes.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
-                        <UserPlus size={20} />
-                        Novo Paciente
-                    </button>
-                </div>
+                <button 
+                    onClick={handleNewPatient}
+                    className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
+                >
+                    <UserPlus size={20} />
+                    Cadastrar Paciente
+                </button>
             </div>
 
-            {/* Quick Stats */}
+            {/* Analytical Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <StatCard
                     title="Total de Pacientes"
-                    value={patients?.length || 0}
+                    value={summary.totalPatients}
                     icon={<Users size={20} />}
-                    trend={`${patients?.length || 0} cadastrados`}
+                    trend="Base de dados ativa"
                 />
                 <StatCard
-                    title="Atendimentos Hoje"
-                    value="0"
-                    icon={<Calendar size={20} />}
-                    trend="Aguardando dados"
+                    title="Aniversariantes do Mês"
+                    value={summary.monthlyBirthdays}
+                    icon={<Cake size={20} />}
+                    trend="Oportunidade de contato"
+                    color="text-pink-500"
+                    bgColor="bg-pink-50"
                 />
                 <StatCard
-                    title="Taxa de Retorno"
-                    value="0%"
+                    title="Ticket Médio Unidade"
+                    value={`R$ ${summary.averageClinicTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                     icon={<TrendingUp size={20} />}
-                    trend="Sem dados"
+                    trend="Receita por atendimento"
+                    color="text-blue-500"
+                    bgColor="bg-blue-50"
                 />
             </div>
 
@@ -116,15 +131,17 @@ const PatientsPage = () => {
                         <input
                             type="text"
                             placeholder="Buscar por nome, CPF ou e-mail..."
-                            className="w-full pl-12 pr-4 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/20 transition-all font-medium text-sm"
+                            className="w-full pl-12 pr-4 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/20 transition-all font-medium text-sm shadow-sm shadow-[#8A9A5B]/5"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-all">
-                        <Filter size={16} />
-                        Filtros Avançados
-                    </button>
+                    <div className="flex gap-2">
+                        <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-all">
+                            <Filter size={16} />
+                            Filtros Avançados
+                        </button>
+                    </div>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -139,69 +156,87 @@ const PatientsPage = () => {
                         <table className="w-full text-left">
                             <thead>
                                 <tr className="bg-slate-50/50">
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Paciente</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Paciente & Classificação</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contato</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Última Visita</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Status</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Visitas / Ticket Médio</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Faturamento (LTV)</th>
                                     <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-[#8A9A5B]/5">
-                                {displayPatients.map((patient: any) => (
-                                    <tr key={patient.id} className="hover:bg-[#8A9A5B]/5 transition-colors group cursor-pointer">
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 bg-[#DEB587]/20 text-[#697D58] rounded-full flex items-center justify-center font-black text-xs">
-                                                    {patient.name.split(' ').map((n: string) => n[0]).join('')}
-                                                </div>
-                                                <div>
-                                                    <p className="font-black text-slate-700 text-sm">{patient.name}</p>
-                                                    <p className="text-[10px] text-slate-400 font-bold">ID: #{patient.id}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="space-y-1">
-                                                {patient.phone && (
-                                                    <div className="flex items-center gap-2 text-slate-500">
-                                                        <Phone size={12} />
-                                                        <span className="text-xs font-medium">{patient.phone}</span>
+                                {displayPatients.map((patient: any) => {
+                                    const config = getClassificationConfig(patient.classification);
+                                    return (
+                                        <tr key={patient.id} 
+                                            onClick={() => handleEditPatient(patient)}
+                                            className="hover:bg-[#8A9A5B]/5 transition-colors group cursor-pointer"
+                                        >
+                                            <td className="px-8 py-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="relative">
+                                                        <div className="w-12 h-12 bg-white border border-[#8A9A5B]/20 text-[#697D58] rounded-2xl flex items-center justify-center font-black text-xs shadow-sm overflow-hidden">
+                                                            {patient.photoUrl ? (
+                                                                <img src={patient.photoUrl} alt="" className="w-full h-full object-cover" />
+                                                            ) : (
+                                                                patient.fullName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+                                                            )}
+                                                        </div>
+                                                        <div className={`absolute -bottom-2 -right-2 flex items-center justify-center p-1 rounded-lg border bg-white shadow-sm`}>
+                                                            {config.icon || <Users size={10} />}
+                                                        </div>
                                                     </div>
-                                                )}
-                                                {patient.email && (
+                                                    <div className="space-y-1">
+                                                        <p className="font-black text-slate-700 text-sm">{patient.fullName}</p>
+                                                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[9px] font-black uppercase tracking-wider ${config.color}`}>
+                                                            {config.label}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="space-y-1">
                                                     <div className="flex items-center gap-2 text-slate-500">
+                                                        <Phone size={12} className="text-[#8A9A5B]" />
+                                                        <span className="text-xs font-bold">{patient.phone || 'Sem telefone'}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-slate-400">
                                                         <Mail size={12} />
-                                                        <span className="text-xs font-medium">{patient.email}</span>
+                                                        <span className="text-[10px] font-medium">{patient.email || 'sem@email.com'}</span>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <div className="flex items-center gap-2 text-slate-600 font-bold text-xs">
-                                                <Calendar size={14} className="text-[#8A9A5B]" />
-                                                {patient.lastVisit ? new Date(patient.lastVisit).toLocaleDateString('pt-BR') : 'Sem visitas'}
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${patient.status === 'Ativo' || !patient.status
-                                                ? 'bg-[#8A9A5B]/10 text-[#697D58]'
-                                                : 'bg-slate-100 text-slate-400'
-                                                }`}>
-                                                {patient.status || 'Ativo'}
-                                            </span>
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button className="p-2 hover:bg-white rounded-lg transition-all text-slate-400 hover:text-[#8A9A5B]">
-                                                    <MoreHorizontal size={18} />
-                                                </button>
-                                                <button className="p-2 hover:bg-[#8A9A5B] rounded-lg transition-all text-slate-400 hover:text-white">
-                                                    <ChevronRight size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2 text-slate-600 font-bold text-xs">
+                                                        <Calendar size={12} className="text-[#8A9A5B]" />
+                                                        {patient.visitCount} {patient.visitCount === 1 ? 'Visita' : 'Visitas'}
+                                                    </div>
+                                                    <div className="text-[10px] text-slate-400 font-bold">
+                                                        Ticket: R$ {patient.averageTicket.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-right">
+                                                <div className="flex flex-col items-end">
+                                                    <span className="text-sm font-black text-[#697D58]">
+                                                        R$ {patient.totalSpent.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Investimento Real</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button className="p-2.5 hover:bg-white rounded-xl transition-all text-slate-400 hover:text-[#8A9A5B] border border-transparent hover:border-[#8A9A5B]/10">
+                                                        <MoreHorizontal size={18} />
+                                                    </button>
+                                                    <button className="p-2.5 bg-white rounded-xl shadow-sm border border-[#8A9A5B]/10 text-[#8A9A5B] hover:bg-[#8A9A5B] hover:text-white transition-all">
+                                                        <ChevronRight size={18} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     )}
@@ -209,27 +244,34 @@ const PatientsPage = () => {
 
                 {displayPatients.length > 0 && (
                     <div className="p-8 bg-slate-50/30 flex items-center justify-between border-t border-[#8A9A5B]/5">
-                        <p className="text-xs font-bold text-slate-400">Mostrando {displayPatients.length} pacientes</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Monitorando {displayPatients.length} pacientes na base analítica</p>
                         <div className="flex gap-2">
-                            <button className="px-4 py-2 bg-white border border-[#8A9A5B]/10 rounded-xl text-xs font-bold text-slate-400 cursor-not-allowed">Anterior</button>
-                            <button className="px-4 py-2 bg-white border border-[#8A9A5B]/10 rounded-xl text-xs font-bold text-[#697D58] hover:bg-[#8A9A5B]/5 transition-all">Próximo</button>
+                            <button className="px-5 py-2.5 bg-white border border-[#8A9A5B]/10 rounded-xl text-xs font-bold text-slate-400 cursor-not-allowed">Anterior</button>
+                            <button className="px-5 py-2.5 bg-white border border-[#8A9A5B]/10 rounded-xl text-xs font-bold text-[#697D58] hover:bg-[#8A9A5B]/5 transition-all shadow-sm">Próximo</button>
                         </div>
                     </div>
                 )}
             </div>
+
+            <PatientSheet 
+                isOpen={isSheetOpen} 
+                onClose={() => setIsSheetOpen(false)} 
+                onSave={() => queryClient.invalidateQueries({ queryKey: ['patients'] })}
+                patient={selectedPatient}
+            />
         </div>
     );
 };
 
-const StatCard = ({ title, value, icon, trend }: any) => (
-    <div className="bg-white p-6 rounded-3xl border border-[#8A9A5B]/10 shadow-sm flex items-center gap-5">
-        <div className="w-12 h-12 bg-[#8A9A5B]/10 rounded-2xl flex items-center justify-center text-[#8A9A5B]">
+const StatCard = ({ title, value, icon, trend, color = "text-[#8A9A5B]", bgColor = "bg-[#8A9A5B]/10" }: any) => (
+    <div className="bg-white p-7 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex items-center gap-6 group hover:translate-y-[-4px] transition-all duration-300">
+        <div className={`w-14 h-14 ${bgColor} rounded-2xl flex items-center justify-center ${color} group-hover:scale-110 transition-transform`}>
             {icon}
         </div>
         <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{title}</p>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
             <h5 className="text-2xl font-black text-[#1A202C]">{value}</h5>
-            <p className="text-[10px] text-[#697D58] font-black">{trend}</p>
+            <p className="text-[10px] text-[#697D58] font-black uppercase tracking-tight">{trend}</p>
         </div>
     </div>
 );

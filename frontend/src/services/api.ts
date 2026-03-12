@@ -91,6 +91,9 @@ export const receivablesApi = {
 
 export const coreApi = {
     getPatients: () => api.get('core/patients'),
+    createPatient: (data: any) => api.post('core/patients', data),
+    updatePatient: (id: string, data: any) => api.patch(`core/patients/${id}`, data),
+    deletePatient: (id: string) => api.delete(`core/patients/${id}`),
     getDoctors: () => api.get('core/doctors'),
     getStock: () => api.get('core/stock'),
     getProductivity: () => api.get('core/productivity'),
