@@ -11,7 +11,9 @@ import {
     ArrowDownRight,
     Trophy,
     Stethoscope,
-    Tags
+    Tags,
+    Crown,
+    User
 } from 'lucide-react';
 import { 
     BarChart, 
@@ -25,7 +27,7 @@ import {
     Pie,
     Cell
 } from 'recharts';
-import { format, subMonths, startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns';
+import { format, subDays } from 'date-fns';
 
 type GroupBy = 'day' | 'week' | 'month';
 
@@ -34,11 +36,12 @@ const COLORS = ['#8A9A5B', '#DEB587', '#5B7C9A', '#9A5B7C', '#5B9A7C', '#c4c8b2'
 const BillingPage = () => {
     const [groupBy, setGroupBy] = useState<GroupBy>('month');
     
-    // Filtros de Data
+    // Filtros de Data e GroupBy automáticos via Quick Filters
+    const [activeFilter, setActiveFilter] = useState('monthly');
     const today = new Date();
     const [dateRange, setDateRange] = useState({
-        startDate: format(startOfMonth(today), 'yyyy-MM-dd'),
-        endDate: format(endOfMonth(today), 'yyyy-MM-dd')
+        startDate: format(subDays(today, 30), 'yyyy-MM-dd'),
+        endDate: format(today, 'yyyy-MM-dd')
     });
 
     const { data: dashboardData, isLoading, isError } = useQuery({
@@ -53,27 +56,32 @@ const BillingPage = () => {
         }
     });
 
-    const handleQuickFilter = (type: 'thisMonth' | 'lastMonth' | 'thisYear') => {
+    const handleQuickFilter = (type: 'daily' | 'weekly' | 'monthly' | 'semiannual' | 'annual') => {
+        setActiveFilter(type);
         const now = new Date();
-        if (type === 'thisMonth') {
-            setDateRange({
-                startDate: format(startOfMonth(now), 'yyyy-MM-dd'),
-                endDate: format(endOfMonth(now), 'yyyy-MM-dd')
-            });
-            setGroupBy('day');
-        } else if (type === 'lastMonth') {
-            const last = subMonths(now, 1);
-            setDateRange({
-                startDate: format(startOfMonth(last), 'yyyy-MM-dd'),
-                endDate: format(endOfMonth(last), 'yyyy-MM-dd')
-            });
-            setGroupBy('day');
-        } else if (type === 'thisYear') {
-            setDateRange({
-                startDate: format(startOfYear(now), 'yyyy-MM-dd'),
-                endDate: format(endOfYear(now), 'yyyy-MM-dd')
-            });
-            setGroupBy('month');
+        const end = format(now, 'yyyy-MM-dd');
+        
+        switch (type) {
+            case 'daily':
+                setDateRange({ startDate: end, endDate: end });
+                setGroupBy('day');
+                break;
+            case 'weekly':
+                setDateRange({ startDate: format(subDays(now, 7), 'yyyy-MM-dd'), endDate: end });
+                setGroupBy('day');
+                break;
+            case 'monthly':
+                setDateRange({ startDate: format(subDays(now, 30), 'yyyy-MM-dd'), endDate: end });
+                setGroupBy('week');
+                break;
+            case 'semiannual':
+                setDateRange({ startDate: format(subDays(now, 180), 'yyyy-MM-dd'), endDate: end });
+                setGroupBy('month');
+                break;
+            case 'annual':
+                setDateRange({ startDate: format(subDays(now, 365), 'yyyy-MM-dd'), endDate: end });
+                setGroupBy('month');
+                break;
         }
     };
 
@@ -104,7 +112,8 @@ const BillingPage = () => {
     const rankings = safeData.rankings || {};
     const distributions = safeData.distributions || {};
 
-    const formatCurrency = (val: number) => `R$ ${(val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+    const formatCurrency = (val: number) => 
+        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
 
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
@@ -132,43 +141,25 @@ const BillingPage = () => {
                     <p className="text-slate-500 font-medium mt-1">Análise de performance, evolução temporal e rankings estratégicos.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
-                    {/* Filtros de Período Rápidos */}
-                    <div className="flex items-center gap-2 bg-white p-1.5 rounded-2xl border border-[#8A9A5B]/10 shadow-sm">
-                        <button 
-                            onClick={() => handleQuickFilter('thisMonth')} 
-                            className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-slate-50 text-slate-600 focus:bg-[#8A9A5B]/10 hover:text-[#8A9A5B]"
-                        >
-                            Este Mês
-                        </button>
-                        <span className="w-px h-4 bg-slate-200"></span>
-                        <button 
-                            onClick={() => handleQuickFilter('lastMonth')}
-                            className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-slate-50 text-slate-600 focus:bg-[#8A9A5B]/10 hover:text-[#8A9A5B]"
-                        >
-                            Mês Passado
-                        </button>
-                        <span className="w-px h-4 bg-slate-200"></span>
-                        <button 
-                            onClick={() => handleQuickFilter('thisYear')}
-                            className="px-4 py-2 rounded-xl text-xs font-bold transition-all hover:bg-slate-50 text-slate-600 focus:bg-[#8A9A5B]/10 hover:text-[#8A9A5B]"
-                        >
-                            Este Ano
-                        </button>
-                    </div>
-
-                    {/* Toggle: Dia / Semana / Mês */}
-                    <div className="flex bg-slate-100/80 p-1.5 rounded-2xl">
-                        {(['day', 'week', 'month'] as GroupBy[]).map((gb) => (
+                    {/* Filtros de Período Rápidos e Agrupamento */}
+                    <div className="flex bg-slate-100/80 p-1.5 rounded-2xl overflow-x-auto max-w-full hidden-scrollbar shadow-inner">
+                        {[
+                            { id: 'daily', label: 'Diário' },
+                            { id: 'weekly', label: 'Semanal' },
+                            { id: 'monthly', label: 'Mensal' },
+                            { id: 'semiannual', label: 'Semestral' },
+                            { id: 'annual', label: 'Anual' }
+                        ].map((btn) => (
                             <button
-                                key={gb}
-                                onClick={() => setGroupBy(gb)}
-                                className={`px-4 py-2 rounded-xl text-xs font-black transition-all capitalize ${
-                                    groupBy === gb 
+                                key={btn.id}
+                                onClick={() => handleQuickFilter(btn.id as any)}
+                                className={`px-5 py-2 rounded-xl text-xs font-black transition-all capitalize whitespace-nowrap ${
+                                    activeFilter === btn.id 
                                     ? 'bg-white text-[#8A9A5B] shadow-sm' 
                                     : 'text-slate-400 hover:text-slate-600'
                                 }`}
                             >
-                                {gb === 'day' ? 'Diário' : gb === 'week' ? 'Semanal' : 'Mensal'}
+                                {btn.label}
                             </button>
                         ))}
                     </div>
@@ -272,6 +263,12 @@ const BillingPage = () => {
                     color="#5B7C9A"
                 />
             </div>
+
+            {/* Ranking VIP de Pacientes */}
+            <PatientRankingCard 
+                data={rankings.patients} 
+                color="#c4c8b2" 
+            />
 
             {/* Rodapé Analítico: Distribuições */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -420,6 +417,79 @@ const PieCard = ({ title, data = [], isCurrency = false }: any) => {
                         <PieChartIcon size={24} className="text-slate-200" />
                     </div>
                 )}
+            </div>
+        </div>
+    );
+};
+
+const PatientRankingCard = ({ data = [], color = "#c4c8b2" }: any) => {
+    return (
+        <div className="bg-white p-8 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex flex-col h-full w-full">
+            <div className="flex items-center gap-3 mb-6">
+                <div className="p-2.5 rounded-xl text-white" style={{ backgroundColor: color }}>
+                    <Crown size={24} />
+                </div>
+                <div>
+                    <h3 className="font-extrabold text-xl text-slate-800">Ranking VIP de Pacientes</h3>
+                    <p className="text-xs font-bold text-slate-400 mt-0.5">Top clientes do período selecionado</p>
+                </div>
+            </div>
+            
+            <div className="overflow-x-auto w-full">
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr className="border-b border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                            <th className="pb-3 w-16 text-center">Pos</th>
+                            <th className="pb-3">Paciente</th>
+                            <th className="pb-3 text-center">Procedimentos</th>
+                            <th className="pb-3 text-right pr-4">Total Gasto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {(!data || data.length === 0) ? (
+                            <tr>
+                                <td colSpan={4} className="py-8 text-center text-slate-400 font-bold text-sm">
+                                    Nenhum faturamento registrado neste período.
+                                </td>
+                            </tr>
+                        ) : (
+                            data.map((patient: any, idx: number) => (
+                                <tr key={patient.id} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors group">
+                                    <td className="py-4 text-center">
+                                        <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black mx-auto ${idx === 0 ? 'bg-yellow-100 text-yellow-600' : idx === 1 ? 'bg-slate-200 text-slate-600' : idx === 2 ? 'bg-orange-100 text-orange-700' : 'bg-slate-50 text-slate-400'}`}>
+                                            {idx + 1}º
+                                        </span>
+                                    </td>
+                                    <td className="py-4 flex items-center gap-4">
+                                        {patient.avatarUrl ? (
+                                            <img src={patient.avatarUrl} alt={patient.name} className="w-10 h-10 rounded-full object-cover shadow-sm bg-white border border-slate-100" />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shadow-sm">
+                                                <User size={18} />
+                                            </div>
+                                        )}
+                                        <div>
+                                            <p className="font-extrabold text-sm text-slate-800">{patient.name}</p>
+                                            {patient.isNew ? (
+                                                <span className="inline-block mt-1 px-2 py-0.5 text-[9px] uppercase font-black tracking-widest bg-emerald-100 text-emerald-600 rounded-md">Novo VIP</span>
+                                            ) : (
+                                                <span className="inline-block mt-1 px-2 py-0.5 text-[9px] uppercase font-black tracking-widest bg-blue-100 text-blue-600 rounded-md">Recorrente</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="py-4 text-center">
+                                        <span className="font-bold text-slate-600 bg-slate-50 px-3 py-1 rounded-full text-xs">{patient.count}x</span>
+                                    </td>
+                                    <td className="py-4 text-right pr-4">
+                                        <span className="font-black text-[#8A9A5B] text-base">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(patient.value)}
+                                        </span>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
             </div>
         </div>
     );

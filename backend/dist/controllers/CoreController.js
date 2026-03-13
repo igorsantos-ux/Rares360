@@ -1,4 +1,16 @@
 import { MedicalService, InventoryService } from '../services/CoreServices.js';
+import { z } from 'zod';
+const stockSchema = z.object({
+    name: z.string().min(1, "Nome é obrigatório"),
+    category: z.string().min(1, "Categoria é obrigatória"),
+    unit: z.string().min(1, "Unidade é obrigatória"),
+    quantity: z.coerce.number().min(0, "Quantidade deve ser positiva"),
+    minQuantity: z.coerce.number().min(0, "Mínimo deve ser positivo"),
+    unitCost: z.coerce.number().min(0, "Custo deve ser positivo"),
+    supplier: z.string().optional().nullable(),
+    expirationDate: z.string().optional().nullable(),
+    batch: z.string().optional().nullable(),
+});
 export class CoreController {
     static async getProductivity(req, res) {
         try {
@@ -20,19 +32,22 @@ export class CoreController {
     }
     static async createStock(req, res) {
         try {
-            const { name, quantity, minQuantity, price, category } = req.body;
+            const validation = stockSchema.safeParse(req.body);
+            if (!validation.success) {
+                return res.status(400).json({
+                    error: 'Validação falhou',
+                    details: validation.error.flatten().fieldErrors
+                });
+            }
             const data = await InventoryService.createStockItem({
-                name,
-                quantity: Number(quantity),
-                minQuantity: Number(minQuantity),
-                price: Number(price),
-                category,
+                ...validation.data,
                 clinicId: req.clinicId
             });
             res.status(201).json(data);
         }
         catch (error) {
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('Erro ao criar item de estoque:', error);
+            res.status(500).json({ error: 'Erro interno ao salvar item' });
         }
     }
     static async createDoctor(req, res) {

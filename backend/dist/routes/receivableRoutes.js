@@ -1,0 +1,15 @@
+import { Router } from 'express';
+import { ReceivableController } from '../controllers/ReceivableController.js';
+import { authMiddleware } from '../middlewares/authMiddleware.js';
+const router = Router();
+// Todas as rotas de recebíveis são protegidas
+router.use(authMiddleware);
+// Rota de listagem de recebíveis (Pendenciais)
+router.get('/', ReceivableController.list);
+// Rota para cadastrar um novo recebimento
+router.post('/', ReceivableController.create);
+// Rota para atualizar o status (Baixa rápida)
+router.patch('/:id/status', ReceivableController.updateStatus);
+// Rota para excluir um recebimento
+router.delete('/:id', ReceivableController.delete);
+export default router;

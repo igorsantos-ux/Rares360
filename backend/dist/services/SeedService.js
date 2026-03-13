@@ -108,7 +108,7 @@ export class SeedService {
         await prisma.lead.deleteMany();
         await prisma.stockItem.deleteMany();
         await prisma.doctor.deleteMany();
-        await prisma.customer.deleteMany();
+        await prisma.patient.deleteMany();
         await prisma.clinic.deleteMany();
         const defaultHashedPassword = await AuthService.hashPassword('admin123');
         // 1. Garantir Admin (Sem sobrescrever senha se já existir)
@@ -163,17 +163,17 @@ export class SeedService {
         for (const d of doctors) {
             createdDoctors.push(await prisma.doctor.create({ data: d }));
         }
-        // 5. Clientes
-        const customers = [
-            { name: 'Maria Santos', email: 'maria@email.com', phone: '(11) 98888-7777', clinicId: clinic.id },
-            { name: 'João Pereira', email: 'joao@email.com', phone: '(11) 97777-6666', clinicId: clinic.id },
-            { name: 'Ana Costa', email: 'ana.c@email.com', phone: '(11) 96666-5555', clinicId: clinic.id },
-            { name: 'Roberto Lima', email: 'roberto@email.com', phone: '(11) 95555-4444', clinicId: clinic.id },
-            { name: 'Carla Dias', email: 'carla@email.com', phone: '(11) 94444-3333', clinicId: clinic.id },
+        // 5. Pacientes
+        const patients = [
+            { fullName: 'Maria Santos', email: 'maria@email.com', phone: '(11) 98888-7777', clinicId: clinic.id },
+            { fullName: 'João Pereira', email: 'joao@email.com', phone: '(11) 97777-6666', clinicId: clinic.id },
+            { fullName: 'Ana Costa', email: 'ana.c@email.com', phone: '(11) 96666-5555', clinicId: clinic.id },
+            { fullName: 'Roberto Lima', email: 'roberto@email.com', phone: '(11) 95555-4444', clinicId: clinic.id },
+            { fullName: 'Carla Dias', email: 'carla@email.com', phone: '(11) 94444-3333', clinicId: clinic.id },
         ];
-        const createdCustomers = [];
-        for (const c of customers) {
-            createdCustomers.push(await prisma.customer.create({ data: c }));
+        const createdPatients = [];
+        for (const c of patients) {
+            createdPatients.push(await prisma.patient.create({ data: c }));
         }
         // 6. Transações 2026
         const procedures = [
@@ -187,18 +187,18 @@ export class SeedService {
             for (let i = 0; i < transCount; i++) {
                 const proc = procedures[Math.floor(Math.random() * procedures.length)];
                 const doc = createdDoctors[Math.floor(Math.random() * createdDoctors.length)];
-                const cust = createdCustomers[Math.floor(Math.random() * createdCustomers.length)];
+                const patient = createdPatients[Math.floor(Math.random() * createdPatients.length)];
                 const day = Math.floor(Math.random() * 28) + 1;
                 await prisma.transaction.create({
                     data: {
-                        description: `Atendimento ${proc.name} - ${cust.name}`,
+                        description: `Atendimento ${proc.name} - ${patient.fullName}`,
                         amount: proc.price,
                         type: 'INCOME',
                         category: 'Procedimento',
                         procedureName: proc.name,
                         cost: proc.cost,
                         doctorId: doc.id,
-                        customerId: cust.id,
+                        patientId: patient.id,
                         clinicId: clinic.id,
                         date: new Date(2026, month - 1, day)
                     }

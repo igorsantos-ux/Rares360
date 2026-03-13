@@ -190,6 +190,7 @@ export class BillingService {
         const procMap: Record<string, number> = {};
         const doctorMap: Record<string, number> = {};
         const categoryMap: Record<string, number> = {}; // Top Categories
+        const patientMap: Record<string, { value: number, count: number, name: string, id: string, avatarUrl: string | null }> = {};
         
         currentTransactions.forEach(t => {
             // Procedimentos
@@ -203,6 +204,22 @@ export class BillingService {
             // Categorias (usaremos como Vendedores/Sellers proxy pois a regra de Vendedor não está clara no BD)
             const cat = t.category || 'Outros';
             categoryMap[cat] = (categoryMap[cat] || 0) + t.amount;
+
+            // Pacientes (VIPs)
+            if (t.patient) {
+                const pId = t.patient.id;
+                if (!patientMap[pId]) {
+                    patientMap[pId] = {
+                        id: pId,
+                        name: t.patient.fullName,
+                        avatarUrl: t.patient.photoUrl || null,
+                        value: 0,
+                        count: 0
+                    };
+                }
+                patientMap[pId].value += t.amount;
+                patientMap[pId].count += 1;
+            }
         });
 
         const sortRank = (map: Record<string, number>) => 
@@ -210,6 +227,35 @@ export class BillingService {
                 .map(([name, value]) => ({ name, value }))
                 .sort((a, b) => b.value - a.value)
                 .slice(0, 10); // Top 10
+
+        // Processando Ranking VIP e verificando Novo/Recorrente
+        const patientIds = Object.keys(patientMap);
+        let previousPurchasers = new Set<string>();
+        if (patientIds.length > 0) {
+            const previousTransactionsForPatients = await prisma.transaction.findMany({
+                where: {
+                    clinicId,
+                    type: 'INCOME',
+                    status: 'PAID',
+                    patientId: { in: patientIds },
+                    date: { lt: start } // Qualquer transação antes do período atual
+                },
+                select: { patientId: true }
+            });
+            previousPurchasers = new Set(previousTransactionsForPatients.map(t => t.patientId).filter(Boolean) as string[]);
+        }
+
+        const patientRankings = Object.values(patientMap)
+            .map(p => ({
+                name: p.name,
+                value: p.value,
+                count: p.count,
+                id: p.id,
+                avatarUrl: p.avatarUrl,
+                isNew: !previousPurchasers.has(p.id)
+            }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 20); // Top 20 VIPs
 
         // --- DISTRIBUIÇÕES (Pie Charts) ---
         const originMap: Record<string, number> = {};
@@ -237,7 +283,8 @@ export class BillingService {
             rankings: {
                 procedures: sortRank(procMap),
                 doctors: sortRank(doctorMap),
-                categories: sortRank(categoryMap)
+                categories: sortRank(categoryMap),
+                patients: patientRankings
             },
             distributions: {
                 origins: buildDist(originMap),

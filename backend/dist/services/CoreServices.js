@@ -33,17 +33,18 @@ export class MedicalService {
 }
 export class InventoryService {
     static async getStockStatus(clinicId) {
-        const items = await prisma.stockItem.findMany({
+        const items = await prisma.inventoryItem.findMany({
             where: { clinicId }
         });
-        const totalInventoryValue = items.reduce((acc, item) => acc + (item.quantity * item.price), 0);
+        const totalInventoryValue = items.reduce((acc, item) => acc + (item.quantity * item.unitCost), 0);
         // Lógica Curva ABC (Simplificada por Valor de Estoque)
-        const sortedItems = [...items].sort((a, b) => (b.quantity * b.price) - (a.quantity * a.price));
+        const sortedItems = [...items].sort((a, b) => (b.quantity * b.unitCost) - (a.quantity * a.unitCost));
         let cumulativeValue = 0;
         return sortedItems.map(item => {
-            const itemValue = item.quantity * item.price;
+            const itemValue = item.quantity * item.unitCost;
             cumulativeValue += itemValue;
-            const percentage = (cumulativeValue / totalInventoryValue) * 100;
+            const totalValueSum = totalInventoryValue || 1;
+            const percentage = (cumulativeValue / totalValueSum) * 100;
             let categoryABC = 'C';
             if (percentage <= 70)
                 categoryABC = 'A';
@@ -58,14 +59,32 @@ export class InventoryService {
         });
     }
     static async createStockItem(data) {
-        return await prisma.stockItem.create({
-            data: {
-                name: data.name,
-                quantity: data.quantity,
-                minQuantity: data.minQuantity,
-                price: data.price,
-                category: data.category,
+        const existingItem = await prisma.inventoryItem.findFirst({
+            where: {
+                name: { equals: data.name, mode: 'insensitive' },
                 clinicId: data.clinicId
+            }
+        });
+        if (existingItem) {
+            return await prisma.inventoryItem.update({
+                where: { id: existingItem.id },
+                data: {
+                    quantity: existingItem.quantity + Number(data.quantity),
+                    minQuantity: Number(data.minQuantity),
+                    unitCost: Number(data.unitCost),
+                    category: data.category,
+                    unit: data.unit,
+                    supplier: data.supplier,
+                    batch: data.batch,
+                    expirationDate: data.expirationDate ? new Date(data.expirationDate) : null,
+                    lastRestock: new Date()
+                }
+            });
+        }
+        return await prisma.inventoryItem.create({
+            data: {
+                ...data,
+                expirationDate: data.expirationDate ? new Date(data.expirationDate) : null
             }
         });
     }

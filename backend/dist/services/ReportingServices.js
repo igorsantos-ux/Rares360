@@ -1,23 +1,58 @@
 import prisma from '../lib/prisma.js';
 export class CashFlowService {
     static async getMonthlyFlow(clinicId) {
-        const transactions = await prisma.transaction.findMany({
-            where: { clinicId }
-        });
-        const income = transactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-        const expense = transactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0);
-        // Projeção futura baseada em transações PENDING
-        const futureIncome = transactions.filter(t => t.type === 'INCOME' && t.status === 'PENDING').reduce((acc, t) => acc + t.amount, 0);
-        const futureExpense = transactions.filter(t => t.type === 'EXPENSE' && t.status === 'PENDING').reduce((acc, t) => acc + t.amount, 0);
+        const today = new Date();
+        const firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const [payables, receivables] = await Promise.all([
+            prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    dueDate: { gte: firstDayMonth, lte: lastDayMonth }
+                },
+                include: { accountPayable: true }
+            }),
+            prisma.transaction.findMany({
+                where: {
+                    clinicId,
+                    type: 'INCOME',
+                    dueDate: { gte: firstDayMonth, lte: lastDayMonth }
+                },
+                include: { patient: true }
+            })
+        ]);
+        const normalizedPayables = payables.map(p => ({
+            id: p.id,
+            description: p.accountPayable.supplierName || p.accountPayable.description,
+            category: p.accountPayable.costCenter || 'Operacional',
+            amount: p.amount,
+            date: p.dueDate,
+            status: p.status,
+            type: 'EXPENSE'
+        }));
+        const normalizedReceivables = receivables.map(r => ({
+            id: r.id,
+            description: r.patient?.fullName || r.description,
+            category: r.category || 'Procedimento',
+            amount: r.amount,
+            date: r.dueDate || r.date,
+            status: r.status,
+            type: 'INCOME'
+        }));
+        const transactions = [...normalizedPayables, ...normalizedReceivables].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const totalIncomes = normalizedReceivables
+            .filter(r => r.status === 'PAID')
+            .reduce((acc, r) => acc + r.amount, 0);
+        const totalExpenses = normalizedPayables
+            .filter(p => p.status === 'PAGO')
+            .reduce((acc, p) => acc + p.amount, 0);
         return {
-            income,
-            expense,
-            balance: income - expense,
-            projections: {
-                futureIncome,
-                futureExpense,
-                estimatedBalance: (income + futureIncome) - (expense + futureExpense)
-            }
+            summary: {
+                balance: totalIncomes - totalExpenses,
+                totalIncomes,
+                totalExpenses
+            },
+            transactions
         };
     }
     static async getDRE(clinicId) {
@@ -44,41 +79,169 @@ export class CashFlowService {
     }
 }
 export class BillingService {
-    static async getBillingAnalytics(clinicId) {
-        const transactions = await prisma.transaction.findMany({
+    static async getBillingAnalytics({ clinicId, startDate, endDate, groupBy = 'month' }) {
+        // 1. Definir o período atual
+        const now = new Date();
+        const start = startDate || new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = endDate || now;
+        // 2. Definir o período ANTERIOR para cálculo de crescimento
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        const prevStart = new Date(start.getTime() - diffTime);
+        const prevEnd = new Date(end.getTime() - diffTime);
+        // 3. Buscar transações do Período Atual (PAGAS)
+        const currentTransactions = await prisma.transaction.findMany({
             where: {
                 clinicId,
                 type: 'INCOME',
-                status: 'PAID'
+                status: 'PAID',
+                date: { gte: start, lte: end }
             },
-            include: {
-                doctor: true
+            include: { doctor: true, patient: true }
+        });
+        // 4. Buscar transações do Período Anterior
+        const previousTransactions = await prisma.transaction.findMany({
+            where: {
+                clinicId,
+                type: 'INCOME',
+                status: 'PAID',
+                date: { gte: prevStart, lte: prevEnd }
             }
         });
-        const totalBilling = transactions.reduce((acc, t) => acc + t.amount, 0);
-        // Por Médico
-        const billingByDoctor = transactions.reduce((acc, t) => {
-            const doctorName = t.doctor?.name || 'Clínica';
-            acc[doctorName] = (acc[doctorName] || 0) + t.amount;
-            return acc;
-        }, {});
-        // Por Categoria
-        const billingByCategory = transactions.reduce((acc, t) => {
-            acc[t.category] = (acc[t.category] || 0) + t.amount;
-            return acc;
-        }, {});
+        // --- CÁLCULOS DOS KPIs ---
+        const totalBilling = currentTransactions.reduce((acc, t) => acc + t.amount, 0);
+        const totalPreviousBilling = previousTransactions.reduce((acc, t) => acc + t.amount, 0);
+        const countCurrent = currentTransactions.length;
+        const averageTicket = countCurrent > 0 ? totalBilling / countCurrent : 0;
+        let growthPercentage = 0;
+        if (totalPreviousBilling > 0) {
+            growthPercentage = ((totalBilling - totalPreviousBilling) / totalPreviousBilling) * 100;
+        }
+        else if (totalBilling > 0) {
+            growthPercentage = 100; // Crescimento infinito se anterior for 0
+        }
+        // --- CÁLCULO DA TIMELINE (BarChart) ---
+        // Agrupar por data (dia, semana, mês)
+        const timelineMap = {};
+        currentTransactions.forEach(t => {
+            let key = '';
+            const d = new Date(t.date);
+            if (groupBy === 'day') {
+                key = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+            }
+            else if (groupBy === 'month') {
+                key = d.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+            }
+            else {
+                // week fallback
+                const weekNumber = Math.ceil(d.getDate() / 7);
+                key = `Sem ${weekNumber} - ${d.toLocaleDateString('pt-BR', { month: 'short' })}`;
+            }
+            if (!timelineMap[key])
+                timelineMap[key] = { total: 0, count: 0 };
+            timelineMap[key].total += t.amount;
+            timelineMap[key].count += 1;
+        });
+        const timeline = Object.entries(timelineMap).map(([label, data]) => ({
+            label,
+            total: data.total,
+            count: data.count
+        }));
+        // Melhor período para KPI
+        let bestPeriod = { label: '---', value: 0 };
+        if (timeline.length > 0) {
+            const max = timeline.reduce((prev, current) => (prev.total > current.total) ? prev : current);
+            bestPeriod = { label: max.label, value: max.total };
+        }
+        // --- CÁLCULOS DOS RANKINGS ---
+        const procMap = {};
+        const doctorMap = {};
+        const categoryMap = {}; // Top Categories
+        const patientMap = {};
+        currentTransactions.forEach(t => {
+            // Procedimentos
+            const proc = t.procedureName || 'Sem Procedimento';
+            procMap[proc] = (procMap[proc] || 0) + t.amount;
+            // Médicos
+            const doc = t.doctor?.name || 'Clínica';
+            doctorMap[doc] = (doctorMap[doc] || 0) + t.amount;
+            // Categorias (usaremos como Vendedores/Sellers proxy pois a regra de Vendedor não está clara no BD)
+            const cat = t.category || 'Outros';
+            categoryMap[cat] = (categoryMap[cat] || 0) + t.amount;
+            // Pacientes (VIPs)
+            if (t.patient) {
+                const pId = t.patient.id;
+                if (!patientMap[pId]) {
+                    patientMap[pId] = {
+                        id: pId,
+                        name: t.patient.fullName,
+                        avatarUrl: t.patient.photoUrl || null,
+                        value: 0,
+                        count: 0
+                    };
+                }
+                patientMap[pId].value += t.amount;
+                patientMap[pId].count += 1;
+            }
+        });
+        const sortRank = (map) => Object.entries(map)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 10); // Top 10
+        // Processando Ranking VIP e verificando Novo/Recorrente
+        const patientIds = Object.keys(patientMap);
+        let previousPurchasers = new Set();
+        if (patientIds.length > 0) {
+            const previousTransactionsForPatients = await prisma.transaction.findMany({
+                where: {
+                    clinicId,
+                    type: 'INCOME',
+                    status: 'PAID',
+                    patientId: { in: patientIds },
+                    date: { lt: start } // Qualquer transação antes do período atual
+                },
+                select: { patientId: true }
+            });
+            previousPurchasers = new Set(previousTransactionsForPatients.map(t => t.patientId).filter(Boolean));
+        }
+        const patientRankings = Object.values(patientMap)
+            .map(p => ({
+            name: p.name,
+            value: p.value,
+            count: p.count,
+            id: p.id,
+            avatarUrl: p.avatarUrl,
+            isNew: !previousPurchasers.has(p.id)
+        }))
+            .sort((a, b) => b.value - a.value)
+            .slice(0, 20); // Top 20 VIPs
+        // --- DISTRIBUIÇÕES (Pie Charts) ---
+        const originMap = {};
+        const paymentMap = {};
+        currentTransactions.forEach(t => {
+            const origin = t.patient?.origin || 'Outros';
+            originMap[origin] = (originMap[origin] || 0) + 1; // Usando Count para Origem (quantos pacientes vieram)
+            const pay = t.paymentMethod || 'Não Informado';
+            paymentMap[pay] = (paymentMap[pay] || 0) + t.amount; // Usando Faturamento para Formas de Recebimento
+        });
+        const buildDist = (map) => Object.entries(map).map(([name, value]) => ({ name, value }));
         return {
-            totalBilling,
-            byDoctor: Object.entries(billingByDoctor).map(([name, value]) => ({
-                name,
-                value,
-                percent: totalBilling > 0 ? (value / totalBilling) * 100 : 0
-            })),
-            byCategory: Object.entries(billingByCategory).map(([name, value]) => ({
-                name,
-                value,
-                percent: totalBilling > 0 ? (value / totalBilling) * 100 : 0
-            }))
+            kpis: {
+                totalBilling,
+                averageTicket,
+                bestPeriod,
+                growthPercentage
+            },
+            timeline,
+            rankings: {
+                procedures: sortRank(procMap),
+                doctors: sortRank(doctorMap),
+                categories: sortRank(categoryMap),
+                patients: patientRankings
+            },
+            distributions: {
+                origins: buildDist(originMap),
+                paymentMethods: buildDist(paymentMap)
+            }
         };
     }
 }
