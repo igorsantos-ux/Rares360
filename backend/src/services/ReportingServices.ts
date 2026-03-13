@@ -3,26 +3,67 @@ import prisma from '../lib/prisma.js';
 
 export class CashFlowService {
     static async getMonthlyFlow(clinicId: string) {
-        const transactions = await prisma.transaction.findMany({
-            where: { clinicId }
-        });
+        const today = new Date();
+        const firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
-        const income = transactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-        const expense = transactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0);
+        const [payables, receivables] = await Promise.all([
+            prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    dueDate: { gte: firstDayMonth, lte: lastDayMonth }
+                },
+                include: { accountPayable: true }
+            }),
+            prisma.transaction.findMany({
+                where: {
+                    clinicId,
+                    type: 'INCOME',
+                    dueDate: { gte: firstDayMonth, lte: lastDayMonth }
+                },
+                include: { patient: true }
+            })
+        ]);
 
-        // Projeção futura baseada em transações PENDING
-        const futureIncome = transactions.filter(t => t.type === 'INCOME' && t.status === 'PENDING').reduce((acc, t) => acc + t.amount, 0);
-        const futureExpense = transactions.filter(t => t.type === 'EXPENSE' && t.status === 'PENDING').reduce((acc, t) => acc + t.amount, 0);
+        const normalizedPayables = payables.map(p => ({
+            id: p.id,
+            description: p.accountPayable.supplierName || p.accountPayable.description,
+            category: p.accountPayable.costCenter || 'Operacional',
+            amount: p.amount,
+            date: p.dueDate,
+            status: p.status,
+            type: 'EXPENSE' as const
+        }));
+
+        const normalizedReceivables = receivables.map(r => ({
+            id: r.id,
+            description: r.patient?.fullName || r.description,
+            category: r.category || 'Procedimento',
+            amount: r.amount,
+            date: r.dueDate || r.date,
+            status: r.status,
+            type: 'INCOME' as const
+        }));
+
+        const transactions = [...normalizedPayables, ...normalizedReceivables].sort(
+            (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
+        const totalIncomes = normalizedReceivables
+            .filter(r => r.status === 'PAID')
+            .reduce((acc, r) => acc + r.amount, 0);
+
+        const totalExpenses = normalizedPayables
+            .filter(p => p.status === 'PAGO')
+            .reduce((acc, p) => acc + p.amount, 0);
 
         return {
-            income,
-            expense,
-            balance: income - expense,
-            projections: {
-                futureIncome,
-                futureExpense,
-                estimatedBalance: (income + futureIncome) - (expense + futureExpense)
-            }
+            summary: {
+                balance: totalIncomes - totalExpenses,
+                totalIncomes,
+                totalExpenses
+            },
+            transactions
         };
     }
 

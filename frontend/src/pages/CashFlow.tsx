@@ -8,37 +8,40 @@ import {
     Plus,
     X,
     CreditCard,
-    Loader2
+    Loader2,
+    ArrowRightLeft
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { financialApi } from '../services/api';
+import { reportingApi, financialApi } from '../services/api';
 
 const CashFlow = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [filter, setFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
     const queryClient = useQueryClient();
 
-    // Fetch summary for headers
-    const { data: summaryResponse, isLoading: isSummaryLoading } = useQuery({
-        queryKey: ['financial-summary'],
-        queryFn: () => financialApi.getSummary()
+    // Consumo da nova API consolidada de Fluxo de Caixa
+    const { data: cashFlowResponse, isLoading } = useQuery({
+        queryKey: ['cash-flow-data'],
+        queryFn: () => reportingApi.getCashFlow(),
+        staleTime: 60000 // Protocolo de Segurança: Evitar re-fetch excessivo
     });
 
-    const summary = summaryResponse?.data;
+    const summary = cashFlowResponse?.data?.summary;
+    const allTransactions = Array.isArray(cashFlowResponse?.data?.transactions) 
+        ? cashFlowResponse.data.transactions 
+        : [];
 
-    // Fetch real transactions
-    const { data: transactionsResponse, isLoading: isTransactionsLoading } = useQuery({
-        queryKey: ['financial-transactions'],
-        queryFn: () => financialApi.getTransactions()
+    // Filtro local (Protocolo de UI Dinâmica)
+    const filteredTransactions = allTransactions.filter(t => {
+        if (filter === 'ALL') return true;
+        return t.type === filter;
     });
 
-    const transactions = transactionsResponse?.data || [];
-
-    // Create mutation
+    // Create mutation (Mantido para compatibilidade de lançamento rápido se necessário)
     const createMutation = useMutation({
         mutationFn: (newTransaction: any) => financialApi.createTransaction(newTransaction),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['financial-summary'] });
-            queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
+            queryClient.invalidateQueries({ queryKey: ['cash-flow-data'] });
             setIsModalOpen(false);
         }
     });
@@ -56,13 +59,11 @@ const CashFlow = () => {
         createMutation.mutate(data);
     };
 
-    const isLoading = isSummaryLoading || isTransactionsLoading;
-
     if (isLoading) {
         return (
             <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
                 <Loader2 className="animate-spin text-[#10b981]" size={48} />
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Carregando fluxo de caixa...</p>
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Sincronizando fluxo de caixa...</p>
             </div>
         );
     }
@@ -88,9 +89,22 @@ const CashFlow = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <FlowCard title="Saldo em Caixa" value={`R$ ${summary?.netProfit?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`} icon={<Wallet className="text-blue-500" />} />
-                <FlowCard title="Entradas (Mês)" value={`R$ ${summary?.revenue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`} icon={<ArrowUpCircle className="text-emerald-500" />} />
-                <FlowCard title="Saídas (Mês)" value={`R$ ${summary?.expenses?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}`} icon={<ArrowDownCircle className="text-red-500" />} />
+                <FlowCard 
+                    title="Saldo em Caixa" 
+                    value={`R$ ${(summary?.balance ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+                    icon={<Wallet className={summary?.balance < 0 ? "text-red-500" : "text-blue-500"} />} 
+                    isNegative={summary?.balance < 0}
+                />
+                <FlowCard 
+                    title="Entradas (Mês)" 
+                    value={`R$ ${(summary?.totalIncomes ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+                    icon={<ArrowUpCircle className="text-emerald-500" />} 
+                />
+                <FlowCard 
+                    title="Saídas (Mês)" 
+                    value={`R$ ${(summary?.totalExpenses ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+                    icon={<ArrowDownCircle className="text-red-500" />} 
+                />
             </div>
 
             {/* Transactions List */}
@@ -99,9 +113,24 @@ const CashFlow = () => {
                     <div className="flex items-center gap-6">
                         <h3 className="font-bold text-xl text-slate-800">Transações Recentes</h3>
                         <div className="flex bg-slate-100 p-1 rounded-xl">
-                            <button className="px-4 py-1.5 bg-white shadow-sm rounded-lg text-xs font-bold text-slate-800 transition-all">Todas</button>
-                            <button className="px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-all">Entradas</button>
-                            <button className="px-4 py-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-all">Saídas</button>
+                            <button 
+                                onClick={() => setFilter('ALL')}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === 'ALL' ? 'bg-white shadow-sm text-slate-800' : 'text-slate-500 hover:text-slate-800'}`}
+                            >
+                                Todas
+                            </button>
+                            <button 
+                                onClick={() => setFilter('INCOME')}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === 'INCOME' ? 'bg-white shadow-sm text-emerald-600' : 'text-slate-500 hover:text-emerald-600'}`}
+                            >
+                                Entradas
+                            </button>
+                            <button 
+                                onClick={() => setFilter('EXPENSE')}
+                                className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${filter === 'EXPENSE' ? 'bg-white shadow-sm text-red-600' : 'text-slate-500 hover:text-red-600'}`}
+                            >
+                                Saídas
+                            </button>
                         </div>
                     </div>
                     <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">
@@ -110,7 +139,7 @@ const CashFlow = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    {transactions.length === 0 ? (
+                    {filteredTransactions.length === 0 ? (
                         <div className="py-20 flex flex-col items-center justify-center gap-4">
                             <ArrowRightLeft size={48} className="text-slate-200" />
                             <p className="text-slate-400 font-bold text-sm uppercase tracking-widest text-center">
@@ -120,29 +149,44 @@ const CashFlow = () => {
                     ) : (
                         <table className="w-full text-left">
                             <tbody className="divide-y divide-slate-100">
-                                {transactions.slice(0, 5).map((t: any) => (
-                                    <TransactionRow
-                                        key={t.id}
-                                        date={new Date(t.date).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                        title={t.description}
-                                        category={t.category}
-                                        amount={`${t.type === 'INCOME' ? '+' : '-'} R$ ${t.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                                        type={t.type.toLowerCase()}
-                                    />
-                                ))}
+                                {filteredTransactions.map((t: any) => {
+                                    let displayDate = "--/--/----";
+                                    try {
+                                        if (t.date) {
+                                            displayDate = new Date(t.date).toLocaleString('pt-BR', { 
+                                                day: '2-digit', 
+                                                month: 'short', 
+                                                year: 'numeric'
+                                            });
+                                        }
+                                    } catch (e) {
+                                        console.error("Invalid date", t.date);
+                                    }
+
+                                    return (
+                                        <TransactionRow
+                                            key={t.id}
+                                            date={displayDate}
+                                            title={t.description || "Sem descrição"}
+                                            category={t.category || "Geral"}
+                                            amount={`${t.type === 'INCOME' ? '+' : '-'} R$ ${(t.amount ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                                            type={t.type?.toLowerCase() || 'expense'}
+                                        />
+                                    );
+                                })}
                             </tbody>
                         </table>
                     )}
                 </div>
 
-                {transactions.length > 0 && (
+                {filteredTransactions.length > 5 && (
                     <div className="p-6 border-t border-slate-200 text-center">
                         <button className="text-sm font-bold text-emerald-600 hover:text-emerald-700 transition-all">Ver extrato completo</button>
                     </div>
                 )}
             </div>
 
-            {/* Modal Nova Transação */}
+            {/* Modal Nova Transação (Opcional - Pode redirecionar para Contas a Pagar/Receber para manter consistência) */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
@@ -211,14 +255,14 @@ const CashFlow = () => {
     );
 };
 
-const FlowCard = ({ title, value, icon }: any) => (
+const FlowCard = ({ title, value, icon, isNegative }: any) => (
     <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-6 group hover:border-[#10b981]/30 transition-all">
         <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center group-hover:bg-white group-hover:shadow-inner transition-all">
             {icon}
         </div>
         <div>
             <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-1">{title}</p>
-            <h4 className="text-2xl font-black text-slate-900">{value}</h4>
+            <h4 className={`text-2xl font-black ${isNegative ? 'text-red-500' : 'text-slate-900'}`}>{value}</h4>
         </div>
     </div>
 );
@@ -237,26 +281,10 @@ const TransactionRow = ({ date, title, category, amount, type }: any) => (
             </div>
         </td>
         <td className="px-8 py-6 text-slate-500 font-bold text-xs">{date}</td>
-        <td className={`px-8 py-6 text-right font-black text-lg ${type === 'income' ? 'text-emerald-600' : 'text-slate-900'}`}>
+        <td className={`px-8 py-6 text-right font-black text-lg ${type === 'income' ? 'text-emerald-600' : 'text-red-600'}`}>
             {amount}
         </td>
     </tr>
-);
-
-const ArrowRightLeft = ({ size, className }: any) => (
-    <svg
-        width={size}
-        height={size}
-        className={className}
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-    >
-        <path d="m16 3 4 4-4 4" /><path d="M20 7H4" /><path d="m8 21-4-4 4-4" /><path d="M4 17h16" />
-    </svg>
 );
 
 export default CashFlow;
