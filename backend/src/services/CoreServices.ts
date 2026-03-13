@@ -69,6 +69,30 @@ export class InventoryService {
     }
 
     static async createStockItem(data: any) {
+        const existingItem = await prisma.inventoryItem.findFirst({
+            where: {
+                name: { equals: data.name, mode: 'insensitive' },
+                clinicId: data.clinicId
+            }
+        });
+
+        if (existingItem) {
+            return await prisma.inventoryItem.update({
+                where: { id: existingItem.id },
+                data: {
+                    quantity: existingItem.quantity + Number(data.quantity),
+                    minQuantity: Number(data.minQuantity),
+                    unitCost: Number(data.unitCost),
+                    category: data.category,
+                    unit: data.unit,
+                    supplier: data.supplier,
+                    batch: data.batch,
+                    expirationDate: data.expirationDate ? new Date(data.expirationDate) : null,
+                    lastRestock: new Date()
+                }
+            });
+        }
+
         return await prisma.inventoryItem.create({
             data: {
                 ...data,
