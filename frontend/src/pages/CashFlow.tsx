@@ -32,7 +32,7 @@ const CashFlow = () => {
         : [];
 
     // Filtro local (Protocolo de UI Dinâmica)
-    const filteredTransactions = allTransactions.filter(t => {
+    const filteredTransactions = allTransactions.filter((t: any) => {
         if (filter === 'ALL') return true;
         return t.type === filter;
     });
