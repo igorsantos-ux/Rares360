@@ -131,6 +131,9 @@ export const integrationApi = {
 export const pricingApi = {
     createSimulation: (data: any) => api.post('pricing', data),
     getSimulations: () => api.get('pricing'),
+    getDiagnosis: () => api.get('pricing/diagnosis'),
+    upsertProcedure: (data: any) => api.post('pricing/procedure', data),
+    deleteProcedure: (id: string) => api.delete(`pricing/procedure/${id}`),
 };
 
 export default api;

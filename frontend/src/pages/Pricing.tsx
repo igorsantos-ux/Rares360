@@ -1,334 +1,257 @@
-import { useMemo } from 'react';
-import { useForm, useFieldArray, useWatch } from 'react-hook-form';
-import { Calculator, Plus, Trash2, Save, AlertCircle, Percent, DollarSign, Loader2 } from 'lucide-react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { 
+    Calculator, 
+    Plus, 
+    Trash2, 
+    Edit2,
+    Search, 
+    TrendingDown, 
+    TrendingUp, 
+    AlertTriangle,
+    Loader2,
+    Clock
+} from 'lucide-react';
 import { pricingApi } from '../services/api';
 import toast from 'react-hot-toast';
-
-interface Supply {
-    name: string;
-    quantity: number;
-    cost: number;
-}
-
-interface PricingFormData {
-    name: string;
-    sellingPrice: number;
-    cardFeePercentage: number;
-    taxPercentage: number;
-    fixedCost: number;
-    commission: number;
-    supplies: Supply[];
-}
+import { ProcedurePricingSheet } from '../components/Pricing/ProcedurePricingSheet';
 
 const Pricing = () => {
     const queryClient = useQueryClient();
+    const [searchTerm, setSearchTerm] = useState('');
+    const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [selectedProcedure, setSelectedProcedure] = useState<any>(null);
 
-    const { register, control, handleSubmit, reset } = useForm<PricingFormData>({
-        defaultValues: {
-            name: '',
-            sellingPrice: 0,
-            cardFeePercentage: 0,
-            taxPercentage: 0,
-            fixedCost: 0,
-            commission: 0,
-            supplies: [{ name: '', quantity: 1, cost: 0 }]
+    const { data: procedures = [], isLoading } = useQuery({
+        queryKey: ['pricing-diagnosis'],
+        queryFn: async () => {
+            const response = await pricingApi.getDiagnosis();
+            return response.data;
         }
     });
 
-    const { fields, append, remove } = useFieldArray({
-        control,
-        name: 'supplies'
-    });
-
-    const formValues = useWatch({ control });
-
-    // Anti-Crash & Valores Seguros
-    const safeSellingPrice = Number(formValues.sellingPrice) || 0;
-    const safeCardFee = Number(formValues.cardFeePercentage) || 0;
-    const safeTax = Number(formValues.taxPercentage) || 0;
-    const safeFixedCost = Number(formValues.fixedCost) || 0;
-    const safeCommission = Number(formValues.commission) || 0;
-    const safeSupplies = formValues.supplies || [];
-
-    // Cálculos em Tempo Real
-    const { totalCost, netProfit, profitMargin, cardFeeValue, taxValue } = useMemo(() => {
-        const suppliesTotal = safeSupplies.reduce((acc, curr) => acc + (Number(curr?.cost) || 0), 0);
-        
-        const cardFeeValueCalc = safeSellingPrice * (safeCardFee / 100);
-        const taxValueCalc = safeSellingPrice * (safeTax / 100);
-        
-        const calculatedTotalCost = suppliesTotal + safeFixedCost + safeCommission + cardFeeValueCalc + taxValueCalc;
-        const calculatedNetProfit = safeSellingPrice - calculatedTotalCost;
-        
-        // Proteção contra divisão por zero
-        const calculatedProfitMargin = safeSellingPrice > 0 ? (calculatedNetProfit / safeSellingPrice) * 100 : 0;
-
-        return {
-            totalCost: calculatedTotalCost,
-            netProfit: calculatedNetProfit,
-            profitMargin: calculatedProfitMargin,
-            cardFeeValue: cardFeeValueCalc,
-            taxValue: taxValueCalc
-        };
-    }, [safeSellingPrice, safeCardFee, safeTax, safeFixedCost, safeCommission, safeSupplies]);
-
-    // Mutation para Salvar
-    const createMutation = useMutation({
-        mutationFn: (data: PricingFormData) => {
-            const payload = {
-                ...data,
-                sellingPrice: Number(data.sellingPrice) || 0,
-                cardFeePercentage: Number(data.cardFeePercentage) || 0,
-                taxPercentage: Number(data.taxPercentage) || 0,
-                fixedCost: Number(data.fixedCost) || 0,
-                commission: Number(data.commission) || 0,
-                totalCost,
-                netProfit,
-                profitMargin,
-                supplies: data.supplies.map((s: any) => ({
-                    ...s,
-                    quantity: Number(s.quantity) || 0,
-                    cost: Number(s.cost) || 0
-                }))
-            };
-            return pricingApi.createSimulation(payload);
-        },
+    const deleteMutation = useMutation({
+        mutationFn: (id: string) => pricingApi.deleteProcedure(id),
         onSuccess: () => {
-            toast.success('Simulação salva com sucesso!');
-            queryClient.invalidateQueries({ queryKey: ['pricing-simulations'] });
-            reset();
+            toast.success('Procedimento removido');
+            queryClient.invalidateQueries({ queryKey: ['pricing-diagnosis'] });
         },
-        onError: () => {
-            toast.error('Erro ao salvar simulação.');
-        }
+        onError: () => toast.error('Erro ao remover procedimento')
     });
 
-    const onSubmit = (data: PricingFormData) => {
-        if (!data.name) {
-            toast.error('O nome do procedimento é obrigatório.');
-            return;
-        }
-        createMutation.mutate(data);
+    // Filtros e Cálculos de KPI localmente
+    const filteredProcedures = procedures.filter((p: any) => 
+        p.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    const stats = {
+        total: procedures.length,
+        critical: procedures.filter((p: any) => p.currentMargin < 20).length,
+        ideal: procedures.filter((p: any) => p.currentMargin >= 40).length
     };
 
-    // Helper de cor para margem
-    const getMarginColor = (margin: number) => {
-        if (margin > 40) return 'text-emerald-500';
-        if (margin > 20) return 'text-amber-500';
-        return 'text-red-500';
+    const handleEdit = (proc: any) => {
+        setSelectedProcedure(proc);
+        setIsSheetOpen(true);
     };
+
+    const handleNew = () => {
+        setSelectedProcedure(null);
+        setIsSheetOpen(true);
+    };
+
+    const getMarginBadge = (margin: number) => {
+        if (margin < 20) return { 
+            color: 'bg-red-50 text-red-600 border-red-100', 
+            label: 'Crítica',
+            icon: <TrendingDown size={12} />
+        };
+        if (margin < 40) return { 
+            color: 'bg-amber-50 text-amber-600 border-amber-100', 
+            label: 'Alerta',
+            icon: <AlertTriangle size={12} />
+        };
+        return { 
+            color: 'bg-emerald-50 text-emerald-600 border-emerald-100', 
+            label: 'Ideal',
+            icon: <TrendingUp size={12} />
+        };
+    };
+
+    if (isLoading) {
+        return (
+            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
+                <Loader2 className="animate-spin text-[#8A9A5B]" size={48} />
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Analisando margens da clínica...</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in slide-in-from-bottom duration-500">
-            {/* Header & Ações */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                <div className="flex-1 max-w-xl flex items-center gap-4">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center">
-                        <Calculator size={24} />
-                    </div>
-                    <div className="flex-1">
-                        <input
-                            {...register('name')}
-                            placeholder="Nome do Procedimento / Simulação"
-                            className="w-full text-2xl font-black text-slate-900 border-none focus:ring-0 p-0 placeholder-slate-300 bg-transparent outline-none"
-                        />
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Simulador de Precificação</p>
-                    </div>
+        <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12 p-8 max-w-7xl mx-auto">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div>
+                    <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Diagnóstico de Precificação</h2>
+                    <p className="text-slate-500 font-medium mt-1">Análise comparativa de margens e lucro real por procedimento.</p>
                 </div>
-                <button
-                    onClick={handleSubmit(onSubmit)}
-                    disabled={createMutation.isPending}
-                    className="px-8 py-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-2xl font-black shadow-lg shadow-indigo-500/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                <button 
+                    onClick={handleNew}
+                    className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
                 >
-                    {createMutation.isPending ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                    Salvar Simulação
+                    <Plus size={20} />
+                    Novo Procedimento
                 </button>
             </div>
 
-            {/* Cards de Resumo */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <p className="text-slate-400 text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-2">
-                        <DollarSign size={14} /> Preço de Venda
-                    </p>
-                    <div className="relative">
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 text-slate-400 font-bold">R$</span>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard 
+                    title="Procedimentos Cadastrados" 
+                    value={stats.total} 
+                    icon={<Calculator size={20} />} 
+                    trend="Base de dados ativa"
+                />
+                <StatCard 
+                    title="Margem Crítica (<20%)" 
+                    value={stats.critical} 
+                    icon={<AlertTriangle size={20} />} 
+                    trend="Urgência de revisão"
+                    color="text-red-500"
+                    bgColor="bg-red-50"
+                />
+                <StatCard 
+                    title="Margem Ideal (>40%)" 
+                    value={stats.ideal} 
+                    icon={<TrendingUp size={20} />} 
+                    trend="Excelente rentabilidade"
+                    color="text-emerald-500"
+                    bgColor="bg-emerald-50"
+                />
+            </div>
+
+            {/* Tabela de Diagnóstico */}
+            <div className="bg-white/70 backdrop-blur-md rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm overflow-hidden">
+                <div className="p-8 border-b border-[#8A9A5B]/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="relative flex-1 max-w-md">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input
-                            {...register('sellingPrice', { valueAsNumber: true })}
-                            type="number"
-                            step="0.01"
-                            className="w-full pl-8 text-3xl font-black text-indigo-600 bg-transparent border-none focus:outline-none p-0"
-                            placeholder="0.00"
+                            type="text"
+                            placeholder="Buscar procedimento..."
+                            className="w-full pl-12 pr-4 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/20 transition-all font-medium text-sm shadow-sm"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-2">Custo Total</p>
-                    <h4 className="text-3xl font-black text-slate-900">
-                        R$ {totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </h4>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="bg-slate-50/50">
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Procedimento</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tempo</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Custo Total</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Preço Atual</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Margem Real</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-[#8A9A5B] uppercase tracking-widest bg-[#8A9A5B]/5">Preço Sugerido</th>
+                                <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#8A9A5B]/5">
+                            {filteredProcedures.map((proc: any) => {
+                                const badge = getMarginBadge(proc.currentMargin);
+                                return (
+                                    <tr key={proc.id} className="hover:bg-[#8A9A5B]/5 transition-colors group">
+                                        <td className="px-8 py-6 font-black text-slate-700 text-sm">
+                                            {proc.name}
+                                        </td>
+                                        <td className="px-8 py-6 text-center">
+                                            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 rounded-full text-[10px] font-bold text-slate-500">
+                                                <Clock size={12} />
+                                                {proc.durationMinutes} min
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-sm font-bold text-slate-600">
+                                            R$ {proc.totalCost?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-8 py-6 text-sm font-black text-slate-800">
+                                            R$ {proc.currentPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-8 py-6">
+                                            <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider ${badge.color}`}>
+                                                {badge.icon}
+                                                {proc.currentMargin?.toFixed(1)}% {badge.label}
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 bg-[#8A9A5B]/5">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-black text-[#697D58]">
+                                                    R$ {proc.suggestedPrice?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                                </span>
+                                                <span className="text-[9px] text-[#8A9A5B] font-bold uppercase tracking-tight">
+                                                    Alvo: {proc.targetMargin}%
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-8 py-6 text-right">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button 
+                                                    onClick={() => handleEdit(proc)}
+                                                    className="p-2.5 bg-white rounded-xl shadow-sm border border-[#8A9A5B]/10 text-slate-400 hover:text-[#8A9A5B] hover:border-[#8A9A5B]/30 transition-all"
+                                                >
+                                                    <Edit2 size={18} />
+                                                </button>
+                                                <button 
+                                                    onClick={() => {
+                                                        if (confirm('Deseja remover este diagnóstico?')) {
+                                                            deleteMutation.mutate(proc.id);
+                                                        }
+                                                    }}
+                                                    className="p-2.5 bg-white rounded-xl shadow-sm border border-red-100 text-red-300 hover:text-red-500 hover:border-red-200 transition-all"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-                    <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full opacity-10 transition-all ${getMarginColor(profitMargin).replace('text-', 'bg-')}`} />
-                    <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-2">Margem de Lucro</p>
-                    <h4 className={`text-4xl font-black ${getMarginColor(profitMargin)}`}>
-                        {profitMargin.toFixed(1)}%
-                    </h4>
-                </div>
-
-                <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-between bg-gradient-to-br from-slate-900 to-slate-800 text-white">
-                    <p className="text-slate-400 text-xs font-black uppercase tracking-widest mb-2">Lucro Líquido</p>
-                    <h4 className="text-3xl font-black text-emerald-400">
-                        R$ {netProfit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </h4>
-                </div>
+                {filteredProcedures.length === 0 && (
+                    <div className="py-20 flex flex-col items-center justify-center gap-4">
+                        <Calculator size={48} className="text-slate-200" />
+                        <p className="text-slate-400 font-bold text-sm uppercase tracking-widest text-center">
+                            Nenhum diagnóstico de procedimento encontrado
+                        </p>
+                    </div>
+                )}
             </div>
 
-            {/* Grid Principal */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Coluna Esquerda: Insumos Utilizados */}
-                <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-50 text-blue-500 rounded-lg">
-                            <Plus size={20} />
-                        </div>
-                        <h3 className="font-bold text-xl text-slate-800">Insumos Utilizados</h3>
-                    </div>
-
-                    <div className="space-y-4">
-                        {fields.map((field, index) => (
-                            <div key={field.id} className="flex gap-4 items-end bg-slate-50 p-4 rounded-2xl border border-slate-100 relative group animate-in fade-in duration-300">
-                                <div className="flex-1 space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Insumo</label>
-                                    <input 
-                                        {...register(`supplies.${index}.name`)} 
-                                        placeholder="Ex: Ácido Hialurônico 1ml" 
-                                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 focus:border-indigo-500 focus:outline-none font-semibold text-sm transition-all" 
-                                    />
-                                </div>
-                                <div className="w-24 space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Qtd</label>
-                                    <input 
-                                        {...register(`supplies.${index}.quantity`, { valueAsNumber: true })} 
-                                        type="number" step="0.01" 
-                                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 focus:border-indigo-500 focus:outline-none font-semibold text-sm transition-all" 
-                                    />
-                                </div>
-                                <div className="w-32 space-y-1.5">
-                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Custo Total (R$)</label>
-                                    <input 
-                                        {...register(`supplies.${index}.cost`, { valueAsNumber: true })} 
-                                        type="number" step="0.01" 
-                                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 focus:border-indigo-500 focus:outline-none font-semibold text-sm transition-all" 
-                                    />
-                                </div>
-                                <button 
-                                    type="button" 
-                                    onClick={() => remove(index)} 
-                                    className="p-3 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                                >
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-
-                    <button 
-                        type="button"
-                        onClick={() => append({ name: '', quantity: 1, cost: 0 })}
-                        className="w-full py-4 border-2 border-dashed border-slate-200 rounded-2xl font-bold text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2"
-                    >
-                        <Plus size={18} /> Adicionar Insumo
-                    </button>
-                    
-                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center justify-between">
-                        <span className="font-bold text-sm text-slate-500">Subtotal Insumos</span>
-                        <span className="font-black text-lg text-slate-900">
-                            R$ {(safeSupplies.reduce((acc, curr) => acc + (Number(curr?.cost) || 0), 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
-                    </div>
-                </div>
-
-                {/* Coluna Direita: Custos Operacionais e Impostos */}
-                <div className="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm space-y-6">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-amber-50 text-amber-500 rounded-lg">
-                            <Percent size={20} />
-                        </div>
-                        <h3 className="font-bold text-xl text-slate-800">Custos e Taxas Ocultas</h3>
-                    </div>
-
-                    <div className="space-y-6">
-                        {/* Taxas Percentuais */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Taxa Máquininha (%)</label>
-                                <div className="flex items-center gap-2">
-                                    <input 
-                                        {...register('cardFeePercentage', { valueAsNumber: true })} 
-                                        type="number" step="0.01" 
-                                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 focus:border-indigo-500 focus:outline-none font-semibold text-sm transition-all" 
-                                    />
-                                    <span className="text-xs font-bold text-slate-400 whitespace-nowrap min-w-[60px]">= R$ {cardFeeValue.toFixed(2)}</span>
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Impostos (%)</label>
-                                <div className="flex items-center gap-2">
-                                    <input 
-                                        {...register('taxPercentage', { valueAsNumber: true })} 
-                                        type="number" step="0.01" 
-                                        className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2 focus:border-indigo-500 focus:outline-none font-semibold text-sm transition-all" 
-                                    />
-                                    <span className="text-xs font-bold text-slate-400 whitespace-nowrap min-w-[60px]">= R$ {taxValue.toFixed(2)}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Valores Fixos */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1.5 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1">
-                                    Custo Fixo Rateado <AlertCircle size={12} className="text-slate-300" />
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">R$</span>
-                                    <input 
-                                        {...register('fixedCost', { valueAsNumber: true })} 
-                                        type="number" step="0.01" 
-                                        className="w-full pl-9 bg-white border border-slate-200 rounded-xl px-4 py-2 focus:border-indigo-500 focus:outline-none font-semibold text-sm transition-all" 
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5 p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Comissão Média</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">R$</span>
-                                    <input 
-                                        {...register('commission', { valueAsNumber: true })} 
-                                        type="number" step="0.01" 
-                                        className="w-full pl-9 bg-white border border-slate-200 rounded-xl px-4 py-2 focus:border-indigo-500 focus:outline-none font-semibold text-sm transition-all" 
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-8 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl">
-                            <h4 className="font-bold text-sm text-indigo-900 mb-2">Explicando o Custo Fixo Rateado</h4>
-                            <p className="text-xs text-indigo-700 leading-relaxed">
-                                Este é o valor da hora clínica que você deve embutir em cada procedimento para cobrir aluguel, luz e salários estruturais. O simulador soma Insumos + Custo Fixo + Taxas Dinâmicas para chegar ao lucro final real.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <ProcedurePricingSheet 
+                isOpen={isSheetOpen}
+                onClose={() => setIsSheetOpen(false)}
+                onSave={() => queryClient.invalidateQueries({ queryKey: ['pricing-diagnosis'] })}
+                procedure={selectedProcedure}
+            />
         </div>
     );
 };
+
+const StatCard = ({ title, value, icon, trend, color = "text-[#8A9A5B]", bgColor = "bg-[#8A9A5B]/10" }: any) => (
+    <div className="bg-white p-7 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex items-center gap-6 group hover:translate-y-[-4px] transition-all duration-300">
+        <div className={`w-14 h-14 ${bgColor} rounded-2xl flex items-center justify-center ${color} group-hover:scale-110 transition-transform`}>
+            {icon}
+        </div>
+        <div>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+            <h5 className="text-2xl font-black text-[#1A202C]">{value}</h5>
+            <p className="text-[10px] text-[#697D58] font-black uppercase tracking-tight">{trend}</p>
+        </div>
+    </div>
+);
 
 export default Pricing;
