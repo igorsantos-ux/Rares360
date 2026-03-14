@@ -1,3 +1,4 @@
+import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
@@ -42,50 +43,61 @@ function App() {
   }
 
   return (
-    <div className={`flex flex-col min-h-screen ${isPublicPage ? 'bg-white' : 'bg-[#F0EAD6]'}`}>
+    <div className={`flex min-h-screen ${isPublicPage ? 'bg-white' : 'bg-[#F0EAD6]'}`}>
       <Toaster position="top-right" />
-      {showHeader && <Header />}
-      <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'ml-0' : (showHeader ? 'pt-28 pb-12 px-8 lg:px-12 ml-0' : 'p-0')}`}>
-        <div className={isPublicPage ? '' : (showHeader ? 'max-w-7xl mx-auto' : '')}>
-          <Routes>
-            {/* Public Routes - Auto-redirect if logged in */}
-            <Route path="/" element={
-              user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LandingPage />
-            } />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/login" element={
-              user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LoginPage />
-            } />
-
-            {/* SaaS Admin Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['ADMIN_GLOBAL']} />}>
-              <Route path="/saas-dashboard" element={<SaaSManagement />} />
-            </Route>
-
-            {/* Clinic Private Routes */}
-            <Route element={<ProtectedRoute allowedRoles={['CLINIC_ADMIN', 'USER']} />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/billing" element={<BillingPage />} />
-              <Route path="/patients" element={<PatientsPage />} />
-              <Route path="/despesas-faturamento" element={<ExpensesBilling />} />
-              <Route path="/cash-flow" element={<CashFlow />} />
-              <Route path="/pendenciais" element={<PendenciaisPage />} />
-              <Route path="/payables" element={<PayablesPage />} />
-              <Route path="/income" element={<IncomePage />} />
-              <Route path="/dre" element={<DREPage />} />
-              <Route path="/dfc" element={<DFCPage />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/goals" element={<Goals />} />
-              <Route path="/inventory" element={<Inventory />} />
-              <Route path="/documents" element={<DocumentsPage />} />
-              <Route path="/automations" element={<Automations />} />
-            </Route>
-
-            {/* Redirects */}
-            <Route path="*" element={<Navigate to={user?.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace />} />
-          </Routes>
+      
+      {/* Sidebar Fixa para Desktop */}
+      {showHeader && (
+        <div className="hidden lg:block w-72 shrink-0 h-screen sticky top-0">
+          <Sidebar />
         </div>
-      </main>
+      )}
+
+      <div className="flex-1 flex flex-col min-w-0">
+        {showHeader && <Header />}
+        
+        <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'p-0' : (showHeader ? 'p-8 lg:p-12' : 'p-0')}`}>
+          <div className={isPublicPage ? '' : (showHeader ? 'max-w-7xl mx-auto' : '')}>
+            <Routes>
+              {/* Public Routes - Auto-redirect if logged in */}
+              <Route path="/" element={
+                user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LandingPage />
+              } />
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/login" element={
+                user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LoginPage />
+              } />
+
+              {/* SaaS Admin Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['ADMIN_GLOBAL']} />}>
+                <Route path="/saas-dashboard" element={<SaaSManagement />} />
+              </Route>
+
+              {/* Clinic Private Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['CLINIC_ADMIN', 'USER']} />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/billing" element={<BillingPage />} />
+                <Route path="/patients" element={<PatientsPage />} />
+                <Route path="/despesas-faturamento" element={<ExpensesBilling />} />
+                <Route path="/cash-flow" element={<CashFlow />} />
+                <Route path="/pendenciais" element={<PendenciaisPage />} />
+                <Route path="/payables" element={<PayablesPage />} />
+                <Route path="/income" element={<IncomePage />} />
+                <Route path="/dre" element={<DREPage />} />
+                <Route path="/dfc" element={<DFCPage />} />
+                <Route path="/pricing" element={<Pricing />} />
+                <Route path="/goals" element={<Goals />} />
+                <Route path="/inventory" element={<Inventory />} />
+                <Route path="/documents" element={<DocumentsPage />} />
+                <Route path="/automations" element={<Automations />} />
+              </Route>
+
+              {/* Redirects */}
+              <Route path="*" element={<Navigate to={user?.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace />} />
+            </Routes>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

@@ -47,7 +47,7 @@ const StatusBadge = ({ status, dueDate }: { status: string; dueDate: string | nu
 
     return (
         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${styles[currentStatus] || styles['PENDENTE']}`}>
-            {currentStatus}
+            {currentStatus === 'ATRASADO' ? 'PENDÊNCIAS' : currentStatus}
         </span>
     );
 };
@@ -270,7 +270,7 @@ const PendenciaisPage = () => {
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Pendenciais</h2>
+                    <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Contas a Receber</h2>
                     <p className="text-slate-500 font-medium mt-1">Acompanhamento de faturamento e pagamentos de clientes. (v1.1)</p>
                 </div>
                 <button 
@@ -297,7 +297,7 @@ const PendenciaisPage = () => {
                         color="moss" 
                     />
                     <StatCard 
-                        title="Atrasados" 
+                        title="Pendências" 
                         value={`R$ ${summary.totalOverdue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
                         icon={<AlertCircle size={20} />} 
                         color="dun" 

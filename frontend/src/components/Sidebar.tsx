@@ -4,8 +4,6 @@ import {
     Package,
     TrendingUp,
     Target,
-    FileText,
-    Wallet,
     BarChart3,
     ArrowDownCircle,
     ArrowUpCircle,
@@ -17,6 +15,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { reportingApi } from '../services/api';
+import { motion } from 'framer-motion';
 
 const Sidebar = () => {
     const location = useLocation();
@@ -40,76 +39,64 @@ const Sidebar = () => {
         ? Math.round(goals.reduce((acc: number, g: any) => acc + (Math.min(((g.current || g.achieved || 0) / g.target) * 100, 100)), 0) / goals.length)
         : 0;
 
-    const menuItems = [
-        { icon: <LayoutDashboard size={18} />, label: "Dashboard", path: "/dashboard" },
-        { icon: <BarChart3 size={18} />, label: "Faturamento", path: "/billing" },
-        { icon: <Users size={18} />, label: "Pacientes", path: "/patients" },
-        { icon: <TrendingUp size={18} />, label: "Fluxo de Caixa", path: "/cash-flow" },
-        { icon: <ArrowUpCircle size={18} />, label: "Pendenciais", path: "/pendenciais" },
-        { icon: <ArrowDownCircle size={18} />, label: "Contas a Pagar", path: "/payables" },
-        { icon: <Wallet size={18} />, label: "Recebimentos (Caixa)", path: "/income" },
-        { icon: <FileText size={18} />, label: "DRE", path: "/dre" },
-        { icon: <FileText size={18} />, label: "DFC", path: "/dfc" },
-        { icon: <Calculator size={18} />, label: "Precificação", path: "/pricing" },
-        { icon: <Target size={18} />, label: "Metas", path: "/goals" },
-        { icon: <Package size={18} />, label: "Estoque", path: "/inventory" },
-        { icon: <FolderOpen size={18} />, label: "Documentos", path: "/documents" },
+    const navItems = [
+        { label: "Principal", items: [
+            { icon: <LayoutDashboard size={20} />, label: "Dashboard", path: "/dashboard" },
+            { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
+            { icon: <BarChart3 size={20} />, label: "Faturamento", path: "/billing" },
+        ]},
+        { label: "Financeiro", items: [
+            { icon: <ArrowUpCircle size={20} />, label: "Contas a Receber", path: "/pendenciais" },
+            { icon: <ArrowDownCircle size={20} />, label: "Contas a Pagar", path: "/payables" },
+            { icon: <TrendingUp size={20} />, label: "Fluxo de Caixa", path: "/cash-flow" },
+            { icon: <Calculator size={20} />, label: "Precificação", path: "/pricing" },
+        ]},
+        { label: "Gestão", items: [
+            { icon: <Package size={20} />, label: "Estoque", path: "/inventory" },
+            { icon: <Target size={20} />, label: "Metas", path: "/goals" },
+            { icon: <FolderOpen size={20} />, label: "Documentos", path: "/documents" },
+        ]}
     ];
 
     return (
-        <aside className="w-72 bg-[#F0EAD6] text-slate-800 flex flex-col h-screen fixed left-0 top-0 z-20 border-r border-[#8A9A5B]/20">
-            <div className="p-8">
-                <div className="flex justify-center mb-6">
-                    <img src="/logo-alamino-dark.png" alt="Logo Rares360" className="h-40 w-auto object-contain" />
-                </div>
+        <aside className="w-72 bg-[#F0EAD6] text-slate-800 flex flex-col h-screen border-r border-[#8A9A5B]/20 shadow-sm overflow-hidden">
+            <div className="p-8 flex justify-center border-b border-[#8A9A5B]/10">
+                <img src="/logo-alamino-dark.png" alt="Logo Rares360" className="h-32 w-auto object-contain" />
             </div>
 
-            <nav className="flex-1 px-4 overflow-y-auto custom-scrollbar">
-                <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Principal</p>
-                <div className="space-y-1 mb-8">
-                    {menuItems.slice(0, 3).map((item) => (
-                        <SidebarLink key={item.path} item={item} active={location.pathname === item.path} />
-                    ))}
-                </div>
-
-                <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Financeiro</p>
-                <div className="space-y-1 mb-8">
-                    {menuItems.slice(3, 10).map((item) => (
-                        <SidebarLink key={item.path} item={item} active={location.pathname === item.path} />
-                    ))}
-                </div>
-
-                <p className="px-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Gestão</p>
-                <div className="space-y-1">
-                    {menuItems.slice(10).map((item) => (
-                        <SidebarLink key={item.path} item={item} active={location.pathname === item.path} />
-                    ))}
-                </div>
+            <nav className="flex-1 px-4 py-8 overflow-y-auto custom-scrollbar space-y-8">
+                {Array.isArray(navItems) ? navItems.map((group) => (
+                    <div key={group.label} className="space-y-2">
+                        <p className="px-4 text-[10px] font-black text-[#8A9A5B] uppercase tracking-[0.2em] opacity-60">{group.label}</p>
+                        <div className="space-y-1">
+                            {group.items.map((item) => (
+                                <SidebarLink key={item.path} item={item} active={location.pathname === item.path} />
+                            ))}
+                        </div>
+                    </div>
+                )) : null}
             </nav>
 
-            <div className="p-4 mt-auto">
-                <div className="bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-[#8A9A5B]/10 shadow-sm">
-                    <div className="flex items-center gap-3 mb-3">
-                        <div className="w-8 h-8 rounded-full bg-[#DEB587]/20 flex items-center justify-center text-[#DEB587]">
-                            <Target size={16} />
-                        </div>
-                        <p className="text-xs font-bold text-slate-600">Meta Mensal</p>
+            <div className="p-6 mt-auto bg-white/30 backdrop-blur-sm border-t border-[#8A9A5B]/10">
+                <div className="bg-white/60 p-4 rounded-2xl border border-[#8A9A5B]/10 shadow-sm mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Meta Mensal</p>
+                        <p className="text-[10px] font-black text-[#8A9A5B]">{globalProgress}%</p>
                     </div>
-                    <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-2">
+                    <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-[#8A9A5B] rounded-full shadow-sm shadow-[#8A9A5B]/20 transition-all duration-1000"
+                            className="h-full bg-[#8A9A5B] rounded-full transition-all duration-1000"
                             style={{ width: `${globalProgress}%` }}
                         ></div>
                     </div>
-                    <p className="text-[10px] font-bold text-[#8A9A5B] text-right">{globalProgress}% atingido</p>
                 </div>
 
                 <button
                     onClick={handleLogout}
-                    className="flex items-center gap-3 w-full px-4 py-3 mt-4 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
+                    className="flex items-center gap-3 w-full px-4 py-3 text-slate-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 group font-bold text-sm"
                 >
-                    <LogOut size={18} />
-                    <span className="font-bold text-sm">Sair</span>
+                    <LogOut size={18} className="group-hover:translate-x-1 transition-transform" />
+                    Sair da Conta
                 </button>
             </div>
         </aside>
@@ -119,15 +106,24 @@ const Sidebar = () => {
 const SidebarLink = ({ item, active }: { item: any; active: boolean }) => (
     <Link
         to={item.path}
-        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group ${active
+        className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${active
             ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20'
-            : 'text-slate-500 hover:bg-[#8A9A5B]/10 hover:text-[#697D58]'
+            : 'text-slate-600 hover:bg-[#8A9A5B]/10 hover:text-[#697D58]'
             }`}
     >
-        <span className={`${active ? 'text-white' : 'text-slate-400 group-hover:text-[#8A9A5B]'}`}>
+        {active && (
+            <motion.div 
+                layoutId="active-nav-indicator"
+                className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#697D58]"
+                initial={false}
+            />
+        )}
+        <span className={`${active ? 'text-white' : 'text-slate-400 group-hover:text-[#8A9A5B]'} transition-colors`}>
             {item.icon}
         </span>
-        <span className="font-bold text-sm">{item.label}</span>
+        <span className={`font-black text-sm tracking-tight ${active ? 'translate-x-1' : ''} transition-transform`}>
+            {item.label}
+        </span>
     </Link>
 );
 
