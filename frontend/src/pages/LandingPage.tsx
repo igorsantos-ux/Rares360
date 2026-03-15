@@ -160,7 +160,7 @@ const LandingPage = () => {
                         <Link to="/about" className="text-[#697D58] font-bold hover:opacity-70 transition-opacity">Quem Somos</Link>
                         <Link
                             to="/login"
-                            className="px-6 py-2.5 bg-[#697D58] text-white rounded-[10px] font-bold text-sm shadow-xl shadow-[#697D58]/20 hover:scale-105 transition-all"
+                            className="px-6 py-2.5 bg-[#697D58] text-[#FDFCF0] rounded-[4px] font-bold text-sm shadow-xl shadow-[#697D58]/20 hover:scale-105 transition-all"
                         >
                             Acessar Plataforma
                         </Link>
@@ -168,17 +168,24 @@ const LandingPage = () => {
                 </div>
             </nav>
 
-            {/* Hero Section - Apple Style Scale Down */}
-            <section className="h-screen flex flex-col items-center justify-center relative px-6 text-center">
+            {/* Hero Section - Premium Aesthetic */}
+            <section className="h-screen flex flex-col items-center justify-center relative px-6 text-center overflow-hidden">
+                {/* Background Image with Deep Olive Overlay */}
+                <div 
+                    className="absolute inset-0 bg-cover bg-center -z-20 scale-105"
+                    style={{ backgroundImage: "url('/hero-luxury-bg.png')" }}
+                />
+                <div className="absolute inset-0 bg-[#2D3325]/85 backdrop-blur-[2px] -z-10" />
+
                 <motion.div
                     style={{ opacity, scale: smoothScale, y: heroY }}
-                    className="max-w-container mx-auto"
+                    className="max-w-container mx-auto relative z-10"
                 >
-                    <h1 className="text-h1 text-[#697D58] mb-8">
+                    <h1 className="text-h1 text-[#FDFCF0] mb-8 leading-[1.05]">
                         O Futuro da sua <br />
-                        <span className="text-[#8A9A5B]">Gestão Financeira</span>.
+                        <span className="text-[#FDFCF0]/90">Gestão Financeira</span>.
                     </h1>
-                    <p className="text-body-lg text-slate-500 max-w-2xl mx-auto">
+                    <p className="text-body-lg text-[#FDFCF0]/80 max-w-2xl mx-auto leading-relaxed font-light">
                         Transformamos números em estratégia. Excelência em consultoria financeira para clínicas e negócios de alto padrão.
                     </p>
 
@@ -188,19 +195,10 @@ const LandingPage = () => {
                         transition={{ delay: 0.5, duration: 0.8 }}
                         className="mt-12 flex flex-col items-center gap-4"
                     >
-                        <ChevronDown size={32} className="text-[#8A9A5B] animate-bounce" />
-                        <span className="text-xs font-black uppercase tracking-[0.3em] text-[#8A9A5B]">Role para descobrir</span>
+                        <ChevronDown size={32} className="text-[#A39161] animate-bounce" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#A39161]">Role para descobrir</span>
                     </motion.div>
                 </motion.div>
-
-                {/* Background Decoration */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-screen opacity-10 pointer-events-none -z-10">
-                    <img
-                        src="/financial_luxury_abstract_1772753693181.png"
-                        alt="Background Decor"
-                        className="w-full h-full object-cover blur-2xl"
-                    />
-                </div>
             </section>
 
             {/* Section 2 - Reveal Cards */}
