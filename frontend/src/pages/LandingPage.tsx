@@ -169,13 +169,13 @@ const LandingPage = () => {
             </nav>
 
             {/* Hero Section - Premium Aesthetic */}
-            <section className="h-screen flex flex-col items-center justify-center relative px-6 text-center overflow-hidden">
+            <section className="h-screen flex flex-col items-center justify-center relative px-6 text-center overflow-hidden bg-[#2D3325]">
                 {/* Background Image with Deep Olive Overlay */}
                 <div 
-                    className="absolute inset-0 bg-cover bg-center -z-20 scale-105"
+                    className="absolute inset-0 bg-cover bg-center scale-105"
                     style={{ backgroundImage: "url('/hero-luxury-bg.png')" }}
                 />
-                <div className="absolute inset-0 bg-[#2D3325]/85 backdrop-blur-[2px] -z-10" />
+                <div className="absolute inset-0 bg-[#2D3325]/85 backdrop-blur-[2px]" />
 
                 <motion.div
                     style={{ opacity, scale: smoothScale, y: heroY }}
