@@ -18,6 +18,21 @@ export default {
                     muted: "#718096"
                 }
             },
+            fontSize: {
+                'h1': ['80px', { lineHeight: '1.1', letterSpacing: '-0.02em', fontWeight: '600' }],
+                'h2': ['54px', { lineHeight: '1.2', fontWeight: '500' }],
+                'h3': ['40px', { lineHeight: '1.2', fontWeight: '500' }],
+                'body-lg': ['18px', { lineHeight: '1.5', fontWeight: '400' }],
+            },
+            maxWidth: {
+                'container': '1208px',
+            },
+            borderRadius: {
+                'design': '20px',
+            },
+            spacing: {
+                'section': '120px',
+            }
         },
     },
     plugins: [],

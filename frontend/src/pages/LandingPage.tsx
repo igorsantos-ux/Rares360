@@ -151,18 +151,20 @@ const LandingPage = () => {
     return (
         <div className="bg-[#F8FAFC] overflow-x-hidden" ref={targetRef}>
             {/* Navbar */}
-            <nav className="fixed top-0 w-full z-[100] px-8 py-6 flex justify-between items-center backdrop-blur-md bg-white/30 border-b border-[#8A9A5B]/10">
-                <div className="flex items-center gap-2">
-                    <img src="/logo-alamino-dark.png" alt="Logo Rares360" className="h-28 w-auto object-contain" />
-                </div>
-                <div className="flex items-center gap-8">
-                    <Link to="/about" className="text-[#697D58] font-bold hover:opacity-70 transition-opacity">Quem Somos</Link>
-                    <Link
-                        to="/login"
-                        className="px-6 py-2.5 bg-[#697D58] text-white rounded-full font-bold text-sm shadow-xl shadow-[#697D58]/20 hover:scale-105 transition-all"
-                    >
-                        Acessar Plataforma
-                    </Link>
+            <nav className="fixed top-0 w-full z-[100] px-8 py-6 flex justify-center items-center backdrop-blur-md bg-white/30 border-b border-[#8A9A5B]/10">
+                <div className="w-full max-w-container flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <img src="/logo-alamino-dark.png" alt="Logo Rares360" className="h-28 w-auto object-contain" />
+                    </div>
+                    <div className="flex items-center gap-8">
+                        <Link to="/about" className="text-[#697D58] font-bold hover:opacity-70 transition-opacity">Quem Somos</Link>
+                        <Link
+                            to="/login"
+                            className="px-6 py-2.5 bg-[#697D58] text-white rounded-[10px] font-bold text-sm shadow-xl shadow-[#697D58]/20 hover:scale-105 transition-all"
+                        >
+                            Acessar Plataforma
+                        </Link>
+                    </div>
                 </div>
             </nav>
 
@@ -170,13 +172,13 @@ const LandingPage = () => {
             <section className="h-screen flex flex-col items-center justify-center relative px-6 text-center">
                 <motion.div
                     style={{ opacity, scale: smoothScale, y: heroY }}
-                    className="max-w-5xl mx-auto"
+                    className="max-w-container mx-auto"
                 >
-                    <h1 className="text-7xl md:text-9xl font-black text-[#697D58] leading-tight mb-8 tracking-tighter">
+                    <h1 className="text-h1 text-[#697D58] mb-8">
                         O Futuro da sua <br />
                         <span className="text-[#8A9A5B]">Gestão Financeira</span>.
                     </h1>
-                    <p className="text-xl md:text-2xl text-slate-500 font-medium max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-body-lg text-slate-500 max-w-2xl mx-auto">
                         Transformamos números em estratégia. Excelência em consultoria financeira para clínicas e negócios de alto padrão.
                     </p>
 
@@ -202,15 +204,15 @@ const LandingPage = () => {
             </section>
 
             {/* Section 2 - Reveal Cards */}
-            <section className="min-h-screen py-32 px-8 bg-[#697D58] text-white overflow-hidden">
-                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <section className="min-h-screen py-section px-8 bg-[#697D58] text-white overflow-hidden">
+                <div className="max-w-container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
                     <motion.div
                         initial={{ opacity: 0, x: -50 }}
                         whileInView={{ opacity: 1, x: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.8 }}
                     >
-                        <h2 className="text-5xl md:text-7xl font-black leading-tight mb-8 tracking-tight">
+                        <h2 className="text-h2 leading-tight mb-8">
                             Dados que <br />
                             contam histórias.
                         </h2>
@@ -259,8 +261,8 @@ const LandingPage = () => {
             </section>
 
             {/* A Experiência Rares360 */}
-            <section className="min-h-screen py-32 px-8 bg-white relative">
-                <div className="max-w-4xl mx-auto text-center">
+            <section className="min-h-screen py-section px-8 bg-white relative text-center">
+                <div className="max-w-container mx-auto">
                     <motion.span
                         initial={{ opacity: 0 }}
                         whileInView={{ opacity: 1 }}
@@ -272,7 +274,7 @@ const LandingPage = () => {
                         initial={{ opacity: 0, y: 30 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
-                        className="text-4xl md:text-6xl font-black text-[#697D58] mb-20 tracking-tight"
+                        className="text-h3 text-[#697D58] mb-20"
                     >
                         Excelência em cada detalhe, <br />
                         do lucro ao investimento.
@@ -299,13 +301,13 @@ const LandingPage = () => {
             </section>
 
             {/* Final CTA */}
-            <section className="py-40 bg-[#F8FAFC] flex flex-col items-center justify-center px-6">
+            <section className="py-section bg-[#F8FAFC] flex flex-col items-center justify-center px-6">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     className="text-center"
                 >
-                    <h4 className="text-6xl md:text-8xl font-black text-[#697D58] mb-12 tracking-tighter">
+                    <h4 className="text-h2 text-[#697D58] mb-12">
                         Assuma o controle.
                     </h4>
                     <Link
@@ -322,7 +324,7 @@ const LandingPage = () => {
 
             {/* Footer */}
             <footer className="py-20 px-8 border-t border-[#8A9A5B]/10 bg-white">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-slate-400 font-medium">
+                <div className="max-w-container mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-slate-400 font-medium">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 bg-[#697D58]/10 rounded-lg flex items-center justify-center text-[#697D58]">
                             <TrendingUp size={16} />

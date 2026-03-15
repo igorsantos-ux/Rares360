@@ -15,26 +15,28 @@ const AboutPage = () => {
     return (
         <div className="bg-white min-h-screen overflow-x-hidden">
             {/* Navbar Simple */}
-            <nav className="fixed top-0 w-full z-[100] px-8 py-6 flex justify-between items-center backdrop-blur-md bg-white/30">
-                <Link to="/" className="flex items-center gap-2 text-[#697D58] font-bold hover:scale-105 transition-all">
-                    <ChevronLeft size={20} /> Voltar
-                </Link>
-                <div className="flex items-center gap-2">
-                    <span className="text-xl font-black text-[#697D58] tracking-tight">Roberta Alamino</span>
+            <nav className="fixed top-0 w-full z-[100] px-8 py-6 flex justify-center items-center backdrop-blur-md bg-white/30">
+                <div className="w-full max-w-container flex justify-between items-center">
+                    <Link to="/" className="flex items-center gap-2 text-[#697D58] font-bold hover:scale-105 transition-all">
+                        <ChevronLeft size={20} /> Voltar
+                    </Link>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xl font-black text-[#697D58] tracking-tight">Roberta Alamino</span>
+                    </div>
+                    <div className="w-20"></div> {/* Spacer */}
                 </div>
-                <div className="w-20"></div> {/* Spacer */}
             </nav>
 
             {/* Hero Section */}
             <section className="pt-32 pb-20 px-8">
-                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div className="max-w-container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
                     <motion.div
                         initial={{ opacity: 0, x: -30 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ duration: 0.8 }}
                         className="relative"
                     >
-                        <div className="aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl border-8 border-[#8A9A5B]/10">
+                        <div className="aspect-[4/5] rounded-design overflow-hidden shadow-2xl border-8 border-[#8A9A5B]/10">
                             <img
                                 src="/roberta.jpg"
                                 alt="Roberta Alamino"
@@ -52,11 +54,11 @@ const AboutPage = () => {
                         transition={{ duration: 0.8, delay: 0.2 }}
                     >
                         <span className="text-xs font-black uppercase tracking-[0.5em] text-[#8A9A5B] mb-6 block">Especialista em Gestão Financeira</span>
-                        <h1 className="text-6xl md:text-8xl font-black text-[#697D58] leading-tight mb-8 tracking-tighter">
+                        <h1 className="text-h1 text-[#697D58] mb-8">
                             Excelência que <br />
                             <span className="text-[#8A9A5B]">gera resultados</span>.
                         </h1>
-                        <p className="text-xl text-slate-500 font-medium leading-relaxed mb-10">
+                        <p className="text-body-lg text-slate-500 mb-10">
                             Com mais de uma década de vivência na operação de clínicas médicas, Roberta Alamino desenvolveu uma sólida experiência na gestão financeira, operacional, administrativa e estratégica desses negócios. Ao longo de sua trajetória, tem se dedicado a estruturar consultórios e transformá-los em negócios mais organizados, sustentáveis e preparados para crescer com consistência. Sua abordagem une análise técnica, visão estratégica e uma compreensão profunda da realidade operacional das clínicas.
                         </p>
 
@@ -70,11 +72,11 @@ const AboutPage = () => {
             </section>
 
             {/* Career / Pillars */}
-            <section className="py-32 px-8 bg-[#697D58] text-white">
-                <div className="max-w-7xl mx-auto">
+            <section className="py-section px-8 bg-[#697D58] text-white">
+                <div className="max-w-container mx-auto">
                     <div className="text-center mb-24">
-                        <h2 className="text-4xl md:text-6xl font-black mb-6 tracking-tight">Trajetória de Impacto</h2>
-                        <p className="text-[#F0EAD6]/80 text-xl font-medium max-w-2xl mx-auto">
+                        <h2 className="text-h2 mb-6">Trajetória de Impacto</h2>
+                        <p className="text-[#F0EAD6]/80 text-body-lg max-w-2xl mx-auto">
                             Uma jornada dedicada a organizar, otimizar e escalar o patrimônio de quem confia em nossa gestão.
                         </p>
                     </div>
