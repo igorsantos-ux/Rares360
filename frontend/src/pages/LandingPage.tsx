@@ -151,17 +151,21 @@ const LandingPage = () => {
     return (
         <div className="bg-[#F8FAFC] overflow-x-hidden" ref={targetRef}>
             {/* Navbar */}
-            <nav className="fixed top-0 w-full z-[100] px-8 py-6 flex justify-center items-center backdrop-blur-sm bg-black/10 border-b border-white/5">
+            <nav className="fixed top-0 w-full z-[100] px-8 py-6 flex justify-center items-center backdrop-blur-md bg-black/30 border-b border-white/10">
                 <div className="w-full max-w-container flex justify-between items-center">
                     <div className="flex items-center gap-2">
-                        {/* Applying a brightness filter to make the dark logo visible on dark background */}
-                        <img src="/logo-alamino-dark.png" alt="Logo Rares360" className="h-28 w-auto object-contain brightness-0 invert opacity-90" />
+                        {/* High contrast white logo filter */}
+                        <img 
+                            src="/logo-alamino-dark.png" 
+                            alt="Logo Rares360" 
+                            className="h-28 w-auto object-contain brightness-0 invert-[1] contrast-[200%]" 
+                        />
                     </div>
                     <div className="flex items-center gap-8">
-                        <Link to="/about" className="text-[#FDFCF0] font-bold hover:opacity-70 transition-opacity">Quem Somos</Link>
+                        <Link to="/about" className="text-white font-bold hover:text-[#FDFCF0]/70 transition-colors text-lg">Quem Somos</Link>
                         <Link
                             to="/login"
-                            className="px-6 py-2.5 bg-[#697D58] text-[#FDFCF0] rounded-[4px] font-bold text-sm shadow-xl shadow-black/20 hover:scale-105 transition-all border border-white/10"
+                            className="px-6 py-2.5 bg-[#697D58] text-white rounded-[4px] font-bold text-sm shadow-xl shadow-black/40 hover:scale-105 transition-all border border-white/20"
                         >
                             Acessar Plataforma
                         </Link>
