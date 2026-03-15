@@ -30,15 +30,19 @@ export const roleMiddleware = (allowedRoles: string[]) => {
 };
 
 export const tenantMiddleware = (req: any, res: Response, next: NextFunction) => {
-    // Se for ADMIN_GLOBAL, ele pode acessar qualquer tenant se passar um clinicId via query ou header?
-    // Ou ele atua como um tenant "nulo".
-    // Para usuários normais, o clinicId vem do token.
+    // Para ADMIN_GLOBAL, permitimos sobrescrever o clinicId via header para suporte/gestão
+    const impersonatedClinicId = req.headers['x-clinic-id'];
 
-    if (req.user.role !== 'ADMIN_GLOBAL' && !req.user.clinicId) {
+    if (req.user.role === 'ADMIN_GLOBAL' && impersonatedClinicId) {
+        req.clinicId = impersonatedClinicId;
+        return next();
+    }
+
+    if (!req.user.clinicId && req.user.role !== 'ADMIN_GLOBAL') {
         return res.status(403).json({ error: 'Usuário sem clínica vinculada' });
     }
 
-    // Injeta o clinicId para ser usado nos serviços
+    // Injeta o clinicId do usuário logado
     req.clinicId = req.user.clinicId;
     next();
 };

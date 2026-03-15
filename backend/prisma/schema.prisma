@@ -57,6 +57,7 @@ model Clinic {
   accountPayables       AccountPayable[]
   pricingSimulations    PricingSimulation[]
   procedurePricings     ProcedurePricing[]
+  leads                 Lead[]
   createdAt             DateTime        @default(now())
 }
 
@@ -150,6 +151,9 @@ model Lead {
   source    String
   status    String
   createdAt DateTime @default(now())
+
+  clinicId  String
+  clinic    Clinic   @relation(fields: [clinicId], references: [id])
 }
 
 model InventoryItem {

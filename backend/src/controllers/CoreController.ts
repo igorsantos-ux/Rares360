@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { MedicalService, InventoryService } from '../services/CoreServices.js';
+import { getPrismaClient } from '../lib/prisma.js';
 import { z } from 'zod';
 
 const stockSchema = z.object({
