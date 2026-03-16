@@ -16,6 +16,7 @@ const AboutPage = () => {
         <div className="bg-white min-h-screen overflow-x-hidden">
             {/* Navbar Simple */}
             <nav className="fixed top-0 w-full z-[100] px-8 py-6 flex justify-center items-center backdrop-blur-md bg-white/30">
+                <div className="w-full max-w-container flex justify-between items-center">
                     <div className="flex items-center gap-8">
                         <Link to="/" className="text-[#697D58] font-bold hover:scale-105 transition-all flex items-center gap-2">
                              <ChevronLeft size={20} /> Voltar
