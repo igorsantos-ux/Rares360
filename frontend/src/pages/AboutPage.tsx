@@ -16,10 +16,12 @@ const AboutPage = () => {
         <div className="bg-white min-h-screen overflow-x-hidden">
             {/* Navbar Simple */}
             <nav className="fixed top-0 w-full z-[100] px-8 py-6 flex justify-center items-center backdrop-blur-md bg-white/30">
-                <div className="w-full max-w-container flex justify-between items-center">
-                    <Link to="/" className="flex items-center gap-2 text-[#697D58] font-bold hover:scale-105 transition-all">
-                        <ChevronLeft size={20} /> Voltar
-                    </Link>
+                    <div className="flex items-center gap-8">
+                        <Link to="/" className="text-[#697D58] font-bold hover:scale-105 transition-all flex items-center gap-2">
+                             <ChevronLeft size={20} /> Voltar
+                        </Link>
+                        <Link to="/contact" className="text-[#697D58] font-bold hover:opacity-70 transition-all">Contato</Link>
+                    </div>
                     <div className="flex items-center gap-2">
                         <span className="text-xl font-black text-[#697D58] tracking-tight">Roberta Alamino</span>
                     </div>
@@ -138,6 +140,7 @@ const AboutPage = () => {
                     <div className="flex justify-center gap-10 text-xs font-black uppercase tracking-widest text-[#8A9A5B]">
                         <Link to="/" className="hover:text-[#697D58] transition-colors">Início</Link>
                         <Link to="/about" className="hover:text-[#697D58] transition-colors">Quem Somos</Link>
+                        <Link to="/contact" className="hover:text-[#697D58] transition-colors">Contato</Link>
                         <Link to="/login" className="hover:text-[#697D58] transition-colors">Plataforma</Link>
                     </div>
                 </div>

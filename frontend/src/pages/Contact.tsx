@@ -3,7 +3,6 @@ import {
     ChevronLeft, 
     Mail, 
     Phone, 
-    MapPin, 
     Send,
     Linkedin,
     Instagram,
