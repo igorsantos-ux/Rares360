@@ -53,7 +53,7 @@ const IncomePage = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Recebimentos (Caixa)</h2>
-                    <p className="text-slate-500 font-medium mt-1">Controle de entradas imediatas e fechamento de caixa.</p>
+                    <p className="text-slate-500 font-medium mt-1">Controle de entradas imediatas e fluxo de caixa.</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">

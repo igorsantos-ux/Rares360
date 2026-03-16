@@ -37,6 +37,7 @@ const Header = () => {
         '/documents': 'Documentos e Arquivos',
         '/dre': 'DRE (Demonstrativo)',
         '/dfc': 'DFC (Fluxo de Caixa Indireto)',
+        '/fechamento-caixa': 'Caixa',
         '/automations': 'Automatizações CRM'
     };
 

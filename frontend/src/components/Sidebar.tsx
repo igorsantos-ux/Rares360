@@ -45,7 +45,7 @@ const Sidebar = () => {
     const navItems = [
         { label: "Principal", items: [
             { icon: <LayoutDashboard size={20} />, label: "Painel Financeiro", path: "/dashboard" },
-            { icon: <LockIcon size={20} />, label: "Fechamento de Caixa", path: "/fechamento-caixa" },
+            { icon: <LockIcon size={20} />, label: "Caixa", path: "/fechamento-caixa" },
             { icon: <FileText size={20} />, label: "DRE", path: "/dre" },
             { icon: <Activity size={20} />, label: "DFC", path: "/dfc" },
         ]},
