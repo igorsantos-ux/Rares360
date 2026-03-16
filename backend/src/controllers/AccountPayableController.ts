@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
+import { CashSecurity } from '../middleware/CashSecurity.js';
 
 export class AccountPayableController {
     
@@ -305,6 +306,16 @@ export class AccountPayableController {
                 return res.status(400).json({ message: 'Status inválido' });
             }
 
+            const installment = await prisma.accountPayableInstallment.findUnique({
+                where: { id }
+            });
+
+            if (!installment) return res.status(404).json({ message: 'Parcela não encontrada' });
+
+            // Bloqueio se o dia estiver fechado
+            const clinicId = (req as any).user?.clinicId;
+            await CashSecurity.validateClosure(clinicId, installment.dueDate);
+
             const updated = await prisma.accountPayableInstallment.update({
                 where: { id },
                 data: { 
@@ -333,6 +344,15 @@ export class AccountPayableController {
 
             if (!installment) {
                 return res.status(404).json({ message: 'Parcela não encontrada' });
+            }
+
+            const clinicId = (req as any).user?.clinicId;
+            // Bloqueio se o dia estiver fechado (usando a data base da parcela)
+            const installmentData = await prisma.accountPayableInstallment.findUnique({
+                where: { id }
+            });
+            if (installmentData) {
+                await CashSecurity.validateClosure(clinicId, installmentData.dueDate);
             }
 
             // Exclui a parcela

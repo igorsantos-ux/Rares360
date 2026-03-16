@@ -60,6 +60,7 @@ model Clinic {
   procedurePricings     ProcedurePricing[]
   stockMovements        StockMovement[]
   leads                 Lead[]
+  dailyClosures         DailyClosure[]
   createdAt             DateTime        @default(now())
 }
 
@@ -70,9 +71,10 @@ model User {
   password  String
   name      String
   role      String   // "ADMIN_GLOBAL" or "CLINIC_ADMIN"
-  clinicId  String?
-  clinic    Clinic?  @relation(fields: [clinicId], references: [id])
-  isActive  Boolean  @default(true)
+  clinicId       String?
+  clinic         Clinic?        @relation(fields: [clinicId], references: [id])
+  closedChapters DailyClosure[] @relation("ClosedBy")
+  isActive       Boolean        @default(true)
   createdAt DateTime @default(now())
 }
 
@@ -323,4 +325,26 @@ model ProcedurePricing {
 
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
+}
+
+enum ClosureStatus {
+  OPEN
+  CLOSED
+}
+
+model DailyClosure {
+  id             String        @id @default(uuid())
+  clinicId       String
+  clinic         Clinic        @relation(fields: [clinicId], references: [id])
+  date           DateTime      // Data do fechamento (foco no dia)
+  openingBalance Float         @default(0)
+  totalIncomes   Float         @default(0)
+  totalExpenses  Float         @default(0)
+  closingBalance Float         @default(0)
+  status         ClosureStatus @default(CLOSED)
+  closedAt       DateTime      @default(now())
+  closedById     String
+  closedBy       User          @relation("ClosedBy", fields: [closedById], references: [id])
+
+  @@unique([clinicId, date])
 }

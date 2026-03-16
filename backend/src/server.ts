@@ -18,6 +18,7 @@ import pricingRoutes from './routes/pricingRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 
 import importRoutes from './routes/importRoutes.js';
+import cashRoutes from './routes/cashRoutes.js';
 import { SeedService } from './services/SeedService.js';
 
 dotenv.config();
@@ -51,6 +52,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/saas', saasRoutes);
 app.use('/api/financial', financialRoutes);
+app.use('/api/cash', cashRoutes);
 app.use('/api/core', coreRoutes);
 app.use('/api/reporting', reportingRoutes);
 app.use('/api/analytics', analyticsRoutes);

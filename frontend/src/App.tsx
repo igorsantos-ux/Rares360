@@ -13,6 +13,7 @@ import PendenciaisPage from './pages/Financial/Pendenciais';
 import DREPage from './pages/Financial/DRE';
 import DFCPage from './pages/Financial/DFC';
 import IncomePage from './pages/Financial/Income';
+import DailyClosure from './pages/Financial/DailyClosure';
 import Inventory from './pages/Inventory';
 import CashFlow from './pages/CashFlow';
 import Goals from './pages/Goals';
@@ -86,6 +87,7 @@ function App() {
                 <Route path="/payables" element={<PayablesPage />} />
                 <Route path="/income" element={<IncomePage />} />
                 <Route path="/dre" element={<DREPage />} />
+                <Route path="/fechamento-caixa" element={<DailyClosure />} />
                 <Route path="/dfc" element={<DFCPage />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/goals" element={<Goals />} />

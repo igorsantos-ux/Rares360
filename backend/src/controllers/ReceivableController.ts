@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
+import { CashSecurity } from '../middleware/CashSecurity.js';
 
 export class ReceivableController {
     
@@ -246,6 +247,16 @@ export class ReceivableController {
             const { id } = req.params;
             const { status } = req.body;
 
+            const clinicId = (req as any).user?.clinicId;
+            const trans = await prisma.transaction.findUnique({
+                where: { id, clinicId }
+            });
+
+            if (!trans) return res.status(404).json({ error: 'Not found' });
+
+            // Bloqueio se o dia estiver fechado
+            await CashSecurity.validateClosure(clinicId, trans.date);
+
             const updated = await prisma.transaction.update({
                 where: { id },
                 data: { 
@@ -264,6 +275,16 @@ export class ReceivableController {
     static async delete(req: Request, res: Response) {
         try {
             const { id } = req.params;
+            const clinicId = (req as any).user?.clinicId;
+            const trans = await prisma.transaction.findUnique({
+                where: { id, clinicId }
+            });
+
+            if (!trans) return res.status(404).json({ error: 'Not found' });
+
+            // Bloqueio se o dia estiver fechado
+            await CashSecurity.validateClosure(clinicId, trans.date);
+
             await prisma.transaction.delete({ where: { id } });
             return res.json({ message: 'Excluído com sucesso' });
         } catch (error: any) {

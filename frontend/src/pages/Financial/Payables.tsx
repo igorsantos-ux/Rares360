@@ -12,7 +12,8 @@ import {
     Search,
     CheckCircle2,
     MoreVertical,
-    Paperclip
+    Paperclip,
+    Lock as LockIcon
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { DeleteConfirmationModal } from '../../components/Financial/DeleteConfirmationModal';
@@ -212,6 +213,22 @@ const StatCard = ({ title, value, icon, color, alert }: any) => (
     </div>
 );
 
+const useClosureStatus = (date: string) => {
+    return useQuery({
+        queryKey: ['closure-status', date],
+        queryFn: async () => {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cash/status?date=${date}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'x-clinic-id': localStorage.getItem('clinicId') || ''
+                }
+            });
+            return response.json();
+        },
+        enabled: !!date
+    });
+};
+
 const PayablesPage = () => {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
@@ -221,6 +238,9 @@ const PayablesPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [activeFilter, setActiveFilter] = useState<string>('all');
     const itemsPerPage = 20;
+
+    const { data: closureStatus } = useClosureStatus(new Date().toISOString().split('T')[0]);
+    const isLocked = closureStatus?.status === 'CLOSED';
 
     // Estado para Modal de Exclusão
     const [deleteModal, setDeleteModal] = useState<{ 
@@ -511,9 +531,9 @@ const PayablesPage = () => {
                                                 {item.status !== 'PAGO' && (
                                                     <button 
                                                         onClick={() => updateStatusMutation.mutate({ id: item.id, status: 'PAGO' })}
-                                                        disabled={updateStatusMutation.isPending}
+                                                        disabled={updateStatusMutation.isPending || isLocked}
                                                         className="p-2.5 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all disabled:opacity-30 border border-transparent hover:border-emerald-100"
-                                                        title="Marcar como Pago"
+                                                        title={isLocked ? "Dia Fechado" : "Marcar como Pago"}
                                                     >
                                                         {updateStatusMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <CheckCircle2 size={18} />}
                                                     </button>
@@ -533,8 +553,12 @@ const PayablesPage = () => {
                                                 )}
                                                 
                                                 <div className="relative group/menu">
-                                                    <button className="p-2.5 text-slate-400 hover:bg-slate-100 rounded-xl transition-all">
-                                                        <MoreVertical size={18} />
+                                                    <button 
+                                                        disabled={isLocked}
+                                                        className="p-2.5 text-slate-400 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-20"
+                                                        title={isLocked ? "Dia Fechado" : ""}
+                                                    >
+                                                        {isLocked ? <LockIcon size={18} className="text-slate-300" /> : <MoreVertical size={18} />}
                                                     </button>
                                                     
                                                     {/* Custom DropdownMenu */}

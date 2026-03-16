@@ -11,7 +11,8 @@ import {
     Search,
     CheckCircle2,
     MoreVertical,
-    Paperclip
+    Paperclip,
+    Lock as LockIcon
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { DeleteConfirmationModal } from '../../components/Financial/DeleteConfirmationModal';
@@ -199,6 +200,22 @@ const StatCard = ({ title, value, icon, color, alert }: any) => (
     </div>
 );
 
+const useClosureStatus = (date: string) => {
+    return useQuery({
+        queryKey: ['closure-status', date],
+        queryFn: async () => {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cash/status?date=${date}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'x-clinic-id': localStorage.getItem('clinicId') || ''
+                }
+            });
+            return response.json();
+        },
+        enabled: !!date
+    });
+};
+
 const PendenciaisPage = () => {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
@@ -206,6 +223,9 @@ const PendenciaisPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [activeFilter, setActiveFilter] = useState<string>('all');
     const itemsPerPage = 20;
+
+    const { data: closureStatus } = useClosureStatus(new Date().toISOString().split('T')[0]);
+    const isLocked = closureStatus?.status === 'CLOSED';
 
     const [deleteModal, setDeleteModal] = useState<{ open: boolean; item: any | null }>({ open: false, item: null });
 
@@ -425,9 +445,12 @@ const PendenciaisPage = () => {
                                                     </a>
                                                 )}
                                                 <div className="relative group/menu">
-                                                    <button className="p-2.5 hover:bg-slate-100 rounded-xl transition-all">
-                                                        <MoreVertical size={18} />
-                                                    </button>
+                                                                <button 
+                                                                    disabled={isLocked}
+                                                                    className="p-2.5 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-20"
+                                                                >
+                                                                    {isLocked ? <LockIcon size={18} className="text-slate-300" /> : <MoreVertical size={18} />}
+                                                                </button>
                                                     <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all pointer-events-none group-hover/menu:pointer-events-auto">
                                                         <button 
                                                             onClick={() => setDeleteModal({ open: true, item })}
