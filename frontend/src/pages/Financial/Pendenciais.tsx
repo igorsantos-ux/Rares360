@@ -278,7 +278,7 @@ const PendenciaisPage = () => {
             
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Contas a Receber</h2>
+                    <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Contas a Receber (Pendências)</h2>
                     <p className="text-slate-500 font-medium mt-1">Acompanhamento de faturamento e pagamentos de clientes. (v1.1)</p>
                 </div>
                 <div className="flex items-center gap-3">
