@@ -1,7 +1,5 @@
 import type { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../lib/prisma.js';
 
 export class CashController {
     static async checkStatus(req: any, res: Response) {
@@ -9,6 +7,7 @@ export class CashController {
             const { date } = req.query;
             const clinicId = req.clinicId;
 
+            if (!clinicId) return res.status(401).json({ error: 'Clínica não identificada' });
             if (!date) return res.status(400).json({ error: 'Data é obrigatória' });
 
             const targetDate = new Date(date as string);
@@ -38,7 +37,7 @@ export class CashController {
             });
         } catch (error) {
             console.error('Erro ao verificar status:', error);
-            res.status(500).json({ error: 'Erro interno' });
+            res.status(500).json({ error: 'Erro interno ao verificar status do caixa' });
         }
     }
 
@@ -48,6 +47,8 @@ export class CashController {
             const clinicId = req.clinicId;
             const userId = req.userId;
 
+            if (!clinicId) return res.status(401).json({ error: 'Clínica não identificada' });
+            if (!userId) return res.status(401).json({ error: 'Usuário não identificado' });
             if (!date) return res.status(400).json({ error: 'Data é obrigatória' });
 
             const targetDate = new Date(date);
