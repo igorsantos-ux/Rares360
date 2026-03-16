@@ -142,4 +142,10 @@ export const pricingApi = {
     deleteProcedure: (id: string) => api.delete(`pricing/procedure/${id}`),
 };
 
+export const complianceApi = {
+    getDocuments: () => api.get('compliance'),
+    updateDocument: (id: string, data: any) => api.patch(`compliance/${id}`, data),
+    deleteDocument: (id: string) => api.delete(`compliance/${id}`),
+};
+
 export default api;

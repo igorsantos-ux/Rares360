@@ -18,6 +18,7 @@ import CashFlow from './pages/CashFlow';
 import Goals from './pages/Goals';
 import DocumentsPage from './pages/Documents';
 import Pricing from './pages/Pricing';
+import Compliance from './pages/Compliance';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -88,6 +89,7 @@ function App() {
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/inventory" element={<Inventory />} />
+                <Route path="/compliance" element={<Compliance />} />
                 <Route path="/documents" element={<DocumentsPage />} />
                 <Route path="/automations" element={<Automations />} />
               </Route>

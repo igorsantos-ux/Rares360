@@ -115,6 +115,35 @@ export class SaaSController {
                     pricePerUser: parseFloatSafe(pricePerUser) || 50.0
                 }
             });
+
+            // Seed de Documentos Sugeridos (v15.0)
+            const suggestedDocuments = [
+                // Clínica
+                { title: 'Contrato Social / Cartão CNPJ', category: 'Clínica' },
+                { title: 'Alvará de Funcionamento', category: 'Clínica' },
+                { title: 'Alvará Sanitário (VISA)', category: 'Clínica' },
+                { title: 'LTA (Laudo Técnico de Avaliação)', category: 'Clínica' },
+                { title: 'PGRSS (Plano de Resíduos)', category: 'Clínica' },
+                { title: 'Seguro Resp. Civil Operacional', category: 'Clínica' },
+                // Corpo Clínico
+                { title: 'CRM e RQE', category: 'Médico' },
+                { title: 'Diploma e Certificados', category: 'Médico' },
+                { title: 'Seguro Resp. Civil Profissional', category: 'Médico' },
+                { title: 'Contrato de Prestação de Serviço', category: 'Médico' },
+                // Templates
+                { title: 'TCLE (Termo de Consentimento)', category: 'Templates' },
+                { title: 'Contrato Prestação de Serviço ao Paciente', category: 'Templates' },
+                { title: 'Termo de Uso de Imagem', category: 'Templates' }
+            ];
+
+            await prisma.clinicDocument.createMany({
+                data: suggestedDocuments.map(doc => ({
+                    ...doc,
+                    clinicId: clinic.id,
+                    status: 'PENDENTE'
+                }))
+            });
+
             res.status(200).json(clinic);
         } catch (error: any) {
             console.error('Error creating clinic:', error);

@@ -15,6 +15,7 @@ import accountPayableRoutes from './routes/accountPayableRoutes.js';
 import receivableRoutes from './routes/receivableRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
+import complianceRoutes from './routes/complianceRoutes.js';
 
 import importRoutes from './routes/importRoutes.js';
 import { SeedService } from './services/SeedService.js';
@@ -58,6 +59,7 @@ app.use('/api/contas-a-pagar', accountPayableRoutes);
 app.use('/api/pendenciais', receivableRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/pricing', pricingRoutes);
+app.use('/api/compliance', complianceRoutes);
 
 app.use('/api/import', importRoutes);
 
