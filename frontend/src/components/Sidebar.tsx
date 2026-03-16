@@ -9,8 +9,7 @@ import {
     ArrowUpCircle,
     FolderOpen,
     LogOut,
-    Calculator,
-    ShieldCheck
+    Calculator
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -55,7 +54,6 @@ const Sidebar = () => {
         { label: "Gestão", items: [
             { icon: <Package size={20} />, label: "Estoque", path: "/inventory" },
             { icon: <Target size={20} />, label: "Metas", path: "/goals" },
-            { icon: <ShieldCheck size={20} />, label: "Compliance", path: "/compliance" },
             { icon: <FolderOpen size={20} />, label: "Documentos", path: "/documents" },
         ]}
     ];
