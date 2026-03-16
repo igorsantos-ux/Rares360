@@ -12,6 +12,8 @@ router.get('/productivity', CoreController.getProductivity);
 router.post('/doctors', CoreController.createDoctor);
 router.get('/stock', CoreController.getStock);
 router.post('/stock', CoreController.createStock);
+router.post('/stock/movement', CoreController.registerMovement);
+router.get('/stock/history', CoreController.getStockHistory);
 
 // Pacientes
 router.get('/patients', PatientController.list);

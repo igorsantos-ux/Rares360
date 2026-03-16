@@ -58,6 +58,7 @@ model Clinic {
   accountPayables       AccountPayable[]
   pricingSimulations    PricingSimulation[]
   procedurePricings     ProcedurePricing[]
+  stockMovements        StockMovement[]
   leads                 Lead[]
   createdAt             DateTime        @default(now())
 }
@@ -171,7 +172,30 @@ model InventoryItem {
   lastRestock    DateTime  @default(now())
   
   clinicId       String
-  clinic         Clinic    @relation(fields: [clinicId], references: [id])
+  clinic         Clinic          @relation(fields: [clinicId], references: [id])
+
+  movements      StockMovement[]
+}
+
+enum MovementType {
+  ENTRADA
+  SAIDA
+}
+
+model StockMovement {
+  id        String       @id @default(uuid())
+  type      MovementType
+  quantity  Float
+  reason    String?      // Compra, Uso em Procedimento, Perda, Ajuste, etc.
+  createdAt DateTime     @default(now())
+  
+  userId    String?
+  
+  itemId    String
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  
+  clinicId  String
+  clinic    Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 }
 
 model FinancialGoal {

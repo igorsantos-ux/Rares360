@@ -99,6 +99,8 @@ export const coreApi = {
     getProductivity: () => api.get('core/productivity'),
     createDoctor: (data: any) => api.post('core/doctors', data),
     createStockItem: (data: any) => api.post('core/stock', data),
+    registerStockMovement: (data: any) => api.post('core/stock/movement', data),
+    getStockHistory: () => api.get('core/stock/history'),
 };
 
 export const reportingApi = {
