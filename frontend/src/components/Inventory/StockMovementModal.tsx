@@ -25,6 +25,14 @@ export const StockMovementModal = ({ isOpen, onClose, stockItems, initialType = 
     const [quantity, setQuantity] = useState('');
     const [reason, setReason] = useState('');
 
+    // Sincroniza o tipo quando o modal abre
+    React.useEffect(() => {
+        if (isOpen) {
+            setType(initialType);
+            resetForm();
+        }
+    }, [isOpen, initialType]);
+
     const selectedItem = stockItems.find(i => i.id === itemId);
 
     const mutation = useMutation({
@@ -72,19 +80,19 @@ export const StockMovementModal = ({ isOpen, onClose, stockItems, initialType = 
     return (
         <AnimatePresence>
             {isOpen && (
-                <>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                     <motion.div 
                         initial={{ opacity: 0 }} 
                         animate={{ opacity: 1 }} 
                         exit={{ opacity: 0 }} 
                         onClick={onClose}
-                        className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[100]" 
+                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" 
                     />
                     <motion.div 
                         initial={{ opacity: 0, scale: 0.9, y: 20 }} 
                         animate={{ opacity: 1, scale: 1, y: 0 }} 
                         exit={{ opacity: 0, scale: 0.9, y: 20 }} 
-                        className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl z-[101] overflow-hidden"
+                        className="relative w-full max-w-lg bg-white rounded-[2.5rem] shadow-2xl z-[101] overflow-hidden"
                     >
                         <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
                             <div className="flex items-center gap-3">
@@ -214,7 +222,7 @@ export const StockMovementModal = ({ isOpen, onClose, stockItems, initialType = 
                             </div>
                         </form>
                     </motion.div>
-                </>
+                </div>
             )}
         </AnimatePresence>
     );
