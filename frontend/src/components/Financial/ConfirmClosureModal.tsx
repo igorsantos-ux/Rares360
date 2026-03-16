@@ -82,10 +82,7 @@ const ConfirmClosureModal = ({ isOpen, onClose, onConfirm, isPending }: ConfirmC
                             </div>
                         </div>
 
-                        {/* Rodapé Decorativo Case Rares */}
-                        <div className="bg-slate-50 py-4 px-10 border-t border-slate-100 flex justify-center">
-                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em]">Auditoria de Segurança • Protocolo RARES</p>
-                        </div>
+
                     </motion.div>
                 </>
             )}

@@ -434,9 +434,7 @@ const DailyClosure = () => {
             </div>
           </div>
           
-          <div className="px-8 text-center">
-             <p className="text-[10px] text-slate-300 font-black uppercase tracking-widest">Powered by Antigravity Financial Engine</p>
-          </div>
+
         </div>
       </div>
 
