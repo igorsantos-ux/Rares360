@@ -4,8 +4,6 @@ import {
     Search, 
     Upload, 
     Folder, 
-    Download, 
-    MoreVertical, 
     Clock, 
     Users, 
     Filter, 
@@ -81,7 +79,7 @@ const DocumentsPage = () => {
 
     const complianceCategories = [
         { id: 'Clínica', label: 'Documentos da Clínica', icon: <Hospital size={20} />, color: '#8A9A5B' },
-        { id: 'Médico', label: 'Corpo Clínico (Médicos)', icon: <User size={20} />, color: '#DEB587' },
+        { id: 'Médico', label: 'Corpo Clínico (Médicos)', icon: <Users size={20} />, color: '#DEB587' },
         { id: 'Templates', label: 'Modelos & Templates', icon: <FileSignature size={20} />, color: '#697D58' },
     ];
 
@@ -233,7 +231,7 @@ const DocumentsPage = () => {
     );
 };
 
-const ComplianceCard = ({ doc, onUpload, onMissing }: any) => {
+const ComplianceCard = ({ doc, onUpload, onMissing }: { doc: any, onUpload: (file: File) => void, onMissing: () => void }) => {
     const isSent = doc.status === 'ENVIADO';
     return (
         <motion.div whileHover={{ y: -4 }} className="bg-white/70 backdrop-blur-md rounded-3xl border border-[#8A9A5B]/10 shadow-sm p-6 flex flex-col gap-5 hover:border-[#8A9A5B]/40 transition-all group">
@@ -266,7 +264,7 @@ const ComplianceCard = ({ doc, onUpload, onMissing }: any) => {
                 ) : (
                     <div className="flex flex-col gap-2">
                         <label className="w-full flex items-center justify-center gap-2 py-3.5 bg-[#8A9A5B] text-white rounded-xl font-bold text-xs shadow-lg shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer">
-                            <Upload size={18} />Fazer Upload<input type="file" className="hidden" onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} />
+                            <Upload size={18} />Fazer Upload<input type="file" className="hidden" onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0] as File)} />
                         </label>
                         <button onClick={onMissing} className="w-full py-2.5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors">Não tenho este documento</button>
                     </div>
