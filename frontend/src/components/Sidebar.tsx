@@ -49,7 +49,7 @@ const Sidebar = () => {
         ]},
         { label: "Financeiro", items: [
             { icon: <BarChart3 size={20} />, label: "Faturamento", path: "/billing" },
-            { icon: <ArrowUpCircle size={20} />, label: "Contas a Receber", path: "/pendenciais" },
+            { icon: <ArrowUpCircle size={20} />, label: "Contas a Receber (Pendências)", path: "/pendenciais" },
             { icon: <ArrowDownCircle size={20} />, label: "Contas a Pagar", path: "/payables" },
             { icon: <TrendingUp size={20} />, label: "Fluxo de Caixa", path: "/cash-flow" },
         ]},
