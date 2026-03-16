@@ -24,10 +24,12 @@ import {
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import QuickTransactionModal from '../../components/Financial/QuickTransactionModal';
+import ConfirmClosureModal from '../../components/Financial/ConfirmClosureModal';
 
 const DailyClosure = () => {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'income' | 'expense'>('all');
   const [notes, setNotes] = useState('');
   const [checklist, setChecklist] = useState({
@@ -97,10 +99,11 @@ const DailyClosure = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['closure-status'] });
+      setIsConfirmModalOpen(false);
       toast.success('Caixa fechado com sucesso! Dados protegidos.');
     },
     onError: (err: any) => {
-      toast.error(err.message || 'Erro ao realizar fechamento');
+      toast.error(err.message || 'Falha ao fechar caixa');
     }
   });
 
@@ -414,7 +417,7 @@ const DailyClosure = () => {
                  <button
                    onClick={() => {
                      if (!canClose) return;
-                     if (confirm('Deseja realmente encerrar este caixa? Esta ação é irreversível e bloqueará as movimentações do dia.')) closureMutation.mutate();
+                     setIsConfirmModalOpen(true);
                    }}
                    disabled={!canClose || closureMutation.isPending}
                    className={`w-full py-5 rounded-[1.8rem] font-black text-[10px] uppercase tracking-[0.25em] flex items-center justify-center gap-4 transition-all active:scale-95 ${
@@ -441,6 +444,13 @@ const DailyClosure = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         selectedDate={selectedDate}
+      />
+
+      <ConfirmClosureModal 
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={() => closureMutation.mutate()}
+        isPending={closureMutation.isPending}
       />
     </div>
   );
