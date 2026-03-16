@@ -44,18 +44,18 @@ const Sidebar = () => {
     const navItems = [
         { label: "Principal", items: [
             { icon: <LayoutDashboard size={20} />, label: "Painel Financeiro", path: "/dashboard" },
-            { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
-            { icon: <BarChart3 size={20} />, label: "Faturamento", path: "/billing" },
+            { icon: <FileText size={20} />, label: "DRE", path: "/dre" },
+            { icon: <Activity size={20} />, label: "DFC", path: "/dfc" },
         ]},
         { label: "Financeiro", items: [
+            { icon: <BarChart3 size={20} />, label: "Faturamento", path: "/billing" },
             { icon: <ArrowUpCircle size={20} />, label: "Contas a Receber", path: "/pendenciais" },
             { icon: <ArrowDownCircle size={20} />, label: "Contas a Pagar", path: "/payables" },
             { icon: <TrendingUp size={20} />, label: "Fluxo de Caixa", path: "/cash-flow" },
-            { icon: <FileText size={20} />, label: "DRE", path: "/dre" },
-            { icon: <Activity size={20} />, label: "DFC", path: "/dfc" },
-            { icon: <Calculator size={20} />, label: "Precificação", path: "/pricing" },
         ]},
         { label: "Gestão", items: [
+            { icon: <Calculator size={20} />, label: "Precificação", path: "/pricing" },
+            { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
             { icon: <Package size={20} />, label: "Estoque", path: "/inventory" },
             { icon: <Target size={20} />, label: "Metas", path: "/goals" },
             { icon: <FolderOpen size={20} />, label: "Documentos", path: "/documents" },
