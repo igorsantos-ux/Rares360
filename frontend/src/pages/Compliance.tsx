@@ -11,9 +11,7 @@ import {
     User, 
     Hospital, 
     FileSignature,
-    Eye,
-    EyeOff,
-    MoreHorizontal
+    Eye
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { complianceApi, payablesApi } from '../services/api';
@@ -146,7 +144,6 @@ const Compliance = () => {
 
 const DocumentCard = ({ doc, onUpload, onMissing }: { doc: any, onUpload: (file: File) => void, onMissing: () => void }) => {
     const isSent = doc.status === 'ENVIADO';
-    const hasExpiry = doc.expiryDate;
 
     return (
         <motion.div 
