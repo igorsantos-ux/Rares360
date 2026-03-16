@@ -264,6 +264,7 @@ export class AccountPayableController {
                          amount: Number(inst.amount),
                          dueDate: new Date(inst.dueDate),
                          status: inst.status || 'PENDENTE',
+                         paidAt: inst.status === 'PAGO' ? new Date(inst.dueDate) : null,
                          paymentMethod: paymentMethod || null
                      };
                  });

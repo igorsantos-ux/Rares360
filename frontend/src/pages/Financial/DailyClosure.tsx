@@ -14,6 +14,8 @@ import {
   User,
   Check,
   Filter,
+  ArrowUpRight,
+  ArrowDownLeft,
   FileText,
   Clock,
   Plus,
@@ -272,8 +274,8 @@ const DailyClosure = () => {
                               {t.type === 'INCOME' ? '+' : '-'} {formatCurrency(t.amount)}
                             </span>
                             {t.type === 'INCOME' ? 
-                              <TrendingUp size={14} className="text-emerald-400" /> : 
-                              <TrendingDown size={14} className="text-red-400/60" />
+                              <ArrowUpRight size={14} strokeWidth={3} className="text-emerald-400" /> : 
+                              <ArrowDownLeft size={14} strokeWidth={3} className="text-red-400/60" />
                             }
                           </div>
                         </td>
