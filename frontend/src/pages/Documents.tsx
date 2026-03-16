@@ -15,6 +15,7 @@ import {
     CheckCircle2,
     Eye,
     AlertCircle,
+    ShieldAlert,
     Info,
     ExternalLink
 } from 'lucide-react';
@@ -39,6 +40,9 @@ const DocumentsPage = () => {
         },
         enabled: activeTab === 'compliance'
     });
+    
+    const pendingCount = complianceDocs.filter((d: any) => d.status !== 'ENVIADO').length;
+    const isCompliant = complianceDocs.length > 0 && pendingCount === 0;
 
     const updateDocMutation = useMutation({
         mutationFn: ({ id, data }: { id: string, data: any }) => complianceApi.updateDocument(id, data),
@@ -91,12 +95,18 @@ const DocumentsPage = () => {
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Gestão Documental</h2>
                     <p className="text-slate-500 font-medium mt-1">Repositório central e checklist de conformidade da clínica.</p>
                 </div>
-                {activeTab === 'compliance' && (
-                    <div className="bg-white/50 backdrop-blur-sm border border-[#8A9A5B]/20 px-6 py-3 rounded-2xl flex items-center gap-3">
-                        <ShieldCheck className="text-[#8A9A5B]" size={24} />
+                {activeTab === 'compliance' && !isLoadingCompliance && (
+                    <div className={`bg-white/50 backdrop-blur-sm border ${isCompliant ? 'border-[#8A9A5B]/20' : 'border-amber-500/20'} px-6 py-3 rounded-2xl flex items-center gap-3 transition-colors`}>
+                        {isCompliant ? (
+                            <ShieldCheck className="text-[#8A9A5B]" size={24} />
+                        ) : (
+                            <ShieldAlert className="text-amber-500" size={24} />
+                        )}
                         <div>
                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status Compliance</p>
-                            <p className="text-sm font-bold text-slate-700">Conformidade em Dia</p>
+                            <p className={`text-sm font-bold ${isCompliant ? 'text-slate-700' : 'text-amber-700'}`}>
+                                {isCompliant ? 'Conformidade em Dia' : `${pendingCount} Pendências Identificadas`}
+                            </p>
                         </div>
                     </div>
                 )}
