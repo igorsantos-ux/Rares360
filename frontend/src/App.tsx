@@ -18,6 +18,7 @@ import CashFlow from './pages/CashFlow';
 import Goals from './pages/Goals';
 import DocumentsPage from './pages/Documents';
 import Pricing from './pages/Pricing';
+import Contact from './pages/Contact';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -28,7 +29,7 @@ import { Toaster } from 'react-hot-toast';
 function App() {
   const location = useLocation();
   const { user, loading } = useAuth();
-  const isPublicPage = ['/', '/about', '/login'].includes(location.pathname);
+  const isPublicPage = ['/', '/about', '/login', '/contact'].includes(location.pathname);
 
   // Só mostra Header se for Staff/Admin de Clínica e o carregamento terminou
   const showHeader = !isPublicPage && !loading && user && user.role?.toUpperCase() !== 'ADMIN_GLOBAL';
@@ -67,6 +68,7 @@ function App() {
               <Route path="/login" element={
                 user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LoginPage />
               } />
+              <Route path="/contact" element={<Contact />} />
 
               {/* SaaS Admin Routes */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN_GLOBAL']} />}>

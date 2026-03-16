@@ -163,6 +163,7 @@ const LandingPage = () => {
                     </div>
                     <div className="flex items-center gap-8">
                         <Link to="/about" className="text-white font-bold hover:text-[#FDFCF0]/70 transition-colors text-lg">Quem Somos</Link>
+                        <Link to="/contact" className="text-white font-bold hover:text-[#FDFCF0]/70 transition-colors text-lg">Contato</Link>
                         <Link
                             to="/login"
                             className="px-6 py-2.5 bg-[#697D58] text-white rounded-[4px] font-bold text-sm shadow-xl shadow-black/40 hover:scale-105 transition-all border border-white/20"
