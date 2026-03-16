@@ -44,7 +44,7 @@ export class CashController {
 
     static async closeDay(req: any, res: Response) {
         try {
-            const { date } = req.body;
+            const { date, notes } = req.body;
             const clinicId = req.clinicId;
             const userId = req.userId;
 
@@ -105,7 +105,8 @@ export class CashController {
                     closingBalance,
                     status: 'CLOSED',
                     closedById: userId,
-                    closedAt: new Date()
+                    closedAt: new Date(),
+                    notes
                 },
                 create: {
                     clinicId,
@@ -115,7 +116,8 @@ export class CashController {
                     totalExpenses: expense,
                     closingBalance,
                     status: 'CLOSED',
-                    closedById: userId
+                    closedById: userId,
+                    notes
                 }
             });
 

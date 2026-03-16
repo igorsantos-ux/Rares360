@@ -345,6 +345,7 @@ model DailyClosure {
   closedAt       DateTime      @default(now())
   closedById     String
   closedBy       User          @relation("ClosedBy", fields: [closedById], references: [id])
+  notes          String?       @db.Text
 
   @@unique([clinicId, date])
 }
