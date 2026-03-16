@@ -1,6 +1,12 @@
-import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { coreApi } from '../services/api';
+import { 
+    addDays, 
+    isBefore, 
+    isAfter, 
+    startOfDay,
+    differenceInDays 
+} from 'date-fns';
 import {
     Package,
     Search,
@@ -31,6 +37,7 @@ const Inventory = () => {
     const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
     const [movementType, setMovementType] = useState<'ENTRADA' | 'SAIDA'>('ENTRADA');
     const [selectedItem, setSelectedItem] = useState<any>(null);
+    const [filterType, setFilterType] = useState<'all' | 'low' | 'expiration'>('all');
 
     const { data: response, isLoading: isLoadingItems } = useQuery({
         queryKey: ['stock-items'],
@@ -125,9 +132,25 @@ const Inventory = () => {
 
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <InventoryStatCard label="Total de Itens" value={stats.totalItems.toString()} icon={<Package size={20} />} />
-                <InventoryStatCard label="Abaixo do Mínimo" value={stats.lowStock.toString()} icon={<AlertTriangle size={20} />} alert={stats.lowStock > 0} />
-                <InventoryStatCard label="Valor em Estoque" value={`R$ ${stats.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} icon={<BarChart2 size={20} />} />
+                <InventoryStatCard 
+                    label="Itens p/ Comprar" 
+                    value={stats.toBuyCount.toString()} 
+                    icon={<Truck size={20} />} 
+                    alert={stats.toBuyCount > 0} 
+                    color="red"
+                />
+                <InventoryStatCard 
+                    label="Vencendo (30 dias)" 
+                    value={stats.expiringCount.toString()} 
+                    icon={<Clock size={20} />} 
+                    alert={stats.expiringCount > 0}
+                    color="amber"
+                />
+                <InventoryStatCard 
+                    label="Investimento p/ Reposição" 
+                    value={`R$ ${stats.replenishmentInvestment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
+                    icon={<BarChart2 size={20} />} 
+                />
             </div>
 
             {/* Tabs */}
@@ -177,9 +200,20 @@ const Inventory = () => {
                                 />
                             </div>
                             <div className="flex items-center gap-3">
-                                <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-all">
-                                    <Filter size={16} /> Filtro
-                                </button>
+                                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 mr-2">
+                                    <button 
+                                        onClick={() => setFilterType('all')}
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${filterType === 'all' ? 'bg-white text-[#697D58] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                    > Todos </button>
+                                    <button 
+                                        onClick={() => setFilterType('low')}
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${filterType === 'low' ? 'bg-red-500 text-white shadow-lg shadow-red-200' : 'text-slate-400 hover:text-red-500'}`}
+                                    > Compra Urgente </button>
+                                    <button 
+                                        onClick={() => setFilterType('expiration')}
+                                        className={`px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${filterType === 'expiration' ? 'bg-amber-500 text-white shadow-lg shadow-amber-200' : 'text-slate-400 hover:text-amber-600'}`}
+                                    > Vencendo </button>
+                                </div>
                                 <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-all">
                                     <Download size={16} /> Exportar
                                 </button>
@@ -199,15 +233,26 @@ const Inventory = () => {
                                     <thead>
                                         <tr className="bg-slate-50/50">
                                             <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Item</th>
-                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoria / Unid.</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoria</th>
                                             <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldos</th>
-                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Rastreabilidade</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Validade</th>
+                                            <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
                                             <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#8A9A5B]/5">
                                         {filteredItems.map((item: any) => {
                                             const isLowStock = item.quantity <= item.minQuantity;
+                                            const toBuyQty = item.minQuantity > 0 ? (item.minQuantity * 2) - item.quantity : 0;
+                                            
+                                            // Lógica de Validade com date-fns
+                                            let expStatus: 'ok' | 'warning' | 'critical' = 'ok';
+                                            if (item.expirationDate) {
+                                                const exp = new Date(item.expirationDate);
+                                                if (isBefore(exp, today)) expStatus = 'critical';
+                                                else if (isBefore(exp, thirtyDaysFromNow)) expStatus = 'warning';
+                                            }
+
                                             return (
                                                 <tr key={item.id} className="hover:bg-[#8A9A5B]/5 transition-colors group cursor-pointer" onClick={() => handleOpenSheet(item)}>
                                                     <td className="px-8 py-6">
@@ -228,30 +273,51 @@ const Inventory = () => {
                                                                 <p className={`text-[10px] font-black uppercase tracking-widest ${isLowStock ? 'text-red-400' : 'text-slate-400'}`}>Atual</p>
                                                                 <div className="flex items-center justify-center gap-1.5">
                                                                     <p className={`text-lg font-black ${isLowStock ? 'text-red-600' : 'text-slate-700'}`}>{item.quantity}</p>
-                                                                    {isLowStock && <AlertTriangle size={14} className="text-red-500" />}
                                                                 </div>
                                                             </div>
-                                                            <ArrowUpDown size={14} className="text-slate-300" />
-                                                            <div className="text-center text-slate-400">
-                                                                <p className="text-[10px] font-bold uppercase tracking-widest">Mín</p>
-                                                                <p className="text-xs font-black">{item.minQuantity}</p>
+                                                            <div className="flex flex-col gap-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <ArrowUpDown size={10} className="text-slate-300" />
+                                                                    <span className="text-[10px] font-bold text-slate-400 uppercase">Mín: {item.minQuantity}</span>
+                                                                </div>
+                                                                {isLowStock && item.minQuantity > 0 && (
+                                                                    <span className="text-[10px] font-black text-red-500 bg-red-50 px-2 py-0.5 rounded-lg border border-red-100 whitespace-nowrap animate-pulse">
+                                                                        Comprar: {toBuyQty} un
+                                                                    </span>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-6 text-center">
                                                         <div className="flex flex-col items-center gap-1">
                                                             {item.expirationDate ? (
-                                                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-                                                                    <Calendar size={12} className="text-[#8A9A5B]" />
+                                                                <div className={`flex items-center gap-1.5 text-[10px] font-bold ${
+                                                                    expStatus === 'critical' ? 'text-red-600' : 
+                                                                    expStatus === 'warning' ? 'text-amber-600' : 'text-slate-500'
+                                                                }`}>
+                                                                    {expStatus === 'critical' && <AlertTriangle size={12} className="text-red-600 animate-bounce" />}
+                                                                    {expStatus === 'warning' && <Clock size={12} className="text-amber-500" />}
+                                                                    {expStatus === 'ok' && <Calendar size={12} className="text-[#8A9A5B]" />}
                                                                     {new Date(item.expirationDate).toLocaleDateString()}
                                                                 </div>
                                                             ) : (
-                                                                <span className="text-[10px] text-slate-300 font-bold uppercase">Sem expiração</span>
+                                                                <span className="text-[10px] text-slate-300 font-bold uppercase tracking-widest">---</span>
                                                             )}
                                                             {item.supplier && (
                                                                 <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-medium">
                                                                     <Truck size={10} /> {item.supplier}
                                                                 </div>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-center">
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            {isLowStock ? (
+                                                                <span className="text-[8px] font-black uppercase tracking-widest bg-red-500 text-white px-3 py-1 rounded-lg shadow-sm">Abbaixo do Mínimo</span>
+                                                            ) : expStatus === 'warning' ? (
+                                                                <span className="text-[8px] font-black uppercase tracking-widest bg-amber-500 text-white px-3 py-1 rounded-lg shadow-sm">Vencendo</span>
+                                                            ) : (
+                                                                <span className="text-[8px] font-black uppercase tracking-widest bg-emerald-500 text-white px-3 py-1 rounded-lg shadow-sm">Em Dia</span>
                                                             )}
                                                         </div>
                                                     </td>
@@ -349,16 +415,33 @@ const Inventory = () => {
     );
 };
 
-const InventoryStatCard = ({ label, value, icon, alert }: any) => (
-    <div className={`bg-white p-6 rounded-3xl border ${alert ? 'border-[#DEB587]/30 shadow-lg shadow-[#DEB587]/5' : 'border-[#8A9A5B]/10 shadow-sm'} flex items-center gap-5 group`}>
-        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 ${alert ? 'bg-[#DEB587]/10 text-[#DEB587]' : 'bg-slate-50 text-[#8A9A5B]'
+const InventoryStatCard = ({ label, value, icon, alert, color }: any) => (
+    <div className={`bg-white p-6 rounded-3xl border transition-all duration-500 ${
+        alert 
+        ? (color === 'red' ? 'border-red-200 shadow-xl shadow-red-50 ring-1 ring-red-100' : 'border-amber-200 shadow-xl shadow-amber-50 ring-1 ring-amber-100') 
+        : 'border-[#8A9A5B]/10 shadow-sm'
+    } flex items-center gap-5 group overflow-hidden relative`}>
+        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 relative z-10 ${
+            alert 
+            ? (color === 'red' ? 'bg-red-500 text-white' : 'bg-amber-500 text-white') 
+            : 'bg-slate-50 text-[#8A9A5B]'
             }`}>
             {icon}
         </div>
-        <div>
+        <div className="relative z-10">
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-            <h5 className={`text-2xl font-black ${alert ? 'text-[#DEB587]' : 'text-[#1A202C]'}`}>{value}</h5>
+            <h5 className={`text-2xl font-black ${
+                alert 
+                ? (color === 'red' ? 'text-red-600' : 'text-amber-600') 
+                : 'text-[#1A202C]'
+            }`}>{value}</h5>
         </div>
+
+        {alert && (
+            <div className={`absolute -right-4 -bottom-4 w-24 h-24 opacity-[0.05] pointer-events-none ${color === 'red' ? 'text-red-500' : 'text-amber-500'}`}>
+                {icon}
+            </div>
+        )}
     </div>
 );
 
