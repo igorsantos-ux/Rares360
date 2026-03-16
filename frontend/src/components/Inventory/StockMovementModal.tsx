@@ -4,8 +4,7 @@ import {
     ArrowUpCircle, 
     ArrowDownCircle, 
     Save, 
-    AlertCircle,
-    Package
+    AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
