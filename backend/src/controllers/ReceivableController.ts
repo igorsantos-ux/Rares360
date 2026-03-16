@@ -5,11 +5,12 @@ import { CashSecurity } from '../middleware/CashSecurity.js';
 export class ReceivableController {
     
     // Lista todos os Recebimentos / Pendenciais com paginação e analytics
+    // Listagem de recebíveis (Pendenciais)
     static async list(req: Request, res: Response) {
         try {
             const clinicId = (req as any).clinicId;
             if (!clinicId) {
-                return res.status(401).json({ message: 'Clínica não identificada.' });
+                return res.status(400).json({ message: 'Clínica não identificada.' });
             }
 
             const { 
@@ -240,8 +241,15 @@ export class ReceivableController {
 
             return res.status(201).json(transaction);
         } catch (error: any) {
-            console.error('Error creating receivable:', error);
-            return res.status(500).json({ message: 'Erro ao criar pendencial', error: error.message });
+            console.error('--- CRITICAL ERROR: ReceivableController.create ---');
+            console.error('Payload recebido:', req.body);
+            console.error('ClinicId identificado:', (req as any).clinicId);
+            console.error('Prisma Error:', error);
+            return res.status(500).json({ 
+                message: 'Erro ao criar lançamento de entrada', 
+                error: error.message,
+                details: error.code || 'UNKNOWN_ERROR'
+            });
         }
     }
 

@@ -5,7 +5,7 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
-        return res.status(401).json({ error: 'Token não fornecido' });
+        return res.status(401).json({ error: 'Token não fornecido', message: 'Token não fornecido' });
     }
 
     const [, token] = authHeader.split(' ');
@@ -13,7 +13,7 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
     const decoded = AuthService.verifyToken(token);
 
     if (!decoded) {
-        return res.status(401).json({ error: 'Token inválido ou expirado' });
+        return res.status(401).json({ error: 'Token inválido ou expirado', message: 'Token inválido ou expirado' });
     }
 
     req.user = decoded;
@@ -24,7 +24,7 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
 export const roleMiddleware = (allowedRoles: string[]) => {
     return (req: any, res: Response, next: NextFunction) => {
         if (!req.user || !allowedRoles.includes(req.user.role)) {
-            return res.status(403).json({ error: 'Acesso negado: permissão insuficiente' });
+            return res.status(403).json({ error: 'Acesso negado: permissão insuficiente', message: 'Acesso negado: permissão insuficiente' });
         }
         next();
     };
@@ -40,7 +40,7 @@ export const tenantMiddleware = (req: any, res: Response, next: NextFunction) =>
     }
 
     if (!req.user.clinicId && req.user.role !== 'ADMIN_GLOBAL') {
-        return res.status(403).json({ error: 'Usuário sem clínica vinculada' });
+        return res.status(403).json({ error: 'Usuário sem clínica vinculada', message: 'Usuário sem clínica vinculada' });
     }
 
     // Injeta o clinicId do usuário logado

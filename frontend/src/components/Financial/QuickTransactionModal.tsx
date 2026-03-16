@@ -56,7 +56,7 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
       });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.message || 'Falha ao criar entrada');
+        throw new Error(errData.message || errData.error || 'Falha ao criar entrada');
       }
       return response.json();
     }
@@ -90,7 +90,7 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
       });
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.message || 'Falha ao criar saída');
+        throw new Error(errData.message || errData.error || 'Falha ao criar saída');
       }
       return response.json();
     }

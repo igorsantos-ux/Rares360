@@ -201,7 +201,7 @@ export class AccountPayableController {
         try {
             const clinicId = (req as any).clinicId;
             if (!clinicId) {
-                return res.status(401).json({ message: 'Clínica não identificada.' });
+                return res.status(401).json({ message: 'Clínica não identificada.', error: 'MISSING_CLINIC_ID' });
             }
 
             const {
