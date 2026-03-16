@@ -23,9 +23,11 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
+import QuickTransactionModal from '../../components/Financial/QuickTransactionModal';
 
 const DailyClosure = () => {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'income' | 'expense'>('all');
   const [notes, setNotes] = useState('');
   const [checklist, setChecklist] = useState({
@@ -144,12 +146,22 @@ const DailyClosure = () => {
             <p className="text-xl font-mono font-bold text-red-500">-{formatCurrency(totals.expense)}</p>
           </div>
 
-          <div className="p-6 bg-[#697D58]/5">
+          <div className="p-6 bg-[#697D58]/5 relative">
             <div className="flex items-center gap-3 mb-2">
               <DollarSign size={16} className="text-[#697D58]" />
               <p className="text-[10px] font-black text-[#697D58]/60 uppercase tracking-widest">Saldo Final Esperado</p>
             </div>
             <p className="text-2xl font-mono font-black text-[#697D58]">{formatCurrency(expectedClosing)}</p>
+
+            {!isClosed && (
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                className="absolute right-6 top-1/2 -translate-y-1/2 bg-[#697D58] text-white p-3 rounded-2xl shadow-lg shadow-[#697D58]/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 pr-5"
+              >
+                <DollarSign size={16} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Novo Lançamento</span>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -405,6 +417,12 @@ const DailyClosure = () => {
           </div>
         </div>
       </div>
+
+      <QuickTransactionModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        selectedDate={selectedDate}
+      />
     </div>
   );
 };

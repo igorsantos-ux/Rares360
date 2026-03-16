@@ -12,25 +12,43 @@ export class FinancialService {
             };
         }
 
-        const transactions: Transaction[] = await prisma.transaction.findMany({
-            where
-        });
+        const [transactions, paidInstallments] = await Promise.all([
+            prisma.transaction.findMany({ where }),
+            prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    status: 'PAGO',
+                    paidAt: where.date
+                },
+                include: { accountPayable: true }
+            })
+        ]);
 
-        const revenue = transactions
-            .filter((t: Transaction) => t.type === 'INCOME')
-            .reduce((acc: number, t: Transaction) => acc + t.amount, 0);
+        const normalizedInstallments = paidInstallments.map(p => ({
+            id: p.id,
+            amount: p.amount,
+            type: 'EXPENSE',
+            status: 'PAID',
+            category: p.accountPayable.costCenter || 'Operacional'
+        }));
 
-        const currentExpenses = transactions
-            .filter((t: Transaction) => t.type === 'EXPENSE')
-            .reduce((acc: number, t: Transaction) => acc + t.amount, 0);
+        const allMovements = [...transactions, ...normalizedInstallments];
 
-        const pendingReceivables = transactions
-            .filter((t: Transaction) => t.type === 'INCOME' && t.status === 'PENDING')
-            .reduce((acc: number, t: Transaction) => acc + t.amount, 0);
+        const revenue = allMovements
+            .filter((t: any) => t.type === 'INCOME')
+            .reduce((acc: number, t: any) => acc + t.amount, 0);
 
-        const pendingPayables = transactions
-            .filter((t: Transaction) => t.type === 'EXPENSE' && t.status === 'PENDING')
-            .reduce((acc: number, t: Transaction) => acc + t.amount, 0);
+        const currentExpenses = allMovements
+            .filter((t: any) => t.type === 'EXPENSE')
+            .reduce((acc: number, t: any) => acc + t.amount, 0);
+
+        const pendingReceivables = allMovements
+            .filter((t: any) => t.type === 'INCOME' && t.status === 'PENDING')
+            .reduce((acc: number, t: any) => acc + t.amount, 0);
+
+        const pendingPayables = allMovements
+            .filter((t: any) => t.type === 'EXPENSE' && t.status === 'PENDING')
+            .reduce((acc: number, t: any) => acc + t.amount, 0);
 
         return {
             revenue,
@@ -161,13 +179,39 @@ export class FinancialService {
             };
         }
 
-        return await prisma.transaction.findMany({
-            where,
-            orderBy: { date: 'desc' },
-            include: {
-                doctor: true,
-                patient: true
-            }
-        });
+        const [transactions, paidInstallments] = await Promise.all([
+            prisma.transaction.findMany({
+                where,
+                orderBy: { date: 'desc' },
+                include: {
+                    doctor: true,
+                    patient: true
+                }
+            }),
+            prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    status: 'PAGO',
+                    paidAt: where.date
+                },
+                include: { accountPayable: true }
+            })
+        ]);
+
+        const normalizedInstallments = paidInstallments.map(p => ({
+            id: p.id,
+            description: p.accountPayable.supplierName || p.accountPayable.description,
+            amount: p.amount,
+            type: 'EXPENSE',
+            status: 'PAID',
+            paymentMethod: p.paymentMethod || p.accountPayable.paymentMethod || 'Outros',
+            category: p.accountPayable.costCenter || 'Geral',
+            date: p.paidAt || p.dueDate,
+            isInstallment: true
+        }));
+
+        return [...transactions, ...normalizedInstallments].sort(
+            (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
     }
 }
