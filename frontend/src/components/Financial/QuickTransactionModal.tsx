@@ -49,10 +49,15 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
           amount: Number(data.amount),
           dueDate: selectedDate,
           status: 'RECEBIDO',
+          category: data.category,
+          paymentMethod: data.paymentMethod,
           procedureName: data.category === 'Procedimentos' ? data.description : 'Geral'
         })
       });
-      if (!response.ok) throw new Error('Falha ao criar entrada');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || 'Falha ao criar entrada');
+      }
       return response.json();
     }
   });
@@ -83,7 +88,10 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
           }]
         })
       });
-      if (!response.ok) throw new Error('Falha ao criar saída');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.message || 'Falha ao criar saída');
+      }
       return response.json();
     }
   });

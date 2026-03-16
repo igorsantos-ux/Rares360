@@ -208,12 +208,17 @@ export class ReceivableController {
                 amount, 
                 dueDate, 
                 status = 'PENDENTE',
-                fileUrl
+                fileUrl,
+                category,
+                paymentMethod
             } = req.body;
 
             if (!description || !amount || !dueDate) {
+                console.error('Campos obrigatórios ausentes:', { description, amount, dueDate });
                 return res.status(400).json({ message: 'Descrição, valor e data de vencimento são obrigatórios.' });
             }
+
+            const transactionDate = new Date(dueDate);
 
             const transaction = await prisma.transaction.create({
                 data: {
@@ -222,10 +227,11 @@ export class ReceivableController {
                     netAmount: Number(amount),
                     type: 'INCOME',
                     status: status === 'RECEBIDO' ? 'PAID' : 'PENDING',
-                    category: 'Procedimentos',
-                    procedureName: procedureName || 'Geral',
-                    dueDate: new Date(dueDate),
-                    date: status === 'RECEBIDO' ? new Date() : new Date(dueDate),
+                    category: category || 'Procedimentos',
+                    procedureName: procedureName || description || 'Geral',
+                    paymentMethod: paymentMethod || 'Outros',
+                    dueDate: transactionDate,
+                    date: transactionDate, // Sincroniza com a data selecionada
                     fileUrl,
                     patientId,
                     clinicId: clinicId!

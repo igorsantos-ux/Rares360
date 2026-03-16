@@ -225,6 +225,7 @@ export class AccountPayableController {
             } = req.body;
 
             if (!description || !totalAmount || !installments || !Array.isArray(installments) || installments.length === 0) {
+                console.error('Campos obrigatórios de Contas a Pagar ausentes:', { description, totalAmount, installments });
                 return res.status(400).json({ message: 'Dados incompletos. Informe descrição, valor e as parcelas.' });
             }
 
