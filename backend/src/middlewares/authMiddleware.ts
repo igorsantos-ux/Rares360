@@ -10,15 +10,22 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
 
     const [, token] = authHeader.split(' ');
 
-    const decoded = AuthService.verifyToken(token);
+    try {
+        const decoded = AuthService.verifyToken(token);
 
-    if (!decoded) {
-        return res.status(401).json({ error: 'Token inválido ou expirado', message: 'Token inválido ou expirado' });
+        if (!decoded) {
+            console.error('--- FALHA NA VERIFICAÇÃO DO TOKEN ---');
+            console.error('Token capturado:', token.substring(0, 20) + '...');
+            return res.status(401).json({ error: 'Token inválido ou expirado', message: 'Token inválido ou expirado' });
+        }
+
+        req.user = decoded;
+        req.userId = decoded.id;
+        next();
+    } catch (err: any) {
+        console.error('--- ERRO CATASTRÓFICO NO AUTH MIDDLEWARE ---', err);
+        return res.status(401).json({ error: 'Erro de autenticação', message: err.message });
     }
-
-    req.user = decoded;
-    req.userId = decoded.id;
-    next();
 };
 
 export const roleMiddleware = (allowedRoles: string[]) => {

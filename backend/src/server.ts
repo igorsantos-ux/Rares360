@@ -1,7 +1,9 @@
 console.log('🚀 Starting Backend Finance Server...');
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 
 import authRoutes from './routes/authRoutes.js';
@@ -21,7 +23,7 @@ import importRoutes from './routes/importRoutes.js';
 import cashRoutes from './routes/cashRoutes.js';
 import { SeedService } from './services/SeedService.js';
 
-dotenv.config();
+
 
 const app = express();
 
