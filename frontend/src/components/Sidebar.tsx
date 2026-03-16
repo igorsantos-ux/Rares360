@@ -9,7 +9,9 @@ import {
     ArrowUpCircle,
     FolderOpen,
     LogOut,
-    Calculator
+    Calculator,
+    Activity,
+    FileText
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -49,6 +51,8 @@ const Sidebar = () => {
             { icon: <ArrowUpCircle size={20} />, label: "Contas a Receber", path: "/pendenciais" },
             { icon: <ArrowDownCircle size={20} />, label: "Contas a Pagar", path: "/payables" },
             { icon: <TrendingUp size={20} />, label: "Fluxo de Caixa", path: "/cash-flow" },
+            { icon: <FileText size={20} />, label: "DRE", path: "/dre" },
+            { icon: <Activity size={20} />, label: "DFC", path: "/dfc" },
             { icon: <Calculator size={20} />, label: "Precificação", path: "/pricing" },
         ]},
         { label: "Gestão", items: [

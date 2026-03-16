@@ -11,6 +11,7 @@ import {
     ArrowUpRight,
     ArrowDownRight
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const ExpensesBilling = () => {
 
@@ -184,9 +185,12 @@ const ExpensesBilling = () => {
                             </div>
                         </div>
                     </div>
-                    <button className="mt-12 w-full py-4 bg-[#F0EAD6] text-[#697D58] font-black rounded-2xl shadow-xl hover:bg-white transition-all flex items-center justify-center gap-2 group">
+                    <Link 
+                        to="/dre"
+                        className="mt-12 w-full py-4 bg-[#F0EAD6] text-[#697D58] font-black rounded-2xl shadow-xl hover:bg-white transition-all flex items-center justify-center gap-2 group"
+                    >
                         Ver Detalhes do DRE <ArrowUpRight size={18} className="group-hover:translate-x-1 group-hover:translate-y-[-1px] transition-transform" />
-                    </button>
+                    </Link>
                 </div>
             </div>
         </div>
