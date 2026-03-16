@@ -20,7 +20,9 @@ export class AccountPayableController {
                 page = 1, 
                 limit = 20, 
                 filter, 
-                search = '' 
+                search = '',
+                startDate,
+                endDate
             } = req.query;
 
             const skip = (Number(page) - 1) * Number(limit);
@@ -55,6 +57,15 @@ export class AccountPayableController {
                 where.dueDate = { gte: new Date(nextDayISO) };
             } else if (filter === 'pagas') {
                 where.status = 'PAGO';
+            }
+
+            // Filtro de Data (startDate / endDate)
+            if (startDate || endDate) {
+                where.dueDate = {
+                    ...(where.dueDate || {}),
+                    ...(startDate ? { gte: new Date(startDate as string) } : {}),
+                    ...(endDate ? { lte: new Date(endDate as string) } : {})
+                };
             }
 
             // Busca por descrição ou fornecedor (se houver termo)

@@ -1,22 +1,33 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { reportingApi } from '../../services/api';
+import { useState } from 'react';
+import DateFilter from '../../components/DateFilter';
 import {
     Activity,
     TrendingUp,
     ArrowRightLeft,
     Download,
     Wallet,
-    Calendar,
     ArrowUpRight,
     ArrowDownRight,
     Loader2
 } from 'lucide-react';
 
 const DFCPage = () => {
+    const queryClient = useQueryClient();
+
+    // Estados para Filtro de Data
+    const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
+    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
+
     // Busca os dados reais do DFC (reutilizando motor do DRE se necessário ou endpoint específico)
     const { data: response, isLoading } = useQuery({
-        queryKey: ['dfc-report'],
-        queryFn: () => reportingApi.getDRE() // O DRE já processa entradas e saídas de forma similar ao DFC direto
+        queryKey: ['dfc-report', selectedPeriod, customStartDate, customEndDate],
+        queryFn: () => reportingApi.getDRE({
+            startDate: selectedPeriod === 'Personalizado' ? customStartDate : undefined,
+            endDate: selectedPeriod === 'Personalizado' ? customEndDate : undefined
+        }) // O DRE já processa entradas e saídas de forma similar ao DFC direto
     });
 
     const dreData = response?.data;
@@ -70,9 +81,15 @@ const DFCPage = () => {
                     <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/20 rounded-2xl font-bold text-sm text-[#697D58] hover:bg-[#8A9A5B]/5 transition-all shadow-sm">
                         <Download size={18} /> Exportar Excel
                     </button>
-                    <button className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
-                        <Calendar size={20} /> Período
-                    </button>
+                    <DateFilter 
+                        selectedPeriod={selectedPeriod}
+                        setSelectedPeriod={setSelectedPeriod}
+                        customStartDate={customStartDate}
+                        setCustomStartDate={setCustomStartDate}
+                        customEndDate={customEndDate}
+                        setCustomEndDate={setCustomEndDate}
+                        onApply={() => queryClient.invalidateQueries({ queryKey: ['dfc-report'] })}
+                    />
                 </div>
             </div>
 

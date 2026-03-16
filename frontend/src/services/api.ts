@@ -70,7 +70,7 @@ export const financialApi = {
 };
 
 export const payablesApi = {
-    getPayables: (params?: { page?: number; limit?: number; filter?: string; search?: string }) => 
+    getPayables: (params?: { page?: number; limit?: number; filter?: string; search?: string; startDate?: string; endDate?: string }) => 
         api.get('contas-a-pagar', { params }),
     createPayable: (data: any) => api.post('contas-a-pagar', data),
     updatePayableStatus: (id: string, status: string) => api.patch(`contas-a-pagar/${id}/status`, { status }),
@@ -82,7 +82,7 @@ export const payablesApi = {
 };
 
 export const receivablesApi = {
-    getReceivables: (params?: { page?: number; limit?: number; filter?: string; search?: string }) => 
+    getReceivables: (params?: { page?: number; limit?: number; filter?: string; search?: string; startDate?: string; endDate?: string }) => 
         api.get('pendenciais', { params }),
     createReceivable: (data: any) => api.post('pendenciais', data),
     updateReceivableStatus: (id: string, status: string) => api.patch(`pendenciais/${id}/status`, { status }),
@@ -104,8 +104,8 @@ export const coreApi = {
 export const reportingApi = {
     getDashboard: () => api.get('reporting/dashboard'),
     getDashboardKPIs: () => api.get('reporting/dashboard-kpis'),
-    getCashFlow: () => api.get('reporting/cash-flow'),
-    getDRE: () => api.get('reporting/dre'),
+    getCashFlow: (params?: { startDate?: string; endDate?: string }) => api.get('reporting/cash-flow', { params }),
+    getDRE: (params?: { startDate?: string; endDate?: string }) => api.get('reporting/dre', { params }),
     getBillingAnalytics: (params?: { startDate?: string; endDate?: string; groupBy?: string }) => {
         const query = new URLSearchParams();
         if (params?.startDate) query.append('startDate', params.startDate);
@@ -137,7 +137,7 @@ export const integrationApi = {
 export const pricingApi = {
     createSimulation: (data: any) => api.post('pricing', data),
     getSimulations: () => api.get('pricing'),
-    getDiagnosis: () => api.get('pricing/diagnosis'),
+    getDiagnosis: (params?: { startDate?: string; endDate?: string }) => api.get('pricing/diagnosis', { params }),
     upsertProcedure: (data: any) => api.post('pricing/procedure', data),
     deleteProcedure: (id: string) => api.delete(`pricing/procedure/${id}`),
 };

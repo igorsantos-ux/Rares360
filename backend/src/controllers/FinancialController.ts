@@ -4,7 +4,10 @@ import { FinancialService } from '../services/FinancialService.js';
 export class FinancialController {
     static async getSummary(req: any, res: Response) {
         try {
-            const summary = await FinancialService.getSummary(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate as string) : undefined;
+            const end = endDate ? new Date(endDate as string) : undefined;
+            const summary = await FinancialService.getSummary(req.clinicId, start, end);
             res.json(summary);
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });
@@ -13,7 +16,10 @@ export class FinancialController {
 
     static async getBreakEven(req: any, res: Response) {
         try {
-            const breakEven = await FinancialService.getBreakEven(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate as string) : undefined;
+            const end = endDate ? new Date(endDate as string) : undefined;
+            const breakEven = await FinancialService.getBreakEven(req.clinicId, start, end);
             res.json(breakEven);
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });
@@ -48,7 +54,10 @@ export class FinancialController {
 
     static async getTransactions(req: any, res: Response) {
         try {
-            const transactions = await FinancialService.getTransactions(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate as string) : undefined;
+            const end = endDate ? new Date(endDate as string) : undefined;
+            const transactions = await FinancialService.getTransactions(req.clinicId, start, end);
             res.json(transactions);
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });

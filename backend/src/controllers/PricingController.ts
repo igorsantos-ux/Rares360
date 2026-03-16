@@ -74,14 +74,23 @@ export class PricingController {
     static async diagnosis(req: Request, res: Response): Promise<void> {
         try {
             const clinicId = (req as any).user.clinicId;
+            const { startDate, endDate } = req.query;
 
             if (!clinicId) {
                 res.status(403).json({ error: 'Acesso negado. Clínica não identificada.' });
                 return;
             }
 
+            const where: any = { clinicId };
+            if (startDate || endDate) {
+                where.updatedAt = {
+                    ...(startDate ? { gte: new Date(startDate as string) } : {}),
+                    ...(endDate ? { lte: new Date(endDate as string) } : {})
+                };
+            }
+
             const procedures = await prisma.procedurePricing.findMany({
-                where: { clinicId },
+                where,
                 include: { supplies: true },
                 orderBy: { name: 'asc' }
             });

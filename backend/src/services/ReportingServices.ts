@@ -2,16 +2,16 @@ import { Transaction, FinancialGoal } from '@prisma/client';
 import prisma from '../lib/prisma.js';
 
 export class CashFlowService {
-    static async getMonthlyFlow(clinicId: string) {
+    static async getMonthlyFlow(clinicId: string, startDate?: Date, endDate?: Date) {
         const today = new Date();
-        const firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const start = startDate || new Date(today.getFullYear(), today.getMonth(), 1);
+        const end = endDate || new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
         const [payables, receivables] = await Promise.all([
             prisma.accountPayableInstallment.findMany({
                 where: {
                     accountPayable: { clinicId },
-                    dueDate: { gte: firstDayMonth, lte: lastDayMonth }
+                    dueDate: { gte: start, lte: end }
                 },
                 include: { accountPayable: true }
             }),
@@ -19,7 +19,7 @@ export class CashFlowService {
                 where: {
                     clinicId,
                     type: 'INCOME',
-                    dueDate: { gte: firstDayMonth, lte: lastDayMonth }
+                    dueDate: { gte: start, lte: end }
                 },
                 include: { patient: true }
             })
@@ -67,9 +67,18 @@ export class CashFlowService {
         };
     }
 
-    static async getDRE(clinicId: string) {
+    static async getDRE(clinicId: string, startDate?: Date, endDate?: Date) {
+        const where: any = { clinicId };
+        
+        if (startDate || endDate) {
+            where.date = {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {})
+            };
+        }
+
         const transactions = await prisma.transaction.findMany({
-            where: { clinicId }
+            where
         });
 
         const revenue = transactions.filter(t => t.type === 'INCOME' && t.status === 'PAID').reduce((acc, t) => acc + t.amount, 0);

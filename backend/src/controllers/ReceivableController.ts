@@ -20,7 +20,9 @@ export class ReceivableController {
                 page = 1, 
                 limit = 20, 
                 filter, 
-                search = '' 
+                search = '',
+                startDate,
+                endDate
             } = req.query;
 
             const skip = (Number(page) - 1) * Number(limit);
@@ -52,6 +54,15 @@ export class ReceivableController {
                 where.status = 'RECEBIDO';
             } else if (filter === 'pending') {
                 where.status = 'PENDENTE';
+            }
+
+            // Filtro de Data (startDate / endDate)
+            if (startDate || endDate) {
+                where.dueDate = {
+                    ...(where.dueDate || {}),
+                    ...(startDate ? { gte: new Date(startDate as string) } : {}),
+                    ...(endDate ? { lte: new Date(endDate as string) } : {})
+                };
             }
 
             // Busca por descrição ou paciente

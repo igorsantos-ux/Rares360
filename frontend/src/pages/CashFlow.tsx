@@ -3,7 +3,6 @@ import {
     ArrowUpCircle,
     ArrowDownCircle,
     Wallet,
-    Filter,
     Download,
     Plus,
     X,
@@ -13,16 +12,25 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reportingApi, financialApi } from '../services/api';
+import DateFilter from '../components/DateFilter';
 
 const CashFlow = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [filter, setFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
     const queryClient = useQueryClient();
 
+    // Estados para Filtro de Data
+    const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
+    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
+
     // Consumo da nova API consolidada de Fluxo de Caixa
     const { data: cashFlowResponse, isLoading } = useQuery({
-        queryKey: ['cash-flow-data'],
-        queryFn: () => reportingApi.getCashFlow(),
+        queryKey: ['cash-flow-data', selectedPeriod, customStartDate, customEndDate],
+        queryFn: () => reportingApi.getCashFlow({
+            startDate: selectedPeriod === 'Personalizado' ? customStartDate : undefined,
+            endDate: selectedPeriod === 'Personalizado' ? customEndDate : undefined
+        }),
         staleTime: 60000 // Protocolo de Segurança: Evitar re-fetch excessivo
     });
 
@@ -133,9 +141,15 @@ const CashFlow = () => {
                             </button>
                         </div>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-900 transition-all">
-                        <Filter size={18} /> Filtrar Período
-                    </button>
+                    <DateFilter 
+                        selectedPeriod={selectedPeriod}
+                        setSelectedPeriod={setSelectedPeriod}
+                        customStartDate={customStartDate}
+                        setCustomStartDate={setCustomStartDate}
+                        customEndDate={customEndDate}
+                        setCustomEndDate={setCustomEndDate}
+                        onApply={() => queryClient.invalidateQueries({ queryKey: ['cash-flow-data'] })}
+                    />
                 </div>
 
                 <div className="overflow-x-auto">

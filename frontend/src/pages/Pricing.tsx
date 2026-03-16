@@ -15,6 +15,7 @@ import {
 import { pricingApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { ProcedurePricingSheet } from '../components/Pricing/ProcedurePricingSheet';
+import DateFilter from '../components/DateFilter';
 
 const Pricing = () => {
     const queryClient = useQueryClient();
@@ -22,10 +23,18 @@ const Pricing = () => {
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [selectedProcedure, setSelectedProcedure] = useState<any>(null);
 
+    // Estados para Filtro de Data
+    const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
+    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
+
     const { data: procedures = [], isLoading } = useQuery({
-        queryKey: ['pricing-diagnosis'],
+        queryKey: ['pricing-diagnosis', selectedPeriod, customStartDate, customEndDate],
         queryFn: async () => {
-            const response = await pricingApi.getDiagnosis();
+            const response = await pricingApi.getDiagnosis({
+                startDate: selectedPeriod === 'Personalizado' ? customStartDate : undefined,
+                endDate: selectedPeriod === 'Personalizado' ? customEndDate : undefined
+            });
             return response.data;
         }
     });
@@ -95,13 +104,24 @@ const Pricing = () => {
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Diagnóstico de Precificação</h2>
                     <p className="text-slate-500 font-medium mt-1">Análise comparativa de margens e lucro real por procedimento.</p>
                 </div>
-                <button 
-                    onClick={handleNew}
-                    className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
-                >
-                    <Plus size={20} />
-                    Novo Procedimento
-                </button>
+                <div className="flex items-center gap-3">
+                    <DateFilter 
+                        selectedPeriod={selectedPeriod}
+                        setSelectedPeriod={setSelectedPeriod}
+                        customStartDate={customStartDate}
+                        setCustomStartDate={setCustomStartDate}
+                        customEndDate={customEndDate}
+                        setCustomEndDate={setCustomEndDate}
+                        onApply={() => queryClient.invalidateQueries({ queryKey: ['pricing-diagnosis'] })}
+                    />
+                    <button 
+                        onClick={handleNew}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
+                    >
+                        <Plus size={20} />
+                        Novo Procedimento
+                    </button>
+                </div>
             </div>
 
             {/* KPI Cards */}

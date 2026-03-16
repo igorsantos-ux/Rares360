@@ -1,10 +1,11 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { reportingApi } from '../../services/api';
+import { useState } from 'react';
+import DateFilter from '../../components/DateFilter';
 import {
     FileText,
     TrendingUp,
     Info,
-    Filter,
     Download,
     Percent,
     DollarSign,
@@ -13,10 +14,20 @@ import {
 } from 'lucide-react';
 
 const DREPage = () => {
+    const queryClient = useQueryClient();
+
+    // Estados para Filtro de Data
+    const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
+    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
+
     // Buscando Dados Reais do DRE
     const { data: dre, isLoading } = useQuery({
-        queryKey: ['financial-dre'],
-        queryFn: () => reportingApi.getDRE().then(res => res.data)
+        queryKey: ['financial-dre', selectedPeriod, customStartDate, customEndDate],
+        queryFn: () => reportingApi.getDRE({
+            startDate: selectedPeriod === 'Personalizado' ? customStartDate : undefined,
+            endDate: selectedPeriod === 'Personalizado' ? customEndDate : undefined
+        }).then(res => res.data)
     });
 
     if (isLoading) {
@@ -43,9 +54,15 @@ const DREPage = () => {
                     <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/20 rounded-2xl font-bold text-sm text-[#697D58] hover:bg-[#8A9A5B]/5 transition-all shadow-sm">
                         <Download size={18} /> Exportar PDF
                     </button>
-                    <button className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
-                        <Filter size={20} /> Mês Referência
-                    </button>
+                    <DateFilter 
+                        selectedPeriod={selectedPeriod}
+                        setSelectedPeriod={setSelectedPeriod}
+                        customStartDate={customStartDate}
+                        setCustomStartDate={setCustomStartDate}
+                        customEndDate={customEndDate}
+                        setCustomEndDate={setCustomEndDate}
+                        onApply={() => queryClient.invalidateQueries({ queryKey: ['financial-dre'] })}
+                    />
                 </div>
             </div>
 

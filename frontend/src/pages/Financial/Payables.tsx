@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { DeleteConfirmationModal } from '../../components/Financial/DeleteConfirmationModal';
+import DateFilter from '../../components/DateFilter';
 import { 
     PieChart, 
     Pie, 
@@ -232,6 +233,11 @@ const PayablesPage = () => {
         isSeries: false
     });
 
+    // Estados para Filtro de Data
+    const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
+    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
+    const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
+
     // Mutação para atualizar status
     const updateStatusMutation = useMutation({
         mutationFn: ({ id, status }: { id: string; status: string }) => payablesApi.updatePayableStatus(id, status),
@@ -259,13 +265,15 @@ const PayablesPage = () => {
     });
 
     const { data: payablesResponse, isLoading } = useQuery({
-        queryKey: ['payables-list-v4', currentPage, activeFilter, searchTerm],
+        queryKey: ['payables-list-v4', currentPage, activeFilter, searchTerm, selectedPeriod, customStartDate, customEndDate],
         queryFn: async () => {
             const res = await payablesApi.getPayables({
                 page: currentPage,
                 limit: itemsPerPage,
                 filter: activeFilter !== 'all' ? activeFilter : undefined,
-                search: searchTerm
+                search: searchTerm,
+                startDate: selectedPeriod === 'Personalizado' ? customStartDate : undefined,
+                endDate: selectedPeriod === 'Personalizado' ? customEndDate : undefined
             });
             return res.data;
         },
@@ -353,6 +361,15 @@ const PayablesPage = () => {
                     <p className="text-slate-500 font-medium mt-1">Gestão de fornecedores e compromissos financeiros.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <DateFilter 
+                        selectedPeriod={selectedPeriod}
+                        setSelectedPeriod={setSelectedPeriod}
+                        customStartDate={customStartDate}
+                        setCustomStartDate={setCustomStartDate}
+                        customEndDate={customEndDate}
+                        setCustomEndDate={setCustomEndDate}
+                        onApply={() => queryClient.invalidateQueries({ queryKey: ['payables-list-v4'] })}
+                    />
                     <button 
                         onClick={() => setIsSheetOpen(true)}
                         className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">

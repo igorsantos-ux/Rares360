@@ -2,9 +2,18 @@ import { Transaction } from '@prisma/client';
 import prisma from '../lib/prisma.js';
 
 export class FinancialService {
-    static async getSummary(clinicId: string) {
+    static async getSummary(clinicId: string, startDate?: Date, endDate?: Date) {
+        const where: any = { clinicId };
+        
+        if (startDate || endDate) {
+            where.date = {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {})
+            };
+        }
+
         const transactions: Transaction[] = await prisma.transaction.findMany({
-            where: { clinicId }
+            where
         });
 
         const revenue = transactions
@@ -33,9 +42,18 @@ export class FinancialService {
         };
     }
 
-    static async getBreakEven(clinicId: string) {
+    static async getBreakEven(clinicId: string, startDate?: Date, endDate?: Date) {
+        const where: any = { clinicId };
+        
+        if (startDate || endDate) {
+            where.date = {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {})
+            };
+        }
+
         const transactions: Transaction[] = await prisma.transaction.findMany({
-            where: { clinicId }
+            where
         });
 
         const fixedCosts = transactions
@@ -109,7 +127,7 @@ export class FinancialService {
         doctorId?: string;
         procedureName?: string;
         cost?: number;
-        customerId?: string;
+        patientId?: string;
         status?: string;
         paymentMethod?: string;
         netAmount?: number;
@@ -126,20 +144,29 @@ export class FinancialService {
                 doctorId: data.doctorId || null,
                 procedureName: data.procedureName || null,
                 cost: data.cost ?? 0,
-                customerId: data.customerId || null,
+                patientId: data.patientId || null,
                 clinicId: data.clinicId,
                 date: new Date()
             }
         });
     }
 
-    static async getTransactions(clinicId: string) {
+    static async getTransactions(clinicId: string, startDate?: Date, endDate?: Date) {
+        const where: any = { clinicId };
+        
+        if (startDate || endDate) {
+            where.date = {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {})
+            };
+        }
+
         return await prisma.transaction.findMany({
-            where: { clinicId },
+            where,
             orderBy: { date: 'desc' },
             include: {
                 doctor: true,
-                customer: true
+                patient: true
             }
         });
     }

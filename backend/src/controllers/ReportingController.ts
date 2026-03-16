@@ -7,8 +7,12 @@ export class ReportingController {
     static async getDashboardKPIs(req: any, res: Response) {
         try {
             const clinicId = req.clinicId;
-            const summary = await FinancialService.getSummary(clinicId);
-            const flow = await CashFlowService.getMonthlyFlow(clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate as string) : undefined;
+            const end = endDate ? new Date(endDate as string) : undefined;
+
+            const summary = await FinancialService.getSummary(clinicId, start, end);
+            const flow = await CashFlowService.getMonthlyFlow(clinicId, start, end);
 
             res.json({ ...summary, ...flow });
         } catch (error) {
@@ -18,7 +22,10 @@ export class ReportingController {
 
     static async getCashFlow(req: any, res: Response) {
         try {
-            const data = await CashFlowService.getMonthlyFlow(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate as string) : undefined;
+            const end = endDate ? new Date(endDate as string) : undefined;
+            const data = await CashFlowService.getMonthlyFlow(req.clinicId, start, end);
             res.json(data);
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });
@@ -27,7 +34,10 @@ export class ReportingController {
 
     static async getDRE(req: any, res: Response) {
         try {
-            const data = await CashFlowService.getDRE(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate as string) : undefined;
+            const end = endDate ? new Date(endDate as string) : undefined;
+            const data = await CashFlowService.getDRE(req.clinicId, start, end);
             res.json(data);
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });
