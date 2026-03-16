@@ -7,12 +7,7 @@ export class AccountPayableController {
     // Lista todas as Contas a Pagar (Parcelas individuais) com paginação e filtros
     static async list(req: Request, res: Response) {
         try {
-            let clinicId = (req as any).user?.clinicId;
-            if (!clinicId && (req as any).user?.role === 'ADMIN_GLOBAL') {
-                const firstClinic = await prisma.clinic.findFirst();
-                clinicId = firstClinic?.id;
-            }
-
+            const clinicId = (req as any).clinicId;
             if (!clinicId) {
                 return res.status(401).json({ message: 'Clínica não identificada.' });
             }
@@ -204,12 +199,7 @@ export class AccountPayableController {
     // Cria uma Conta a Pagar (À vista ou Parcelada)
     static async create(req: Request, res: Response) {
         try {
-            let clinicId = (req as any).user?.clinicId;
-            if (!clinicId && (req as any).user?.role === 'ADMIN_GLOBAL') {
-                const firstClinic = await prisma.clinic.findFirst();
-                clinicId = firstClinic?.id;
-            }
-
+            const clinicId = (req as any).clinicId;
             if (!clinicId) {
                 return res.status(401).json({ message: 'Clínica não identificada.' });
             }

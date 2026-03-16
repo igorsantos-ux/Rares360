@@ -7,12 +7,7 @@ export class ReceivableController {
     // Lista todos os Recebimentos / Pendenciais com paginação e analytics
     static async list(req: Request, res: Response) {
         try {
-            let clinicId = (req as any).user?.clinicId;
-            if (!clinicId && (req as any).user?.role === 'ADMIN_GLOBAL') {
-                const firstClinic = await prisma.clinic.findFirst();
-                clinicId = firstClinic?.id;
-            }
-
+            const clinicId = (req as any).clinicId;
             if (!clinicId) {
                 return res.status(401).json({ message: 'Clínica não identificada.' });
             }
@@ -202,7 +197,10 @@ export class ReceivableController {
     // Cria um novo recebimento
     static async create(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).clinicId;
+            if (!clinicId) {
+                return res.status(400).json({ message: 'Clínica não identificada para o lançamento.' });
+            }
             const { 
                 description, 
                 patientId, 
@@ -247,7 +245,7 @@ export class ReceivableController {
             const { id } = req.params;
             const { status } = req.body;
 
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).clinicId;
             const trans = await prisma.transaction.findUnique({
                 where: { id, clinicId }
             });
@@ -275,7 +273,7 @@ export class ReceivableController {
     static async delete(req: Request, res: Response) {
         try {
             const { id } = req.params;
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).clinicId;
             const trans = await prisma.transaction.findUnique({
                 where: { id, clinicId }
             });
