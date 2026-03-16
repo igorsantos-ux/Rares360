@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { coreApi } from '../services/api';
 import { 
@@ -53,16 +54,43 @@ const Inventory = () => {
     const stockItems = Array.isArray(response?.data) ? response.data : [];
     const historyItems = Array.isArray(historyResponse?.data) ? historyResponse.data : [];
 
+    // Protocolo de Inteligência: Cálculos e KPIs
+    const today = startOfDay(new Date());
+    const thirtyDaysFromNow = addDays(today, 30);
+
     const stats = {
         totalItems: stockItems.length,
-        lowStock: stockItems.filter((i: any) => i.quantity <= i.minQuantity).length,
-        totalValue: stockItems.reduce((acc: number, cur: any) => acc + (cur.quantity * (cur.unitCost || 0)), 0)
+        toBuyCount: stockItems.filter((i: any) => i.quantity <= i.minQuantity && i.minQuantity > 0).length,
+        expiringCount: stockItems.filter((i: any) => {
+            if (!i.expirationDate) return false;
+            const exp = new Date(i.expirationDate);
+            return isBefore(exp, thirtyDaysFromNow);
+        }).length,
+        replenishmentInvestment: stockItems.reduce((acc: number, cur: any) => {
+            if (cur.quantity <= cur.minQuantity && cur.minQuantity > 0) {
+                const targetQty = cur.minQuantity * 2;
+                const neededQty = targetQty - cur.quantity;
+                return acc + (neededQty * (cur.unitCost || 0));
+            }
+            return acc;
+        }, 0)
     };
 
-    const filteredItems = stockItems.filter((item: any) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredItems = stockItems.filter((item: any) => {
+        const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.category.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        if (!matchesSearch) return false;
+
+        if (filterType === 'low') return item.quantity <= item.minQuantity;
+        if (filterType === 'expiration') {
+            if (!item.expirationDate) return false;
+            const exp = new Date(item.expirationDate);
+            return isBefore(exp, thirtyDaysFromNow);
+        }
+
+        return true;
+    });
 
     const handleOpenSheet = (item?: any) => {
         setSelectedItem(item || null);
