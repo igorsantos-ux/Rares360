@@ -41,7 +41,7 @@ const Sidebar = () => {
 
     const navItems = [
         { label: "Principal", items: [
-            { icon: <LayoutDashboard size={20} />, label: "Dashboard", path: "/dashboard" },
+            { icon: <LayoutDashboard size={20} />, label: "Painel Financeiro", path: "/dashboard" },
             { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
             { icon: <BarChart3 size={20} />, label: "Faturamento", path: "/billing" },
         ]},

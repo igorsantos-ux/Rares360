@@ -63,9 +63,9 @@ const AboutPage = () => {
                         </p>
 
                         <div className="flex gap-4">
-                            <SocialLink icon={<Linkedin size={20} />} href="#" />
-                            <SocialLink icon={<Instagram size={20} />} href="#" />
-                            <SocialLink icon={<Mail size={20} />} href="#" />
+                            <SocialLink icon={<Linkedin size={20} />} href="https://www.linkedin.com/in/roberta-alamino-230326295/" />
+                            <SocialLink icon={<Instagram size={20} />} href="https://www.instagram.com/robertaalaminor?igsh=MWEzMWd2M2RpbjcwdA==" />
+                            <SocialLink icon={<Mail size={20} />} href="mailto:robertaarodrigues12@gmail.com" />
                         </div>
                     </motion.div>
                 </div>
@@ -149,6 +149,8 @@ const AboutPage = () => {
 const SocialLink = ({ icon, href }: any) => (
     <a
         href={href}
+        target="_blank"
+        rel="noopener noreferrer"
         className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-[#697D58] hover:bg-[#697D58] hover:text-white transition-all shadow-sm"
     >
         {icon}

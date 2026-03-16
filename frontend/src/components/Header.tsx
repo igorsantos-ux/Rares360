@@ -24,7 +24,7 @@ const Header = () => {
 
     // Mapeamento de títulos de página
     const pageTitles: Record<string, string> = {
-        '/dashboard': 'Dashboard',
+        '/dashboard': 'Painel Financeiro',
         '/billing': 'Faturamento Detalhado',
         '/patients': 'Gestão de Pacientes',
         '/cash-flow': 'Fluxo de Caixa',
