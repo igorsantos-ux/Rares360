@@ -45,12 +45,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const login = (newToken: string, newUser: User) => {
         localStorage.setItem('heath_finance_token', newToken);
+        if (newUser.clinicId) {
+            localStorage.setItem('heath_finance_clinic_id', newUser.clinicId);
+        }
         setToken(newToken);
         setUser(newUser);
     };
 
     const logout = () => {
         localStorage.removeItem('heath_finance_token');
+        localStorage.removeItem('heath_finance_clinic_id');
         setToken(null);
         setUser(null);
     };

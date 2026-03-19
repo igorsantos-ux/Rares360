@@ -1,48 +1,37 @@
 import { PrismaClient } from '@prisma/client';
+import { getClinicId } from './context.js';
 
-export const extendPrisma = (prisma: PrismaClient, clinicId?: string) => {
-  if (!clinicId) return prisma;
-
+export const extendPrisma = (prisma: PrismaClient) => {
   return prisma.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          // Lista de modelos que possuem isolamento por clinicId
-          const tenantModels = [
-            'User', 
-            'Patient', 
-            'AccountPayable', 
-            'AccountReceivable', 
-            'InventoryItem', 
-            'PricingSimulation', 
-            'ProcedurePricing',
-            'Transaction',
-            'Doctor',
-            'FinancialGoal',
-            'Document',
-            'Lead'
-          ];
+          const clinicId = getClinicId();
+          
+          // Se não houver clinicId (ex: scripts, seed, ou rotas públicas), executa normal
+          if (!clinicId) return query(args);
 
-          if (tenantModels.includes(model)) {
-            // Operações de leitura (filtram por clinicId)
-            if (['findMany', 'findFirst', 'findUnique', 'count', 'aggregate', 'groupBy'].includes(operation)) {
-              args.where = { ...args.where, clinicId };
-            }
+          // Modelos que NÃO devem ser filtrados (ex: Clinic em si)
+          const bypassModels = ['Clinic'];
+          if (bypassModels.includes(model)) return query(args);
 
-            // Operações de escrita (garantem que o clinicId seja do tenant atual)
-            if (['create', 'createMany'].includes(operation)) {
-              if (operation === 'create') {
-                args.data = { ...args.data, clinicId };
-              } else {
-                if (Array.isArray(args.data)) {
-                  args.data = args.data.map((item: any) => ({ ...item, clinicId }));
-                }
+          // Aplicar filtros de isolamento
+          if (['findMany', 'findFirst', 'findUnique', 'count', 'aggregate', 'groupBy'].includes(operation)) {
+            (args as any).where = { ...(args as any).where, clinicId };
+          }
+
+          if (['create', 'createMany'].includes(operation)) {
+            if (operation === 'create') {
+              (args as any).data = { ...(args as any).data, clinicId };
+            } else {
+              if (Array.isArray((args as any).data)) {
+                (args as any).data = (args as any).data.map((item: any) => ({ ...item, clinicId }));
               }
             }
+          }
 
-            if (['update', 'updateMany', 'upsert', 'delete', 'deleteMany'].includes(operation)) {
-              args.where = { ...args.where, clinicId };
-            }
+          if (['update', 'updateMany', 'upsert', 'delete', 'deleteMany'].includes(operation)) {
+            (args as any).where = { ...(args as any).where, clinicId };
           }
 
           return query(args);

@@ -247,11 +247,26 @@ const Inventory = () => {
 
                         <div className="overflow-x-auto">
                             {filteredItems.length === 0 ? (
-                                <div className="py-20 flex flex-col items-center justify-center gap-4">
-                                    <Package size={48} className="text-slate-200" />
-                                    <p className="text-slate-400 font-bold text-sm uppercase tracking-widest text-center">
-                                        Nenhum material encontrado no estoque
-                                    </p>
+                                <div className="py-32 flex flex-col items-center justify-center gap-8 animate-in fade-in zoom-in duration-1000">
+                                    <div className="relative">
+                                        <div className="absolute inset-0 bg-[#8A9A5B]/20 blur-3xl rounded-full scale-150" />
+                                        <div className="relative w-24 h-24 bg-white border border-[#8A9A5B]/10 rounded-[2rem] flex items-center justify-center shadow-2xl shadow-[#8A9A5B]/20">
+                                            <Package size={40} className="text-[#8A9A5B]" />
+                                        </div>
+                                    </div>
+                                    <div className="text-center max-w-sm space-y-2">
+                                        <h3 className="text-2xl font-black text-[#697D58]">Seu estoque, sua inteligência</h3>
+                                        <p className="text-slate-400 font-medium leading-relaxed">
+                                            Cadastre seu primeiro item para começar a monitorar níveis críticos, validades e otimizar seus custos operacionais.
+                                        </p>
+                                    </div>
+                                    <button 
+                                        onClick={() => handleOpenSheet()}
+                                        className="flex items-center gap-2 px-8 py-4 bg-[#8A9A5B] text-white rounded-2xl font-black text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.05] active:scale-95 transition-all"
+                                    >
+                                        <Plus size={20} />
+                                        Cadastrar Primeiro Insumo
+                                    </button>
                                 </div>
                             ) : (
                                 <table className="w-full text-left">

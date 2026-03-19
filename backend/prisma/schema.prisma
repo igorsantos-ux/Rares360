@@ -78,6 +78,8 @@ model User {
   closedChapters DailyClosure[] @relation("ClosedBy")
   isActive       Boolean        @default(true)
   createdAt DateTime @default(now())
+
+  @@index([clinicId])
 }
 
 model Transaction {
@@ -105,6 +107,9 @@ model Transaction {
   clinicId      String
   clinic        Clinic   @relation(fields: [clinicId], references: [id])
   procedureExecution ProcedureExecution?
+
+  @@index([clinicId, date])
+  @@index([clinicId, status])
 }
 
 model Doctor {
@@ -116,6 +121,8 @@ model Doctor {
   
   clinicId     String
   clinic       Clinic        @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
 }
 
 model Patient {
@@ -152,6 +159,8 @@ model Patient {
   
   clinicId       String
   clinic         Clinic        @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId, fullName])
 }
 
 model Lead {
@@ -163,6 +172,8 @@ model Lead {
 
   clinicId  String
   clinic    Clinic   @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
 }
 
 model InventoryItem {
@@ -181,6 +192,7 @@ model InventoryItem {
   clinicId       String
   clinic         Clinic          @relation(fields: [clinicId], references: [id])
 
+  @@index([clinicId, name])
   movements      StockMovement[]
 }
 
@@ -203,6 +215,8 @@ model StockMovement {
   
   clinicId  String
   clinic    Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, itemId])
 }
 
 model FinancialGoal {
@@ -240,6 +254,8 @@ model ClinicDocument {
   expiryDate DateTime? // Opcional
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+
+  @@index([clinicId])
 }
 
 model AccountPayable {
@@ -268,6 +284,8 @@ model AccountPayable {
   clinic              Clinic                      @relation(fields: [clinicId], references: [id])
   
   installments        AccountPayableInstallment[]
+
+  @@index([clinicId, status])
 }
 
 model AccountPayableInstallment {
@@ -374,6 +392,8 @@ model ProcedureExecution {
   updatedAt     DateTime  @updatedAt
 
   tasks         Task[]
+
+  @@index([clinicId, status])
 }
 
 model Task {
@@ -393,4 +413,6 @@ model Task {
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+
+  @@index([clinicId, dueDate])
 }

@@ -53,23 +53,25 @@ app.get('/', (req, res) => {
     res.json({ message: 'Heath Finance API is online' });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/saas', saasRoutes);
-app.use('/api/financial', financialRoutes);
-app.use('/api/cash', cashRoutes);
-app.use('/api/core', coreRoutes);
-app.use('/api/reporting', reportingRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/history', historyRoutes);
-app.use('/api/contas-a-pagar', accountPayableRoutes);
-app.use('/api/pendenciais', receivableRoutes);
-app.use('/api/procedures', procedureRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/pricing', pricingRoutes);
-app.use('/api/compliance', complianceRoutes);
+import { authMiddleware, tenantMiddleware } from './middlewares/authMiddleware.js';
 
-app.use('/api/import', importRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/saas', authMiddleware, tenantMiddleware, saasRoutes);
+app.use('/api/financial', authMiddleware, tenantMiddleware, financialRoutes);
+app.use('/api/cash', authMiddleware, tenantMiddleware, cashRoutes);
+app.use('/api/core', authMiddleware, tenantMiddleware, coreRoutes);
+app.use('/api/reporting', authMiddleware, tenantMiddleware, reportingRoutes);
+app.use('/api/analytics', authMiddleware, tenantMiddleware, analyticsRoutes);
+app.use('/api/history', authMiddleware, tenantMiddleware, historyRoutes);
+app.use('/api/contas-a-pagar', authMiddleware, tenantMiddleware, accountPayableRoutes);
+app.use('/api/pendenciais', authMiddleware, tenantMiddleware, receivableRoutes);
+app.use('/api/procedures', authMiddleware, tenantMiddleware, procedureRoutes);
+app.use('/api/tasks', authMiddleware, tenantMiddleware, taskRoutes);
+app.use('/api/upload', authMiddleware, tenantMiddleware, uploadRoutes);
+app.use('/api/pricing', authMiddleware, tenantMiddleware, pricingRoutes);
+app.use('/api/compliance', authMiddleware, tenantMiddleware, complianceRoutes);
+
+app.use('/api/import', authMiddleware, tenantMiddleware, importRoutes);
 
 process.on('SIGTERM', () => {
     console.log('SIGTERM recebido. Encerrando graciosamente...');

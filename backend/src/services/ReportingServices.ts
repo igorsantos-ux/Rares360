@@ -96,11 +96,11 @@ export class CashFlowService {
         const netResult = contributionMargin - fixedExpenses;
 
         return {
-            revenue,
-            variableCosts,
-            contributionMargin,
-            fixedExpenses,
-            netResult,
+            revenue: revenue || 0,
+            variableCosts: variableCosts || 0,
+            contributionMargin: contributionMargin || 0,
+            fixedExpenses: fixedExpenses || 0,
+            netResult: netResult || 0,
             marginPercent: revenue > 0 ? (contributionMargin / revenue) * 100 : 0
         };
     }
@@ -316,9 +316,9 @@ export class GoalService {
         const year = now.getFullYear();
 
         const transactions = await prisma.transaction.findMany({ where: { clinicId } });
-        const revenue = transactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-        const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0);
-        const currentProfit = revenue - expenses;
+        const revenue = transactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0) || 0;
+        const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0) || 0;
+        const currentProfit = (revenue || 0) - (expenses || 0);
 
         const goal = await prisma.financialGoal.upsert({
             where: { id: `goal-${clinicId}-${month}-${year}-PROFIT` },

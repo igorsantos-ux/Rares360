@@ -15,14 +15,21 @@ const api = axios.create({
     baseURL: getBaseURL(),
 });
 
-// Interceptor para injetar o token JWT
+// Interceptor para injetar o token JWT e o clinicId
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('heath_finance_token');
+    const clinicId = localStorage.getItem('heath_finance_clinic_id');
+    
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    if (clinicId) {
+        config.headers['x-clinic-id'] = clinicId;
+    }
+
     // Log para depuração (remover em produção se necessário)
-    console.log(`🚀 Request: ${config.method?.toUpperCase()} ${config.baseURL}/${config.url}`);
+    console.log(`🚀 Request: ${config.method?.toUpperCase()} ${config.baseURL}/${config.url} - Clinic: ${clinicId}`);
     return config;
 });
 

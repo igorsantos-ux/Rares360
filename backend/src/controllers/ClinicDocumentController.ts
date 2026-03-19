@@ -11,10 +11,30 @@ export class ClinicDocumentController {
                 return res.status(401).json({ message: 'Clínica não identificada.' });
             }
 
-            const documents = await prisma.clinicDocument.findMany({
+            let documents = await prisma.clinicDocument.findMany({
                 where: { clinicId },
                 orderBy: { createdAt: 'asc' }
             });
+
+            // Se a clínica não tiver nenhum documento, inicializa com os padrões (Boilerplate)
+            if (documents.length === 0) {
+                const defaultDocs = [
+                    { title: 'Alvará Sanitário', category: 'Clínica', status: 'PENDENTE', clinicId },
+                    { title: 'CRM Responsável Técnico', category: 'Médico', status: 'PENDENTE', clinicId },
+                    { title: 'Contrato Social / Alterações', category: 'Clínica', status: 'PENDENTE', clinicId },
+                    { title: 'Lixo Extra Seletivo (Contrato)', category: 'Clínica', status: 'PENDENTE', clinicId },
+                    { title: 'PCMSO / PPRA (Segurança Trabalho)', category: 'Clínica', status: 'PENDENTE', clinicId }
+                ];
+
+                await prisma.clinicDocument.createMany({
+                    data: defaultDocs
+                });
+
+                documents = await prisma.clinicDocument.findMany({
+                    where: { clinicId },
+                    orderBy: { createdAt: 'asc' }
+                });
+            }
 
             res.json(Array.isArray(documents) ? documents : []);
         } catch (error: any) {
