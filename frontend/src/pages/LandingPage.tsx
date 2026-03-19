@@ -1,135 +1,73 @@
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
-import { useRef, useState, useEffect } from 'react';
-import React from 'react';
+import { useRef } from 'react';
 import {
     ChevronDown,
     TrendingUp,
-    ShieldCheck,
     BarChart3,
     ArrowRight,
-    MousePointer2,
-    Layout,
-    Activity,
-    ChevronLeft,
-    ChevronRight,
-    Database,
-    Zap
+    Users,
+    Package,
+    Scale,
+    Target,
+    ArrowUpRight,
+    HeartPulse,
+    CheckCircle2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-const features = [
-    {
-        icon: <BarChart3 className="text-emerald-500" />,
-        title: "Dashboard de Performance",
-        desc: "Visualize lucros, despesas e lucratividade em tempo real com gráficos intuitivos.",
-        color: "bg-emerald-50"
-    },
-    {
-        icon: <Layout className="text-blue-500" />,
-        title: "Gestão Multi-Clínica",
-        desc: "Controle todas as suas unidades em uma única interface centralizada e segura.",
-        color: "bg-blue-50"
-    },
-    {
-        icon: <Zap className="text-amber-500" />,
-        title: "Faturamento Automatizado",
-        desc: "Geração de faturas SaaS, PDFs e XMLs de forma automática e sem erros.",
-        color: "bg-amber-50"
-    },
-    {
-        icon: <Database className="text-purple-500" />,
-        title: "Auditoria Completa",
-        desc: "Rastreabilidade total de cada centavo. Saiba exatamente de onde vem e para onde vai.",
-        color: "bg-purple-50"
-    },
-    {
-        icon: <Activity className="text-rose-500" />,
-        title: "Insights Estratégicos",
-        desc: "Relatórios avançados que ajudam na tomada de decisão baseada em dados reais.",
-        color: "bg-rose-50"
-    }
-];
-
-const FeatureCarousel = () => {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [isMobile, setIsMobile] = useState(false);
-
-    useEffect(() => {
-        const checkMobile = () => setIsMobile(window.innerWidth < 768);
-        checkMobile();
-        window.addEventListener('resize', checkMobile);
-        return () => window.removeEventListener('resize', checkMobile);
-    }, []);
-
-    const next = () => {
-        setCurrentIndex((prev) => (prev + 1) % features.length);
-    };
-
-    const prev = () => {
-        setCurrentIndex((prev) => (prev - 1 + features.length) % features.length);
-    };
+// Nova seção de Metodologia (Grid de 6 Cards)
+const MethodologyGrid = () => {
+    const pillars = [
+        {
+            icon: <TrendingUp size={28} />,
+            title: "Faturamento Estratégico",
+            desc: "Entenda quem gera resultado, com que frequência e o momento exato em que o paciente deve retornar."
+        },
+        {
+            icon: <Users size={28} />,
+            title: "Gestão Inteligente de Pacientes",
+            desc: "Identifique ativos e inativos, compreenda o LTV (Lifetime Value) e gere recorrência real na sua base."
+        },
+        {
+            icon: <Package size={28} />,
+            title: "Estoque Real",
+            desc: "Baixa automática vinculada à execução técnica e controle rigoroso de validade para reduzir perdas invisíveis."
+        },
+        {
+            icon: <Scale size={28} />,
+            title: "Precificação com Margem",
+            desc: "Pare de seguir o mercado sem critério; precifique com base na sua estrutura de custos e margem real."
+        },
+        {
+            icon: <ArrowUpRight size={28} />,
+            title: "Direcionamento de Despesas",
+            desc: "Gestão financeira não é sobre cortar custos aleatoriamente, é sobre saber onde investir com clareza."
+        },
+        {
+            icon: <Target size={28} />,
+            title: "Metas com Direção",
+            desc: "Transforme objetivos em planos de ação. Saiba exatamente o que fazer hoje para bater a meta de amanhã."
+        }
+    ];
 
     return (
-        <div className="relative w-full max-w-7xl mx-auto px-4 py-24 overflow-hidden">
-            <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-16 gap-8">
-                <div>
-                    <motion.span
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        className="text-[10px] font-black uppercase tracking-[0.4em] text-[#8A9A5B] mb-4 block"
-                    >
-                        Ecossistema Completo
-                    </motion.span>
-                    <h2 className="text-5xl md:text-7xl font-black text-[#697D58] tracking-tighter leading-none">
-                        Ferramentas de <br />
-                        <span className="text-[#8A9A5B]">Elite</span>.
-                    </h2>
-                </div>
-                <div className="flex gap-4">
-                    <button
-                        onClick={prev}
-                        className="p-5 rounded-full bg-white border border-slate-100 text-[#697D58] shadow-xl hover:bg-[#697D58] hover:text-white transition-all group active:scale-90"
-                    >
-                        <ChevronLeft size={24} />
-                    </button>
-                    <button
-                        onClick={next}
-                        className="p-5 rounded-full bg-white border border-slate-100 text-[#697D58] shadow-xl hover:bg-[#697D58] hover:text-white transition-all group active:scale-90"
-                    >
-                        <ChevronRight size={24} />
-                    </button>
-                </div>
-            </div>
-
-            <motion.div
-                className="flex gap-8 cursor-grab active:cursor-grabbing pb-12"
-                animate={{ x: isMobile ? `calc(-${currentIndex * 100}% - ${currentIndex * 32}px)` : `calc(-${currentIndex * 33.33}% - ${currentIndex * 26.6}px)` }}
-                transition={{ type: "spring", stiffness: 200, damping: 25 }}
-                drag="x"
-                dragConstraints={{ left: -1000, right: 0 }}
-            >
-                {features.map((f, i) => (
-                    <motion.div
-                        key={i}
-                        className="min-w-[320px] md:min-w-[420px] bg-white rounded-[3rem] p-12 shadow-2xl shadow-slate-200/50 border border-slate-50 flex flex-col gap-8 group hover:border-[#8A9A5B]/30 transition-all relative overflow-hidden"
-                        whileHover={{ y: -12 }}
-                    >
-                        <div className={`w-20 h-20 ${f.color} rounded-3xl flex items-center justify-center relative z-10`}>
-                            {React.cloneElement(f.icon as React.ReactElement<any>, { size: 40 })}
-                        </div>
-                        <div className="relative z-10">
-                            <h4 className="text-3xl font-black text-[#697D58] mb-4">{f.title}</h4>
-                            <p className="text-slate-500 font-medium leading-relaxed text-lg">{f.desc}</p>
-                        </div>
-                        <div className="mt-auto pt-6 flex items-center gap-2 text-[#8A9A5B] font-black uppercase text-xs tracking-[0.2em] opacity-0 group-hover:opacity-100 transition-all translate-y-4 group-hover:translate-y-0 relative z-10">
-                            Descobrir mais <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
-                        </div>
-
-                        {/* Decorative Gradient */}
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-slate-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    </motion.div>
-                ))}
-            </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-20 px-4 max-w-7xl mx-auto">
+            {pillars.map((p, i) => (
+                <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="p-10 bg-white rounded-[2.5rem] shadow-xl shadow-slate-200/40 border border-slate-50 hover:border-[#8A9A5B]/30 hover:scale-[1.02] transition-all group"
+                >
+                    <div className="w-14 h-14 bg-[#697D58]/5 text-[#697D58] rounded-2xl flex items-center justify-center mb-8 group-hover:bg-[#697D58] group-hover:text-white transition-colors">
+                        {p.icon}
+                    </div>
+                    <h4 className="text-2xl font-bold text-[#697D58] mb-4 tracking-tight">{p.title}</h4>
+                    <p className="text-slate-500 font-light leading-relaxed text-lg">{p.desc}</p>
+                </motion.div>
+            ))}
         </div>
     );
 };
@@ -185,83 +123,178 @@ const LandingPage = () => {
 
                 <motion.div
                     style={{ opacity, scale: smoothScale, y: heroY }}
-                    className="max-w-container mx-auto relative z-10"
+                    className="max-w-7xl mx-auto relative z-10"
                 >
-                    <h1 className="text-h1 text-[#FDFCF0] mb-8 leading-[1.05]">
-                        O Futuro da sua <br />
-                        <span className="text-[#FDFCF0]/90">Gestão Financeira</span>.
+                    <motion.span
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-[10px] font-black uppercase tracking-[0.6em] text-[#DEB587] mb-8 block"
+                    >
+                        Gestão Médica de Alta Performance
+                    </motion.span>
+                    <h1 className="text-6xl md:text-[7.5rem] text-[#FDFCF0] mb-8 leading-[0.95] font-bold tracking-tight text-balance">
+                        Construindo uma gestão onde <br />
+                        <span className="text-[#DEB587]">tudo faz sentido</span>.
                     </h1>
-                    <p className="text-body-lg text-[#FDFCF0]/80 max-w-2xl mx-auto leading-relaxed font-light">
-                        Transformamos números em estratégia. Excelência em consultoria financeira para clínicas e negócios de alto padrão.
+                    <p className="text-xl md:text-2xl text-[#FDFCF0]/70 max-w-3xl mx-auto leading-relaxed font-light text-balance mb-12">
+                        A Rares atua na estruturação, organização e direcionamento de clínicas médicas que desejam crescer com clareza, previsibilidade e resultado.
                     </p>
 
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                        <Link
+                            to="/contact"
+                            className="px-10 py-5 bg-[#DEB587] text-[#2D3325] rounded-[4px] font-bold text-lg hover:scale-105 transition-all shadow-2xl shadow-black/40"
+                        >
+                            Falar com um Especialista
+                        </Link>
+                    </div>
+
                     <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 0.8 }}
-                        className="mt-12 flex flex-col items-center gap-4"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 1, duration: 1 }}
+                        className="mt-20 flex flex-col items-center gap-4"
                     >
-                        <ChevronDown size={32} className="text-[#A39161] animate-bounce" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#A39161]">Role para descobrir</span>
+                        <ChevronDown size={28} className="text-[#FDFCF0]/30 animate-bounce" />
                     </motion.div>
                 </motion.div>
             </section>
 
-            {/* Section 2 - Reveal Cards */}
-            <section className="min-h-screen py-section px-8 bg-[#697D58] text-white overflow-hidden">
-                <div className="max-w-container mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
-                    <motion.div
-                        initial={{ opacity: 0, x: -50 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.8 }}
-                    >
-                        <h2 className="text-h2 leading-tight mb-8">
-                            Dados que <br />
-                            contam histórias.
-                        </h2>
-                        <p className="text-xl text-[#F0EAD6]/80 font-medium leading-relaxed mb-12">
-                            Não entregamos apenas relatórios. Entregamos clareza.
-                            Cada centavo do seu negócio é mapeado, analisado e otimizado por quem entende de performance.
-                        </p>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            <FeatureCard
-                                icon={<ShieldCheck size={24} />}
-                                title="Segurança Total"
-                                desc="Auditoria rigorosa de todas as movimentações."
-                            />
-                            <FeatureCard
-                                icon={<BarChart3 size={24} />}
-                                title="Visão 360º"
-                                desc="Dashboards em tempo real com KPIs críticos."
-                            />
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9, rotate: 5 }}
-                        whileInView={{ opacity: 1, scale: 1, rotate: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 1, type: "spring" }}
-                        className="relative"
-                    >
-                        <div className="bg-white/10 backdrop-blur-2xl rounded-[3rem] p-4 border border-white/20 shadow-2xl overflow-hidden aspect-video flex items-center justify-center">
-                            <div className="text-center group cursor-default">
-                                <div className="text-8xl font-black text-[#DEB587] mb-2 group-hover:scale-110 transition-transform">+R$ 2.4M</div>
-                                <div className="text-xl font-bold text-white/60 tracking-widest uppercase">Otimizado este ano</div>
+            {/* Seção 1: O Que Fazemos (3 Colunas) */}
+            <section className="py-24 md:py-32 bg-white px-8">
+                <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-16 md:gap-24 items-start">
+                        <div className="space-y-6">
+                            <div className="w-12 h-12 bg-[#697D58]/10 rounded-xl flex items-center justify-center text-[#697D58]">
+                                <BarChart3 size={24} />
                             </div>
+                            <h3 className="text-3xl font-bold text-[#697D58]">O financeiro <br />direciona</h3>
+                            <p className="text-slate-500 font-light text-lg">Não é apenas sobre controlar faturamento; é sobre usar números para orientar cada decisão estratégica do negócio.</p>
                         </div>
-                        {/* Parallax accents */}
-                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-[#DEB587]/30 rounded-full blur-[80px]"></div>
-                        <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/20 rounded-full blur-[80px]"></div>
-                    </motion.div>
+                        <div className="space-y-6">
+                            <div className="w-12 h-12 bg-[#DEB587]/10 rounded-xl flex items-center justify-center text-[#DEB587]">
+                                <Target size={24} />
+                            </div>
+                            <h3 className="text-3xl font-bold text-[#697D58]">O comercial <br />executa com estratégia</h3>
+                            <p className="text-slate-500 font-light text-lg">Identificamos os ativos reais da sua base para gerar recorrência orgânica e estruturada.</p>
+                        </div>
+                        <div className="space-y-6">
+                            <div className="w-12 h-12 bg-[#697D58]/10 rounded-xl flex items-center justify-center text-[#697D58]">
+                                <TrendingUp size={24} />
+                            </div>
+                            <h3 className="text-3xl font-bold text-[#697D58]">A operação <br />sustenta o crescimento</h3>
+                            <p className="text-slate-500 font-light text-lg">Processos integrados que garantem que o crescimento não se torne um gargalo operacional.</p>
+                        </div>
+                    </div>
                 </div>
             </section>
 
-            {/* Feature Carousel Section */}
-            <section className="bg-white overflow-hidden">
-                <FeatureCarousel />
+            {/* Seção 2: Choque de Realidade (Pain Point) */}
+            <section className="py-24 md:py-32 bg-[#F8FAFC] px-8 overflow-hidden">
+                <div className="max-w-7xl mx-auto text-center mb-24">
+                    <motion.span
+                        initial={{ opacity: 0 }}
+                        whileInView={{ opacity: 1 }}
+                        className="text-[10px] font-black uppercase tracking-[0.4em] text-[#697D58]/50 mb-6 block"
+                    >
+                        O Problema Oculto
+                    </motion.span>
+                    <h2 className="text-5xl md:text-7xl font-bold text-[#697D58] tracking-tight mb-8">Por que a maioria das <br />clínicas trava?</h2>
+                    <p className="text-xl md:text-2xl text-slate-500 max-w-4xl mx-auto font-light leading-relaxed">
+                        Muitas possuem DRE, metas e fluxo de caixa. Mas não crescem com consistência porque os <strong>dados não estão conectados</strong> e não geram direcionamento claro.
+                    </p>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-12 max-w-6xl mx-auto">
+                    <div className="bg-white p-12 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+                        <div className="text-6xl font-black text-[#DEB587]/20 mb-6">01</div>
+                        <p className="text-slate-600 font-medium text-lg leading-relaxed">
+                            O financeiro analisa dados passados, mas <strong>não direciona</strong> o que deve ser feito no futuro.
+                        </p>
+                    </div>
+                    <div className="bg-white p-12 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+                        <div className="text-6xl font-black text-[#DEB587]/20 mb-6">02</div>
+                        <p className="text-slate-600 font-medium text-lg leading-relaxed">
+                            O comercial atua de forma reativa, sem uma base de <strong>inteligência de pacientes</strong>.
+                        </p>
+                    </div>
+                    <div className="bg-white p-12 rounded-[3rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+                        <div className="text-6xl font-black text-[#DEB587]/20 mb-6">03</div>
+                        <p className="text-slate-600 font-medium text-lg leading-relaxed">
+                            A operação absorve demandas, mas não acompanha o <strong>ritmo do crescimento</strong> planejado.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="mt-20 text-center">
+                    <p className="text-3xl font-bold text-[#697D58] italic opacity-80">"O resultado é um crescimento baseado no 'feeling'. O problema não é esforço, é gestão."</p>
+                </div>
+            </section>
+
+            {/* Seção 3: Metodologia Rares */}
+            <section className="py-24 md:py-32 bg-white px-8">
+                <div className="max-w-7xl mx-auto text-center mb-16">
+                    <h2 className="text-4xl md:text-6xl font-bold text-[#697D58] mb-6">Metodologia Rares</h2>
+                    <p className="text-lg md:text-xl text-slate-500 font-light max-w-2xl mx-auto">Conectamos todas as áreas do negócio através de pilares integrados.</p>
+                </div>
+                <MethodologyGrid />
+            </section>
+
+            {/* Seção 4: CRM e Follow-up */}
+            <section className="py-24 md:py-32 bg-[#2D3325] theme-dark px-8 relative overflow-hidden">
+                <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+                    <div className="relative z-10">
+                        <div className="w-16 h-16 bg-[#DEB587] rounded-2xl flex items-center justify-center text-[#2D3325] mb-8">
+                            <HeartPulse size={32} />
+                        </div>
+                        <h2 className="text-5xl md:text-7xl font-bold text-[#FDFCF0] mb-8 leading-none">Acompanhamento <br />Ativo de Pacientes</h2>
+                        <p className="text-xl md:text-2xl text-[#FDFCF0]/60 font-light leading-relaxed mb-12">
+                            A clínica passa a ter controle real do pós-atendimento. Procedimentos executados geram tarefas automáticas de retorno. Mais relacionamento, mais faturamento.
+                        </p>
+                        <div className="space-y-6">
+                            <div className="flex items-center gap-4 text-[#FDFCF0]/80">
+                                <CheckCircle2 className="text-[#DEB587]" />
+                                <span className="text-lg font-medium">Tarefas organizadas por dia</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-[#FDFCF0]/80">
+                                <CheckCircle2 className="text-[#DEB587]" />
+                                <span className="text-lg font-medium">Follow-up automatizado via CRM</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-[#FDFCF0]/80">
+                                <CheckCircle2 className="text-[#DEB587]" />
+                                <span className="text-lg font-medium">Aumento real na taxa de recorrência</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="relative group">
+                        <div className="absolute inset-0 bg-[#DEB587]/20 blur-[120px] rounded-full group-hover:bg-[#DEB587]/30 transition-all"></div>
+                        <div className="bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[4rem] p-12 relative z-10">
+                            <div className="flex items-center justify-between mb-12">
+                                <div className="text-white">
+                                    <div className="text-sm font-bold uppercase tracking-widest text-[#DEB587] mb-2">Check-in de Hoje</div>
+                                    <div className="text-4xl font-bold">12 Retornos</div>
+                                </div>
+                                <div className="w-16 h-16 rounded-full border-4 border-[#DEB587] flex items-center justify-center text-[#DEB587] font-bold">
+                                    85%
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                {[1, 2, 3].map(i => (
+                                    <div key={i} className="p-4 bg-white/5 rounded-2xl flex justify-between items-center">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-white/10 rounded-full"></div>
+                                            <div>
+                                                <div className="text-white font-bold text-sm">Paciente Exemplo {i}</div>
+                                                <div className="text-white/40 text-xs">Retorno Botox - 15 dias</div>
+                                            </div>
+                                        </div>
+                                        <div className="px-4 py-2 bg-[#DEB587] text-[#2D3325] rounded-lg text-xs font-bold">Agendar</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </section>
 
             {/* A Experiência Rares360 */}
@@ -305,24 +338,21 @@ const LandingPage = () => {
             </section>
 
             {/* Final CTA */}
-            <section className="py-section bg-[#F8FAFC] flex flex-col items-center justify-center px-6">
+            <section className="py-24 md:py-32 bg-[#F8FAFC] flex flex-col items-center justify-center px-6">
                 <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     className="text-center"
                 >
-                    <h4 className="text-h2 text-[#697D58] mb-12">
-                        Assuma o controle.
+                    <h4 className="text-5xl md:text-7xl font-bold text-[#697D58] mb-16 tracking-tighter">
+                        O problema não é esforço. <br /> É gestão.
                     </h4>
                     <Link
-                        to="/login"
-                        className="inline-flex items-center gap-4 px-12 py-6 bg-[#697D58] text-white text-2xl font-black rounded-full shadow-2xl shadow-[#697D58]/30 hover:scale-105 active:scale-95 transition-all group"
+                        to="/contact"
+                        className="inline-flex items-center gap-4 px-16 py-8 bg-[#697D58] text-[#FDFCF0] text-2xl font-bold rounded-full shadow-2xl shadow-[#697D58]/30 hover:scale-105 active:scale-95 transition-all group"
                     >
-                        Entrar na Plataforma <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+                        [ Falar com um Especialista ] <ArrowRight className="group-hover:translate-x-2 transition-transform" />
                     </Link>
-                    <p className="mt-8 text-slate-400 font-bold flex items-center justify-center gap-2">
-                        <MousePointer2 size={18} /> Acesso exclusivo para clientes gerenciados
-                    </p>
                 </motion.div>
             </section>
 
@@ -345,16 +375,6 @@ const LandingPage = () => {
         </div>
     );
 };
-
-const FeatureCard = ({ icon, title, desc }: any) => (
-    <div className="p-8 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all group">
-        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-[#DEB587] mb-6 mb-6 group-hover:scale-110 transition-transform">
-            {icon}
-        </div>
-        <h5 className="text-2xl font-black mb-3">{title}</h5>
-        <p className="text-white/60 font-medium leading-relaxed">{desc}</p>
-    </div>
-);
 
 const AnimatedStep = ({ num, title, text }: any) => {
     return (
