@@ -11,11 +11,16 @@ import {
     MapPin, 
     HeartPulse, 
     Camera,
-    CreditCard
+    CreditCard,
+    Syringe,
+    History,
+    CheckCircle2,
+    Clock
 } from 'lucide-react';
-import { coreApi } from '../../services/api';
+import { coreApi, proceduresApi } from '../../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
 
 const patientSchema = z.object({
   fullName: z.string().min(3, 'Nome completo é obrigatório'),
@@ -55,7 +60,7 @@ interface Props {
 
 export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<'pessoais' | 'contato' | 'clinico'>('pessoais');
+  const [activeTab, setActiveTab] = useState<'pessoais' | 'contato' | 'clinico' | 'execucoes'>('pessoais');
   const [photoPreview, setPhotoPreview] = useState<string | null>(patient?.photoUrl || null);
 
   const { register, handleSubmit, formState: { errors }, reset, setValue } = useForm<PatientFormData>({
@@ -174,6 +179,7 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
     { id: 'pessoais', label: 'Dados Pessoais', icon: <User size={16} /> },
     { id: 'contato', label: 'Contato & Endereço', icon: <Phone size={16} /> },
     { id: 'clinico', label: 'Dados Clínicos', icon: <HeartPulse size={16} /> },
+    { id: 'execucoes', label: 'Execuções', icon: <History size={16} /> },
   ];
 
   return (
@@ -412,6 +418,10 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
                         </div>
                     </motion.div>
                 )}
+
+                {activeTab === 'execucoes' && (
+                    <ProcedureHistory patientId={patient?.id} />
+                )}
               </form>
             </div>
 
@@ -437,4 +447,50 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
       )}
     </AnimatePresence>
   );
+}
+
+function ProcedureHistory({ patientId }: { patientId: string }) {
+    const { data: executions, isLoading } = useQuery({
+        queryKey: ['patient-executions', patientId],
+        queryFn: () => proceduresApi.getByPatient(patientId).then(res => res.data),
+        enabled: !!patientId
+    });
+
+    if (isLoading) return <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-[#8A9A5B]" /></div>;
+
+    if (!executions || executions.length === 0) {
+        return (
+            <div className="py-10 text-center space-y-2">
+                <Syringe size={32} className="mx-auto text-slate-200" />
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nenhum procedimento executado</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-4">
+            {executions.map((exec: any) => (
+                <div key={exec.id} className="bg-white p-4 rounded-2xl border border-[#8A9A5B]/10 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${exec.status === 'EXECUTADO' ? 'bg-emerald-50 text-emerald-500' : 'bg-amber-50 text-amber-500'}`}>
+                            {exec.status === 'EXECUTADO' ? <CheckCircle2 size={18} /> : <Clock size={18} />}
+                        </div>
+                        <div>
+                            <p className="text-sm font-black text-slate-700">{exec.procedureName}</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                                {exec.status === 'EXECUTADO' 
+                                    ? `Executado em ${new Date(exec.executedAt).toLocaleDateString()}` 
+                                    : `Venda em ${new Date(exec.billedAt).toLocaleDateString()}`}
+                            </p>
+                        </div>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                        exec.status === 'EXECUTADO' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                    }`}>
+                        {exec.status}
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
 }

@@ -20,6 +20,7 @@ import Goals from './pages/Goals';
 import DocumentsPage from './pages/Documents';
 import Pricing from './pages/Pricing';
 import Contact from './pages/Contact';
+import TasksPage from './pages/Tarefas';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -90,6 +91,7 @@ function App() {
                 <Route path="/fechamento-caixa" element={<DailyClosure />} />
                 <Route path="/dfc" element={<DFCPage />} />
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/documents" element={<DocumentsPage />} />

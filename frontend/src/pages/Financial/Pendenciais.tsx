@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { receivablesApi } from '../../services/api';
+import { receivablesApi, proceduresApi } from '../../services/api';
 import { AccountReceivableSheet } from '../../components/Financial/AccountReceivableSheet';
 import {
     ArrowUpCircle,
@@ -12,7 +12,8 @@ import {
     CheckCircle2,
     MoreVertical,
     Paperclip,
-    Lock as LockIcon
+    Lock as LockIcon,
+    Syringe
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { DeleteConfirmationModal } from '../../components/Financial/DeleteConfirmationModal';
@@ -264,6 +265,17 @@ const PendenciaisPage = () => {
         }
     });
 
+    const executeMutation = useMutation({
+        mutationFn: (id: string) => proceduresApi.execute(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['receivables-list'] });
+            toast.success('Procedimento executado e estoque atualizado!');
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.message || 'Erro ao executar procedimento');
+        }
+    });
+
     const summary = useMemo(() => ({
         totalPending: receivablesResponse?.summary?.totalPending ?? 0,
         totalOverdue: receivablesResponse?.summary?.totalOverdue ?? 0,
@@ -437,6 +449,15 @@ const PendenciaisPage = () => {
                                                         title="Dar Baixa (Receber)"
                                                     >
                                                         <CheckCircle2 size={18} />
+                                                    </button>
+                                                )}
+                                                {item.category === 'Procedimentos' && item.procedureExecution?.status === 'PENDENTE' && (
+                                                    <button 
+                                                        onClick={() => executeMutation.mutate(item.procedureExecution.id)}
+                                                        className="p-2.5 text-[#DEB587] hover:bg-[#DEB587]/10 rounded-xl transition-all"
+                                                        title="💉 Marcar como Executado"
+                                                    >
+                                                        <Syringe size={18} />
                                                     </button>
                                                 )}
                                                 {item.fileUrl && (

@@ -76,7 +76,8 @@ export class ReceivableController {
                 where,
                 include: {
                     patient: { select: { id: true, fullName: true } },
-                    doctor: { select: { id: true, name: true } }
+                    doctor: { select: { id: true, name: true } },
+                    procedureExecution: true
                 },
                 orderBy: [
                     { status: 'desc' }, // PENDENTE vem antes de RECEBIDO/PAID alfabeticamente? 

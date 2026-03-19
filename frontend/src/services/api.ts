@@ -151,4 +151,16 @@ export const complianceApi = {
     deleteDocument: (id: string) => api.delete(`compliance/${id}`),
 };
 
+export const proceduresApi = {
+    getPending: () => api.get('procedures/pending'),
+    getByPatient: (patientId: string) => api.get(`procedures/patient/${patientId}`),
+    execute: (id: string) => api.post(`procedures/${id}/execute`),
+};
+
+export const tasksApi = {
+    getDaily: () => api.get('tasks/daily'),
+    getSummary: () => api.get('tasks/summary'),
+    complete: (id: string) => api.patch(`tasks/${id}/complete`),
+};
+
 export default api;

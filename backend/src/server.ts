@@ -21,6 +21,8 @@ import complianceRoutes from './routes/complianceRoutes.js';
 
 import importRoutes from './routes/importRoutes.js';
 import cashRoutes from './routes/cashRoutes.js';
+import procedureRoutes from './routes/procedureRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
 import { SeedService } from './services/SeedService.js';
 
 
@@ -61,6 +63,8 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/contas-a-pagar', accountPayableRoutes);
 app.use('/api/pendenciais', receivableRoutes);
+app.use('/api/procedures', procedureRoutes);
+app.use('/api/tasks', taskRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/pricing', pricingRoutes);
 app.use('/api/compliance', complianceRoutes);

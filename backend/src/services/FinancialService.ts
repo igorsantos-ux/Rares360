@@ -235,22 +235,48 @@ export class FinancialService {
         paymentMethod?: string;
         netAmount?: number;
     }) {
-        return await prisma.transaction.create({
-            data: {
-                amount: data.amount,
-                netAmount: data.netAmount || data.amount,
-                type: data.type,
-                status: data.status || 'PAID',
-                paymentMethod: data.paymentMethod || 'Outros',
-                category: data.category,
-                description: data.description,
-                doctorId: data.doctorId || null,
-                procedureName: data.procedureName || null,
-                cost: data.cost ?? 0,
-                patientId: data.patientId || null,
-                clinicId: data.clinicId,
-                date: new Date()
+        return await prisma.$transaction(async (tx) => {
+            const transaction = await tx.transaction.create({
+                data: {
+                    amount: data.amount,
+                    netAmount: data.netAmount || data.amount,
+                    type: data.type,
+                    status: data.status || 'PAID',
+                    paymentMethod: data.paymentMethod || 'Outros',
+                    category: data.category,
+                    description: data.description,
+                    doctorId: data.doctorId || null,
+                    procedureName: data.procedureName || null,
+                    cost: data.cost ?? 0,
+                    patientId: data.patientId || null,
+                    clinicId: data.clinicId,
+                    date: new Date()
+                }
+            });
+
+            // Se for faturamento de procedimento, criamos a execução pendente
+            if (data.type === 'INCOME' && data.category === 'Procedimentos' && data.patientId) {
+                const pricing = await tx.procedurePricing.findFirst({
+                    where: { 
+                        name: { equals: data.procedureName || data.description, mode: 'insensitive' },
+                        clinicId: data.clinicId
+                    }
+                });
+
+                await tx.procedureExecution.create({
+                    data: {
+                        clinicId: data.clinicId,
+                        patientId: data.patientId,
+                        procedureId: pricing?.id || null,
+                        procedureName: data.procedureName || data.description,
+                        transactionId: transaction.id,
+                        status: 'PENDENTE',
+                        billedAt: new Date()
+                    }
+                });
             }
+
+            return transaction;
         });
     }
 
@@ -270,7 +296,8 @@ export class FinancialService {
                 orderBy: { date: 'desc' },
                 include: {
                     doctor: true,
-                    patient: true
+                    patient: true,
+                    procedureExecution: true // Incluindo o status de execução
                 }
             }),
             prisma.accountPayableInstallment.findMany({

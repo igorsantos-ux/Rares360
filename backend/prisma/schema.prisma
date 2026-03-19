@@ -61,6 +61,8 @@ model Clinic {
   stockMovements        StockMovement[]
   leads                 Lead[]
   dailyClosures         DailyClosure[]
+  procedureExecutions   ProcedureExecution[]
+  tasks                 Task[]
   createdAt             DateTime        @default(now())
 }
 
@@ -102,6 +104,7 @@ model Transaction {
   
   clinicId      String
   clinic        Clinic   @relation(fields: [clinicId], references: [id])
+  procedureExecution ProcedureExecution?
 }
 
 model Doctor {
@@ -143,6 +146,8 @@ model Patient {
   photoUrl       String?
   
   transactions   Transaction[]
+  procedureExecutions ProcedureExecution[]
+  tasks          Task[]
   createdAt      DateTime      @default(now())
   
   clinicId       String
@@ -348,4 +353,44 @@ model DailyClosure {
   notes          String?       @db.Text
 
   @@unique([clinicId, date])
+}
+
+model ProcedureExecution {
+  id            String    @id @default(uuid())
+  clinicId      String
+  clinic        Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patientId     String
+  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  procedureId   String?   // ID do ProcedurePricing (opcional para faturamento manual)
+  procedureName String    // Nome do procedimento (para histórico)
+  transactionId String?   @unique // Link para a venda original
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+  
+  status        String    @default("PENDENTE") // PENDENTE / EXECUTADO
+  billedAt      DateTime  @default(now())      // Data da venda
+  executedAt    DateTime?                      // Data da execução efetiva
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  tasks         Task[]
+}
+
+model Task {
+  id            String    @id @default(uuid())
+  clinicId      String
+  clinic        Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patientId     String
+  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  executionId   String?
+  execution     ProcedureExecution? @relation(fields: [executionId], references: [id], onDelete: SetNull)
+  
+  title         String
+  dueDate       DateTime
+  status        String    @default("ABERTA") // ABERTA / CONCLUÍDA
+  type          String    @default("FOLLOW_UP") // "FOLLOW_UP", "ADMIN", "OTHER"
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
