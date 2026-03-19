@@ -65,6 +65,7 @@ export const financialApi = {
     getSummary: () => api.get('financial/summary'),
     getBreakEven: () => api.get('financial/break-even'),
     getEvolution: () => api.get('financial/evolution'),
+    getDailyEvolution: () => api.get('financial/daily-evolution'),
     getTransactions: () => api.get('financial/transactions'),
     createTransaction: (data: any) => api.post('financial/transactions', data),
 };

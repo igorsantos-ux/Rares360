@@ -35,6 +35,15 @@ export class FinancialController {
         }
     }
 
+    static async getDailyEvolution(req: any, res: Response) {
+        try {
+            const daily = await FinancialService.getDailyEvolution(req.clinicId);
+            res.json(daily);
+        } catch (error) {
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+
     static async createTransaction(req: any, res: Response) {
         try {
             const { amount, type, category, description, doctorId } = req.body;

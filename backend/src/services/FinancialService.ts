@@ -12,51 +12,82 @@ export class FinancialService {
             };
         }
 
-        const [transactions, paidInstallments] = await Promise.all([
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+        const [transactions, paidInstallments, pendingInstallments, goal] = await Promise.all([
             prisma.transaction.findMany({ where }),
             prisma.accountPayableInstallment.findMany({
                 where: {
                     accountPayable: { clinicId },
                     status: 'PAGO',
-                    paidAt: where.date
+                    paidAt: where.date || { gte: startOfMonth, lte: endOfMonth }
                 },
                 include: { accountPayable: true }
+            }),
+            prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    status: 'PENDENTE',
+                    dueDate: where.date || { gte: startOfMonth, lte: endOfMonth }
+                },
+                include: { accountPayable: true }
+            }),
+            prisma.financialGoal.findFirst({
+                where: {
+                    clinicId,
+                    month: now.getMonth() + 1,
+                    year: now.getFullYear()
+                }
             })
         ]);
 
-        const normalizedInstallments = paidInstallments.map(p => ({
-            id: p.id,
+        const normalizedPaidInstallments = paidInstallments.map(p => ({
             amount: p.amount,
             type: 'EXPENSE',
-            status: 'PAID',
-            category: p.accountPayable.costCenter || 'Operacional'
+            status: 'PAID'
         }));
 
-        const allMovements = [...transactions, ...normalizedInstallments];
+        const normalizedPendingInstallments = pendingInstallments.map(p => ({
+            amount: p.amount,
+            type: 'EXPENSE',
+            status: 'PENDING'
+        }));
 
-        const revenue = allMovements
-            .filter((t: any) => t.type === 'INCOME')
+        const incomeTransactions = transactions.filter((t: any) => t.type === 'INCOME');
+        const expenseTransactions = transactions.filter((t: any) => t.type === 'EXPENSE');
+
+        const grossRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + t.amount, 0);
+        const netRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + (t.netAmount || t.amount), 0);
+        
+        const paidExpenses = expenseTransactions
+            .filter((t: any) => t.status === 'PAID')
+            .reduce((acc: number, t: any) => acc + t.amount, 0) + 
+            normalizedPaidInstallments.reduce((acc: number, t: any) => acc + t.amount, 0);
+
+        const pendingExpenses = expenseTransactions
+            .filter((t: any) => t.status === 'PENDING')
+            .reduce((acc: number, t: any) => acc + t.amount, 0) + 
+            normalizedPendingInstallments.reduce((acc: number, t: any) => acc + t.amount, 0);
+
+        const pendingReceivables = incomeTransactions
+            .filter((t: any) => t.status === 'PENDING')
             .reduce((acc: number, t: any) => acc + t.amount, 0);
 
-        const currentExpenses = allMovements
-            .filter((t: any) => t.type === 'EXPENSE')
-            .reduce((acc: number, t: any) => acc + t.amount, 0);
-
-        const pendingReceivables = allMovements
-            .filter((t: any) => t.type === 'INCOME' && t.status === 'PENDING')
-            .reduce((acc: number, t: any) => acc + t.amount, 0);
-
-        const pendingPayables = allMovements
-            .filter((t: any) => t.type === 'EXPENSE' && t.status === 'PENDING')
-            .reduce((acc: number, t: any) => acc + t.amount, 0);
+        const uniquePatients = new Set(incomeTransactions.map((t: any) => t.patientId).filter(Boolean)).size;
 
         return {
-            revenue,
-            expenses: currentExpenses,
-            netProfit: revenue - currentExpenses,
+            grossRevenue,
+            netRevenue,
+            revenue: grossRevenue, // Manter compatibilidade
+            expenses: paidExpenses,
+            netProfit: netRevenue - paidExpenses,
             pendingReceivables,
-            pendingPayables,
-            margin: revenue > 0 ? ((revenue - currentExpenses) / revenue) * 100 : 0
+            pendingPayables: pendingExpenses,
+            totalPatients: uniquePatients,
+            goal: goal?.target || 600000, // Default 600k as requested if none found
+            margin: netRevenue > 0 ? ((netRevenue - paidExpenses) / netRevenue) * 100 : 0
         };
     }
 
@@ -134,6 +165,60 @@ export class FinancialService {
         }
 
         return evolution;
+    }
+
+    static async getDailyEvolution(clinicId: string) {
+        const dailyData = [];
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        
+        const transactions = await prisma.transaction.findMany({
+            where: {
+                clinicId,
+                type: 'INCOME',
+                date: {
+                    gte: startOfMonth,
+                    lte: now
+                }
+            },
+            orderBy: { date: 'asc' }
+        });
+
+        const goal = await prisma.financialGoal.findFirst({
+            where: {
+                clinicId,
+                month: now.getMonth() + 1,
+                year: now.getFullYear()
+            }
+        });
+
+        const target = goal?.target || 600000;
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const dailyTarget = target / daysInMonth;
+
+        let accumulated = 0;
+        let accumulatedTarget = 0;
+
+        for (let day = 1; day <= now.getDate(); day++) {
+            const dayStart = new Date(now.getFullYear(), now.getMonth(), day);
+            const dayEnd = new Date(now.getFullYear(), now.getMonth(), day, 23, 59, 59);
+
+            const dayIncome = transactions
+                .filter(t => t.date >= dayStart && t.date <= dayEnd)
+                .reduce((acc, t) => acc + t.amount, 0);
+
+            accumulated += dayIncome;
+            accumulatedTarget += dailyTarget;
+
+            dailyData.push({
+                day,
+                income: dayIncome,
+                accumulated,
+                target: accumulatedTarget
+            });
+        }
+
+        return dailyData;
     }
 
     static async createTransaction(data: {
