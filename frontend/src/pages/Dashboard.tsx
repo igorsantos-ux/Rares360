@@ -4,16 +4,10 @@ import { motion } from 'framer-motion';
 import {
     Target,
     Plus,
-    TrendingUp,
     TrendingDown,
     DollarSign,
-    Filter,
-    ArrowUpRight,
-    ArrowDownRight,
     Wallet,
-    Percent,
     PieChart,
-    ArrowRight,
     Loader2,
     RefreshCw
 } from 'lucide-react';
@@ -45,7 +39,6 @@ const Dashboard = () => {
     }, [queryClient]);
 
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
-    const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
 
     const { data: dashboard, isLoading } = useQuery({
         queryKey: ['dashboard-real'],
@@ -73,7 +66,6 @@ const Dashboard = () => {
     const agora = new Date();
     const ultimoDiaMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).getDate();
     const diaAtual = agora.getDate();
-    const diasRestantes = Math.max(ultimoDiaMes - diaAtual, 1);
     
     // Função simples para dias úteis (Seg-Sex)
     const getBusinessDays = (start: number, end: number) => {
