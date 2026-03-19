@@ -1,6 +1,26 @@
 import { PrismaClient } from '@prisma/client';
 import { getClinicId } from './context.js';
 
+// Lista de modelos que possuem explicitamente o campo clinicId
+const TENANT_MODELS = [
+  'User',
+  'Transaction',
+  'Doctor',
+  'Patient',
+  'Lead',
+  'InventoryItem',
+  'StockMovement',
+  'FinancialGoal',
+  'Document',
+  'ClinicDocument',
+  'AccountPayable',
+  'PricingSimulation',
+  'ProcedurePricing',
+  'DailyClosure',
+  'ProcedureExecution',
+  'Task'
+];
+
 export const extendPrisma = (prisma: PrismaClient) => {
   return prisma.$extends({
     query: {
@@ -11,9 +31,10 @@ export const extendPrisma = (prisma: PrismaClient) => {
           // Se não houver clinicId (ex: scripts, seed, ou rotas públicas), executa normal
           if (!clinicId) return query(args);
 
-          // Modelos que NÃO devem ser filtrados (ex: Clinic em si)
-          const bypassModels = ['Clinic'];
-          if (bypassModels.includes(model)) return query(args);
+          // Aplicar filtros de isolamento APENAS se o modelo for um tenant model
+          if (!TENANT_MODELS.includes(model)) {
+            return query(args);
+          }
 
           // Aplicar filtros de isolamento
           if (['findMany', 'findFirst', 'findUnique', 'count', 'aggregate', 'groupBy'].includes(operation)) {
