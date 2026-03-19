@@ -40,10 +40,29 @@ const Dashboard = () => {
 
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
 
-    const { data: dashboard, isLoading } = useQuery({
+    const { data: dashboard, isLoading, error } = useQuery({
         queryKey: ['dashboard-real'],
-        queryFn: () => reportingApi.getDashboard().then(res => res.data)
+        queryFn: () => financialApi.getSummary().then(res => res.data),
+        retry: 1
     });
+
+    if (error) {
+        return (
+            <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center">
+                    <TrendingDown className="text-red-400" size={32} />
+                </div>
+                <h3 className="text-lg font-black text-slate-700">Ops! Ocorreu um erro</h3>
+                <p className="text-slate-400 font-medium text-center max-w-xs">Não conseguimos carregar seus dados financeiros. Verifique sua conexão.</p>
+                <button 
+                    onClick={() => queryClient.invalidateQueries({ queryKey: ['dashboard-real'] })}
+                    className="mt-4 px-6 py-2 bg-[#8A9A5B] text-white rounded-xl font-bold text-sm shadow-md"
+                >
+                    Tentar Novamente
+                </button>
+            </div>
+        );
+    }
 
     if (isLoading) {
         return (

@@ -5,8 +5,17 @@ export class FinancialController {
     static async getSummary(req: any, res: Response) {
         try {
             const { startDate, endDate } = req.query;
-            const start = startDate ? new Date(startDate as string) : undefined;
-            const end = endDate ? new Date(endDate as string) : undefined;
+            
+            let start = startDate ? new Date(startDate as string) : undefined;
+            let end = endDate ? new Date(endDate as string) : undefined;
+
+            // Filtro padrão: Mês Atual
+            if (!start && !end) {
+                const now = new Date();
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+            }
+
             const summary = await FinancialService.getSummary(req.clinicId, start, end);
             res.json(summary);
         } catch (error) {
