@@ -11,7 +11,11 @@ import {
     Target,
     ArrowUpRight,
     HeartPulse,
-    CheckCircle2
+    CheckCircle2,
+    Instagram,
+    Linkedin,
+    Mail,
+    Phone
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -95,7 +99,7 @@ const LandingPage = () => {
                         {/* High contrast white logo filter */}
                         <img 
                             src="/logo-alamino-dark.png" 
-                            alt="Logo Rares360" 
+                            alt="Logo RARES" 
                             className="h-28 w-auto object-contain brightness-0 invert-[1] contrast-[200%]" 
                         />
                     </div>
@@ -337,38 +341,110 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* Final CTA */}
-            <section className="py-24 md:py-32 bg-[#F8FAFC] flex flex-col items-center justify-center px-6">
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    className="text-center"
-                >
-                    <h4 className="text-5xl md:text-7xl font-bold text-[#697D58] mb-16 tracking-tighter">
-                        O problema não é esforço. <br /> É gestão.
-                    </h4>
-                    <Link
-                        to="/contact"
-                        className="inline-flex items-center gap-4 px-16 py-8 bg-[#697D58] text-[#FDFCF0] text-2xl font-bold rounded-full shadow-2xl shadow-[#697D58]/30 hover:scale-105 active:scale-95 transition-all group"
+            {/* Final CTA - Premium Reveal */}
+            <section className="py-32 md:py-48 bg-[#2D3325] relative overflow-hidden px-8">
+                {/* Visual accents */}
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[#DEB587]/30 to-transparent"></div>
+                
+                <div className="max-w-7xl mx-auto flex flex-col items-center text-center relative z-10">
+                    <motion.div
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
                     >
-                        [ Falar com um Especialista ] <ArrowRight className="group-hover:translate-x-2 transition-transform" />
-                    </Link>
-                </motion.div>
+                        <h4 className="text-5xl md:text-8xl font-bold text-[#FDFCF0] mb-8 tracking-tighter leading-none">
+                            O problema não é esforço. <br /> 
+                            <span className="text-[#DEB587]">É gestão.</span>
+                        </h4>
+                        <p className="text-xl md:text-2xl text-[#FDFCF0]/60 max-w-3xl mx-auto font-light leading-relaxed mb-16 text-balance">
+                            Agende uma conversa estratégica e entenda como a metodologia Rares pode transformar a operação da sua clínica com clareza e previsibilidade.
+                        </p>
+                        
+                        <Link
+                            to="/contact"
+                            className="inline-flex items-center gap-4 px-16 py-8 bg-[#DEB587] text-[#2D3325] text-2xl font-bold rounded-full shadow-2xl shadow-black/40 hover:scale-105 hover:shadow-[#DEB587]/20 active:scale-95 transition-all group"
+                        >
+                            [ Falar com um Especialista ] <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+                        </Link>
+                    </motion.div>
+                </div>
+
+                {/* Background decorative element */}
+                <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[#DEB587]/5 rounded-full blur-[120px] -mb-64 -mr-32"></div>
             </section>
 
-            {/* Footer */}
-            <footer className="py-20 px-8 border-t border-[#8A9A5B]/10 bg-white">
-                <div className="max-w-container mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-slate-400 font-medium">
-                    <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-[#697D58]/10 rounded-lg flex items-center justify-center text-[#697D58]">
-                            <TrendingUp size={16} />
+            {/* New Premium Footer */}
+            <footer className="bg-[#1A1F16] text-[#FDFCF0]/80 pt-24 pb-12 px-8 border-t border-white/5">
+                <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16 md:gap-24 mb-24">
+                    {/* Column 1: Branding */}
+                    <div className="space-y-8">
+                        <div className="flex items-center gap-2">
+                            <img 
+                                src="/logo-alamino-dark.png" 
+                                alt="Logo RARES" 
+                                className="h-20 w-auto object-contain brightness-0 invert-[1] opacity-90" 
+                            />
                         </div>
-                        <span className="font-black text-[#697D58]">Rares360</span>
+                        <p className="text-lg font-light leading-relaxed max-w-xs">
+                            O futuro da gestão financeira para clínicas de alto padrão que buscam excelência operacional.
+                        </p>
                     </div>
-                    <div>© 2026 Rares360. Todos os direitos reservados.</div>
+
+                    {/* Column 2: Navigation */}
+                    <div className="grid grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                            <h5 className="text-[#DEB587] text-xs font-black uppercase tracking-[0.3em]">Consultoria</h5>
+                            <ul className="space-y-4">
+                                <li><a href="#" className="hover:text-white transition-colors font-light">Metodologia</a></li>
+                                <li><a href="#" className="hover:text-white transition-colors font-light">Diagnóstico</a></li>
+                                <li><a href="#" className="hover:text-white transition-colors font-light">Cases</a></li>
+                            </ul>
+                        </div>
+                        <div className="space-y-6">
+                            <h5 className="text-[#DEB587] text-xs font-black uppercase tracking-[0.3em]">Plataforma</h5>
+                            <ul className="space-y-4">
+                                <li><Link to="/login" className="hover:text-white transition-colors font-light">Login</Link></li>
+                                <li><Link to="/contact" className="hover:text-white transition-colors font-light">Suporte</Link></li>
+                                <li><a href="#" className="hover:text-white transition-colors font-light">Segurança</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    {/* Column 3: Contact & Social */}
+                    <div className="space-y-8">
+                        <h5 className="text-[#DEB587] text-xs font-black uppercase tracking-[0.3em]">Conecte-se</h5>
+                        <div className="space-y-4">
+                            <a href="mailto:contato@rares.com.br" className="flex items-center gap-3 hover:text-white transition-colors group">
+                                <div className="p-2.5 bg-white/5 rounded-lg group-hover:bg-white/10 transition-colors">
+                                    <Mail size={18} />
+                                </div>
+                                <span className="font-light">contato@rares.com.br</span>
+                            </a>
+                            <a href="#" className="flex items-center gap-3 hover:text-white transition-colors group">
+                                <div className="p-2.5 bg-white/5 rounded-lg group-hover:bg-white/10 transition-colors">
+                                    <Phone size={18} />
+                                </div>
+                                <span className="font-light">+55 (11) 99999-9999</span>
+                            </a>
+                        </div>
+                        <div className="flex gap-4 pt-4">
+                            <a href="#" className="p-3 bg-white/5 rounded-full hover:bg-[#DEB587] hover:text-[#2D3325] transition-all">
+                                <Instagram size={20} />
+                            </a>
+                            <a href="#" className="p-3 bg-white/5 rounded-full hover:bg-[#DEB587] hover:text-[#2D3325] transition-all">
+                                <Linkedin size={20} />
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bottom Bar */}
+                <div className="max-w-7xl mx-auto pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-medium tracking-[0.1em] text-[#FDFCF0]/30 uppercase">
+                    <div>© 2026 RARES. Todos os direitos reservados.</div>
                     <div className="flex gap-8">
-                        <a href="#" className="hover:text-[#697D58] transition-colors">Privacidade</a>
-                        <a href="#" className="hover:text-[#697D58] transition-colors">Termos</a>
+                        <a href="#" className="hover:text-white transition-colors">Privacidade</a>
+                        <a href="#" className="hover:text-white transition-colors">Termos de Uso</a>
+                        <a href="#" className="hover:text-white transition-colors">Cookies</a>
                     </div>
                 </div>
             </footer>
