@@ -12,7 +12,7 @@ import {
     RefreshCw
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { financialApi, reportingApi, integrationApi } from '../services/api';
+import { financialApi, integrationApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
@@ -46,6 +46,16 @@ const Dashboard = () => {
         retry: 1
     });
 
+    const { data: dailyEvolution } = useQuery({
+        queryKey: ['financial-daily-evolution'],
+        queryFn: () => financialApi.getDailyEvolution().then(res => res.data)
+    });
+
+    const { data: evolution } = useQuery({
+        queryKey: ['financial-evolution'],
+        queryFn: () => financialApi.getEvolution().then(res => res.data)
+    });
+
     if (error) {
         return (
             <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
@@ -73,7 +83,7 @@ const Dashboard = () => {
         );
     }
 
-    // --- Lógica de Metas e Produtividade ---
+    // --- Lógica de Metas e Produtividade (Somente após carregar) ---
     const meta = dashboard?.goal || 600000;
     const realizado = dashboard?.netRevenue || 0;
     const bruto = dashboard?.grossRevenue || 0;
@@ -107,16 +117,6 @@ const Dashboard = () => {
     const ticketMedioPaciente = totalPacientes > 0 ? realizado / totalPacientes : 0;
     const projecaoPacientes = ticketMedioPaciente > 0 ? Math.ceil(gapMeta / ticketMedioPaciente) : 0;
     const progressoMeta = Math.min(Math.round((realizado / meta) * 100), 100);
-
-    const { data: dailyEvolution } = useQuery({
-        queryKey: ['financial-daily-evolution'],
-        queryFn: () => financialApi.getDailyEvolution().then(res => res.data)
-    });
-
-    const { data: evolution } = useQuery({
-        queryKey: ['financial-evolution'],
-        queryFn: () => financialApi.getEvolution().then(res => res.data)
-    });
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
