@@ -1,33 +1,91 @@
 import prisma from '../lib/prisma.js';
 export class FinancialService {
-    static async getSummary(clinicId) {
-        const transactions = await prisma.transaction.findMany({
-            where: { clinicId }
-        });
-        const revenue = transactions
-            .filter((t) => t.type === 'INCOME')
+    static async getSummary(clinicId, startDate, endDate) {
+        const where = { clinicId };
+        if (startDate || endDate) {
+            where.date = {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {})
+            };
+        }
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        const [transactions, paidInstallments, pendingInstallments, goal] = await Promise.all([
+            prisma.transaction.findMany({ where }),
+            prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    status: 'PAGO',
+                    paidAt: where.date || { gte: startOfMonth, lte: endOfMonth }
+                },
+                include: { accountPayable: true }
+            }),
+            prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    status: 'PENDENTE',
+                    dueDate: where.date || { gte: startOfMonth, lte: endOfMonth }
+                },
+                include: { accountPayable: true }
+            }),
+            prisma.financialGoal.findFirst({
+                where: {
+                    clinicId,
+                    month: now.getMonth() + 1,
+                    year: now.getFullYear()
+                }
+            })
+        ]);
+        const normalizedPaidInstallments = paidInstallments.map(p => ({
+            amount: p.amount,
+            type: 'EXPENSE',
+            status: 'PAID'
+        }));
+        const normalizedPendingInstallments = pendingInstallments.map(p => ({
+            amount: p.amount,
+            type: 'EXPENSE',
+            status: 'PENDING'
+        }));
+        const incomeTransactions = transactions.filter((t) => t.type === 'INCOME');
+        const expenseTransactions = transactions.filter((t) => t.type === 'EXPENSE');
+        const grossRevenue = incomeTransactions.reduce((acc, t) => acc + t.amount, 0);
+        const netRevenue = incomeTransactions.reduce((acc, t) => acc + (t.netAmount || t.amount), 0);
+        const paidExpenses = expenseTransactions
+            .filter((t) => t.status === 'PAID')
+            .reduce((acc, t) => acc + t.amount, 0) +
+            normalizedPaidInstallments.reduce((acc, t) => acc + t.amount, 0);
+        const pendingExpenses = expenseTransactions
+            .filter((t) => t.status === 'PENDING')
+            .reduce((acc, t) => acc + t.amount, 0) +
+            normalizedPendingInstallments.reduce((acc, t) => acc + t.amount, 0);
+        const pendingReceivables = incomeTransactions
+            .filter((t) => t.status === 'PENDING')
             .reduce((acc, t) => acc + t.amount, 0);
-        const currentExpenses = transactions
-            .filter((t) => t.type === 'EXPENSE')
-            .reduce((acc, t) => acc + t.amount, 0);
-        const pendingReceivables = transactions
-            .filter((t) => t.type === 'INCOME' && t.status === 'PENDING')
-            .reduce((acc, t) => acc + t.amount, 0);
-        const pendingPayables = transactions
-            .filter((t) => t.type === 'EXPENSE' && t.status === 'PENDING')
-            .reduce((acc, t) => acc + t.amount, 0);
+        const uniquePatients = new Set(incomeTransactions.map((t) => t.patientId).filter(Boolean)).size;
         return {
-            revenue,
-            expenses: currentExpenses,
-            netProfit: revenue - currentExpenses,
+            grossRevenue,
+            netRevenue,
+            revenue: grossRevenue, // Manter compatibilidade
+            expenses: paidExpenses,
+            netProfit: netRevenue - paidExpenses,
             pendingReceivables,
-            pendingPayables,
-            margin: revenue > 0 ? ((revenue - currentExpenses) / revenue) * 100 : 0
+            pendingPayables: pendingExpenses,
+            totalPatients: uniquePatients,
+            goal: goal?.target || 600000, // Default 600k as requested if none found
+            margin: netRevenue > 0 ? ((netRevenue - paidExpenses) / netRevenue) * 100 : 0
         };
     }
-    static async getBreakEven(clinicId) {
+    static async getBreakEven(clinicId, startDate, endDate) {
+        const where = { clinicId };
+        if (startDate || endDate) {
+            where.date = {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {})
+            };
+        }
         const transactions = await prisma.transaction.findMany({
-            where: { clinicId }
+            where
         });
         const fixedCosts = transactions
             .filter((t) => t.type === 'EXPENSE' && t.category === 'Fixo')
@@ -79,33 +137,130 @@ export class FinancialService {
         }
         return evolution;
     }
-    static async createTransaction(data) {
-        return await prisma.transaction.create({
-            data: {
-                amount: data.amount,
-                netAmount: data.netAmount || data.amount,
-                type: data.type,
-                status: data.status || 'PAID',
-                paymentMethod: data.paymentMethod || 'Outros',
-                category: data.category,
-                description: data.description,
-                doctorId: data.doctorId || null,
-                procedureName: data.procedureName || null,
-                cost: data.cost ?? 0,
-                customerId: data.customerId || null,
-                clinicId: data.clinicId,
-                date: new Date()
+    static async getDailyEvolution(clinicId) {
+        const dailyData = [];
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const transactions = await prisma.transaction.findMany({
+            where: {
+                clinicId,
+                type: 'INCOME',
+                date: {
+                    gte: startOfMonth,
+                    lte: now
+                }
+            },
+            orderBy: { date: 'asc' }
+        });
+        const goal = await prisma.financialGoal.findFirst({
+            where: {
+                clinicId,
+                month: now.getMonth() + 1,
+                year: now.getFullYear()
             }
+        });
+        const target = goal?.target || 600000;
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const dailyTarget = target / daysInMonth;
+        let accumulated = 0;
+        let accumulatedTarget = 0;
+        for (let day = 1; day <= now.getDate(); day++) {
+            const dayStart = new Date(now.getFullYear(), now.getMonth(), day);
+            const dayEnd = new Date(now.getFullYear(), now.getMonth(), day, 23, 59, 59);
+            const dayIncome = transactions
+                .filter(t => t.date >= dayStart && t.date <= dayEnd)
+                .reduce((acc, t) => acc + t.amount, 0);
+            accumulated += dayIncome;
+            accumulatedTarget += dailyTarget;
+            dailyData.push({
+                day,
+                income: dayIncome,
+                accumulated,
+                target: accumulatedTarget
+            });
+        }
+        return dailyData;
+    }
+    static async createTransaction(data) {
+        return await prisma.$transaction(async (tx) => {
+            const transaction = await tx.transaction.create({
+                data: {
+                    amount: data.amount,
+                    netAmount: data.netAmount || data.amount,
+                    type: data.type,
+                    status: data.status || 'PAID',
+                    paymentMethod: data.paymentMethod || 'Outros',
+                    category: data.category,
+                    description: data.description,
+                    doctorId: data.doctorId || null,
+                    procedureName: data.procedureName || null,
+                    cost: data.cost ?? 0,
+                    patientId: data.patientId || null,
+                    clinicId: data.clinicId,
+                    date: new Date()
+                }
+            });
+            // Se for faturamento de procedimento, criamos a execução pendente
+            if (data.type === 'INCOME' && data.category === 'Procedimentos' && data.patientId) {
+                const pricing = await tx.procedurePricing.findFirst({
+                    where: {
+                        name: { equals: data.procedureName || data.description, mode: 'insensitive' },
+                        clinicId: data.clinicId
+                    }
+                });
+                await tx.procedureExecution.create({
+                    data: {
+                        clinicId: data.clinicId,
+                        patientId: data.patientId,
+                        procedureId: pricing?.id || null,
+                        procedureName: data.procedureName || data.description,
+                        transactionId: transaction.id,
+                        status: 'PENDENTE',
+                        billedAt: new Date()
+                    }
+                });
+            }
+            return transaction;
         });
     }
-    static async getTransactions(clinicId) {
-        return await prisma.transaction.findMany({
-            where: { clinicId },
-            orderBy: { date: 'desc' },
-            include: {
-                doctor: true,
-                customer: true
-            }
-        });
+    static async getTransactions(clinicId, startDate, endDate) {
+        const where = { clinicId };
+        if (startDate || endDate) {
+            where.date = {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {})
+            };
+        }
+        const [transactions, paidInstallments] = await Promise.all([
+            prisma.transaction.findMany({
+                where,
+                orderBy: { date: 'desc' },
+                include: {
+                    doctor: true,
+                    patient: true,
+                    procedureExecution: true // Incluindo o status de execução
+                }
+            }),
+            prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    status: 'PAGO',
+                    paidAt: where.date
+                },
+                include: { accountPayable: true }
+            })
+        ]);
+        const normalizedInstallments = paidInstallments.map(p => ({
+            id: p.id,
+            description: p.accountPayable.supplierName || p.accountPayable.description,
+            amount: p.amount,
+            type: 'EXPENSE',
+            status: 'PAID',
+            paymentMethod: p.paymentMethod || p.accountPayable.paymentMethod || 'Outros',
+            category: p.accountPayable.costCenter || 'Geral',
+            date: p.paidAt || p.dueDate,
+            isInstallment: true
+        }));
+        return [...transactions, ...normalizedInstallments].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
 }

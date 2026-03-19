@@ -33,6 +33,7 @@ export class AuthController {
                     name: user.name,
                     email: user.email,
                     role: user.role,
+                    hasSeenOnboarding: user.hasSeenOnboarding,
                     clinic: user.clinic
                 },
                 token
@@ -57,11 +58,26 @@ export class AuthController {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                hasSeenOnboarding: user.hasSeenOnboarding,
                 clinic: user.clinic
             });
         }
         catch (error) {
-            res.status(500).json({ error: 'Erro interno no servidor' });
+            res.status(500).json({ error: 'Erro interno no servidor.' });
+        }
+    }
+    static async completeOnboarding(req, res) {
+        try {
+            const userId = req.user.id;
+            await prisma.user.update({
+                where: { id: userId },
+                data: { hasSeenOnboarding: true }
+            });
+            res.json({ success: true });
+        }
+        catch (error) {
+            console.error('Error completing onboarding:', error);
+            res.status(500).json({ error: 'Erro ao atualizar status de onboarding.' });
         }
     }
 }

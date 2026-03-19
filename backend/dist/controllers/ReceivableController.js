@@ -1,17 +1,15 @@
 import prisma from '../lib/prisma.js';
+import { CashSecurity } from '../middleware/CashSecurity.js';
 export class ReceivableController {
     // Lista todos os Recebimentos / Pendenciais com paginação e analytics
+    // Listagem de recebíveis (Pendenciais)
     static async list(req, res) {
         try {
-            let clinicId = req.user?.clinicId;
-            if (!clinicId && req.user?.role === 'ADMIN_GLOBAL') {
-                const firstClinic = await prisma.clinic.findFirst();
-                clinicId = firstClinic?.id;
-            }
+            const clinicId = req.clinicId;
             if (!clinicId) {
-                return res.status(401).json({ message: 'Clínica não identificada.' });
+                return res.status(400).json({ message: 'Clínica não identificada.' });
             }
-            const { page = 1, limit = 20, filter, search = '' } = req.query;
+            const { page = 1, limit = 20, filter, search = '', startDate, endDate } = req.query;
             const skip = (Number(page) - 1) * Number(limit);
             const take = Number(limit);
             const today = new Date();
@@ -42,6 +40,14 @@ export class ReceivableController {
             else if (filter === 'pending') {
                 where.status = 'PENDENTE';
             }
+            // Filtro de Data (startDate / endDate)
+            if (startDate || endDate) {
+                where.dueDate = {
+                    ...(where.dueDate || {}),
+                    ...(startDate ? { gte: new Date(startDate) } : {}),
+                    ...(endDate ? { lte: new Date(endDate) } : {})
+                };
+            }
             // Busca por descrição ou paciente
             if (search) {
                 where.OR = [
@@ -55,7 +61,8 @@ export class ReceivableController {
                 where,
                 include: {
                     patient: { select: { id: true, fullName: true } },
-                    doctor: { select: { id: true, name: true } }
+                    doctor: { select: { id: true, name: true } },
+                    procedureExecution: true
                 },
                 orderBy: [
                     { status: 'desc' }, // PENDENTE vem antes de RECEBIDO/PAID alfabeticamente? 
@@ -164,11 +171,16 @@ export class ReceivableController {
     // Cria um novo recebimento
     static async create(req, res) {
         try {
-            const clinicId = req.user?.clinicId;
-            const { description, patientId, procedureName, amount, dueDate, status = 'PENDENTE', fileUrl } = req.body;
+            const clinicId = req.clinicId;
+            if (!clinicId) {
+                return res.status(400).json({ message: 'Clínica não identificada para o lançamento.' });
+            }
+            const { description, patientId, procedureName, amount, dueDate, status = 'PENDENTE', fileUrl, category, paymentMethod } = req.body;
             if (!description || !amount || !dueDate) {
+                console.error('Campos obrigatórios ausentes:', { description, amount, dueDate });
                 return res.status(400).json({ message: 'Descrição, valor e data de vencimento são obrigatórios.' });
             }
+            const transactionDate = new Date(dueDate);
             const transaction = await prisma.transaction.create({
                 data: {
                     description,
@@ -176,10 +188,11 @@ export class ReceivableController {
                     netAmount: Number(amount),
                     type: 'INCOME',
                     status: status === 'RECEBIDO' ? 'PAID' : 'PENDING',
-                    category: 'Procedimentos',
-                    procedureName: procedureName || 'Geral',
-                    dueDate: new Date(dueDate),
-                    date: status === 'RECEBIDO' ? new Date() : new Date(dueDate),
+                    category: category || 'Procedimentos',
+                    procedureName: procedureName || description || 'Geral',
+                    paymentMethod: paymentMethod || 'Outros',
+                    dueDate: transactionDate,
+                    date: transactionDate, // Sincroniza com a data selecionada
                     fileUrl,
                     patientId,
                     clinicId: clinicId
@@ -188,8 +201,15 @@ export class ReceivableController {
             return res.status(201).json(transaction);
         }
         catch (error) {
-            console.error('Error creating receivable:', error);
-            return res.status(500).json({ message: 'Erro ao criar pendencial', error: error.message });
+            console.error('--- CRITICAL ERROR: ReceivableController.create ---');
+            console.error('Payload recebido:', req.body);
+            console.error('ClinicId identificado:', req.clinicId);
+            console.error('Prisma Error:', error);
+            return res.status(500).json({
+                message: 'Erro ao criar lançamento de entrada',
+                error: error.message,
+                details: error.code || 'UNKNOWN_ERROR'
+            });
         }
     }
     // Atualiza status (Baixa rápida)
@@ -197,6 +217,14 @@ export class ReceivableController {
         try {
             const { id } = req.params;
             const { status } = req.body;
+            const clinicId = req.clinicId;
+            const trans = await prisma.transaction.findUnique({
+                where: { id, clinicId }
+            });
+            if (!trans)
+                return res.status(404).json({ error: 'Not found' });
+            // Bloqueio se o dia estiver fechado
+            await CashSecurity.validateClosure(clinicId, trans.date);
             const updated = await prisma.transaction.update({
                 where: { id },
                 data: {
@@ -214,6 +242,14 @@ export class ReceivableController {
     static async delete(req, res) {
         try {
             const { id } = req.params;
+            const clinicId = req.clinicId;
+            const trans = await prisma.transaction.findUnique({
+                where: { id, clinicId }
+            });
+            if (!trans)
+                return res.status(404).json({ error: 'Not found' });
+            // Bloqueio se o dia estiver fechado
+            await CashSecurity.validateClosure(clinicId, trans.date);
             await prisma.transaction.delete({ where: { id } });
             return res.json({ message: 'Excluído com sucesso' });
         }

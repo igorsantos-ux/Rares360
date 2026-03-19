@@ -1,7 +1,8 @@
 console.log('🚀 Starting Backend Finance Server...');
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
 import saasRoutes from './routes/saasRoutes.js';
 import financialRoutes from './routes/financialRoutes.js';
@@ -13,9 +14,12 @@ import accountPayableRoutes from './routes/accountPayableRoutes.js';
 import receivableRoutes from './routes/receivableRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
+import complianceRoutes from './routes/complianceRoutes.js';
 import importRoutes from './routes/importRoutes.js';
+import cashRoutes from './routes/cashRoutes.js';
+import procedureRoutes from './routes/procedureRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
 import { SeedService } from './services/SeedService.js';
-dotenv.config();
 const app = express();
 // Logger de requisições - MOVIDO PARA O TOPO para capturar tudo (inclusive OPTIONS/CORS)
 app.use((req, res, next) => {
@@ -27,7 +31,7 @@ app.use((req, res, next) => {
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-clinic-id'],
     credentials: true,
     preflightContinue: false,
     optionsSuccessStatus: 204
@@ -37,18 +41,23 @@ app.use('/uploads', express.static('uploads'));
 app.get('/', (req, res) => {
     res.json({ message: 'Heath Finance API is online' });
 });
+import { authMiddleware, tenantMiddleware } from './middlewares/authMiddleware.js';
 app.use('/api/auth', authRoutes);
-app.use('/api/saas', saasRoutes);
-app.use('/api/financial', financialRoutes);
-app.use('/api/core', coreRoutes);
-app.use('/api/reporting', reportingRoutes);
-app.use('/api/analytics', analyticsRoutes);
-app.use('/api/history', historyRoutes);
-app.use('/api/contas-a-pagar', accountPayableRoutes);
-app.use('/api/pendenciais', receivableRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/pricing', pricingRoutes);
-app.use('/api/import', importRoutes);
+app.use('/api/saas', authMiddleware, tenantMiddleware, saasRoutes);
+app.use('/api/financial', authMiddleware, tenantMiddleware, financialRoutes);
+app.use('/api/cash', authMiddleware, tenantMiddleware, cashRoutes);
+app.use('/api/core', authMiddleware, tenantMiddleware, coreRoutes);
+app.use('/api/reporting', authMiddleware, tenantMiddleware, reportingRoutes);
+app.use('/api/analytics', authMiddleware, tenantMiddleware, analyticsRoutes);
+app.use('/api/history', authMiddleware, tenantMiddleware, historyRoutes);
+app.use('/api/contas-a-pagar', authMiddleware, tenantMiddleware, accountPayableRoutes);
+app.use('/api/pendenciais', authMiddleware, tenantMiddleware, receivableRoutes);
+app.use('/api/procedures', authMiddleware, tenantMiddleware, procedureRoutes);
+app.use('/api/tasks', authMiddleware, tenantMiddleware, taskRoutes);
+app.use('/api/upload', authMiddleware, tenantMiddleware, uploadRoutes);
+app.use('/api/pricing', authMiddleware, tenantMiddleware, pricingRoutes);
+app.use('/api/compliance', authMiddleware, tenantMiddleware, complianceRoutes);
+app.use('/api/import', authMiddleware, tenantMiddleware, importRoutes);
 process.on('SIGTERM', () => {
     console.log('SIGTERM recebido. Encerrando graciosamente...');
     process.exit(0);

@@ -84,12 +84,16 @@ export class SeedService {
             }
             console.log('✅ Sincronização de credenciais de teste concluída.');
             // Se for a primeira vez (sem outras clínicas), roda o seed completo
+            // DESABILITADO PARA PRODUÇÃO: Não queremos dados de teste automáticos
+            /*
             const clinicCount = await prisma.clinic.count();
             if (clinicCount === 0) {
                 console.log('Nenhuma clínica encontrada. Iniciando seed de dados de teste...');
                 await this.runSeed();
                 console.log('🚀 Seed de teste completado!');
             }
+            */
+            console.log('ℹ️ Seed automático de teste ignorado (Modo Produção).');
         }
         catch (error) {
             if (error.code === 'P2021') {

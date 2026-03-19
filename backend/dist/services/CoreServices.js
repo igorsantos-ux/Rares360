@@ -88,4 +88,52 @@ export class InventoryService {
             }
         });
     }
+    static async registerMovement(data) {
+        return await prisma.$transaction(async (tx) => {
+            // 1. Criar o registro de movimentação
+            const movement = await tx.stockMovement.create({
+                data: {
+                    itemId: data.itemId,
+                    type: data.type,
+                    quantity: data.quantity,
+                    reason: data.reason,
+                    clinicId: data.clinicId,
+                    userId: data.userId
+                }
+            });
+            // 2. Buscar item atual para atualizar saldo
+            const item = await tx.inventoryItem.findUnique({
+                where: { id: data.itemId }
+            });
+            if (!item)
+                throw new Error("Item não encontrado");
+            // 3. Validar saldo negativo para saídas
+            if (data.type === 'SAIDA' && item.quantity < data.quantity) {
+                throw new Error(`Saldo insuficiente. Estoque atual: ${item.quantity}`);
+            }
+            // 4. Calcular novo saldo
+            const newQuantity = data.type === 'ENTRADA'
+                ? item.quantity + data.quantity
+                : item.quantity - data.quantity;
+            // 5. Atualizar item
+            await tx.inventoryItem.update({
+                where: { id: data.itemId },
+                data: {
+                    quantity: newQuantity,
+                    lastRestock: data.type === 'ENTRADA' ? new Date() : item.lastRestock
+                }
+            });
+            return movement;
+        });
+    }
+    static async getMovementHistory(clinicId) {
+        return await prisma.stockMovement.findMany({
+            where: { clinicId },
+            include: {
+                item: { select: { name: true, unit: true } }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 50
+        });
+    }
 }

@@ -1,14 +1,14 @@
 import prisma from '../lib/prisma.js';
 export class CashFlowService {
-    static async getMonthlyFlow(clinicId) {
+    static async getMonthlyFlow(clinicId, startDate, endDate) {
         const today = new Date();
-        const firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const lastDayMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        const start = startDate || new Date(today.getFullYear(), today.getMonth(), 1);
+        const end = endDate || new Date(today.getFullYear(), today.getMonth() + 1, 0);
         const [payables, receivables] = await Promise.all([
             prisma.accountPayableInstallment.findMany({
                 where: {
                     accountPayable: { clinicId },
-                    dueDate: { gte: firstDayMonth, lte: lastDayMonth }
+                    dueDate: { gte: start, lte: end }
                 },
                 include: { accountPayable: true }
             }),
@@ -16,7 +16,7 @@ export class CashFlowService {
                 where: {
                     clinicId,
                     type: 'INCOME',
-                    dueDate: { gte: firstDayMonth, lte: lastDayMonth }
+                    dueDate: { gte: start, lte: end }
                 },
                 include: { patient: true }
             })
@@ -55,9 +55,16 @@ export class CashFlowService {
             transactions
         };
     }
-    static async getDRE(clinicId) {
+    static async getDRE(clinicId, startDate, endDate) {
+        const where = { clinicId };
+        if (startDate || endDate) {
+            where.date = {
+                ...(startDate ? { gte: startDate } : {}),
+                ...(endDate ? { lte: endDate } : {})
+            };
+        }
         const transactions = await prisma.transaction.findMany({
-            where: { clinicId }
+            where
         });
         const revenue = transactions.filter(t => t.type === 'INCOME' && t.status === 'PAID').reduce((acc, t) => acc + t.amount, 0);
         // Custos Variáveis (Ex: Procedimentos, Insumos)
@@ -69,11 +76,11 @@ export class CashFlowService {
         // Resultado Final (EBITDA simplificado)
         const netResult = contributionMargin - fixedExpenses;
         return {
-            revenue,
-            variableCosts,
-            contributionMargin,
-            fixedExpenses,
-            netResult,
+            revenue: revenue || 0,
+            variableCosts: variableCosts || 0,
+            contributionMargin: contributionMargin || 0,
+            fixedExpenses: fixedExpenses || 0,
+            netResult: netResult || 0,
             marginPercent: revenue > 0 ? (contributionMargin / revenue) * 100 : 0
         };
     }
@@ -256,9 +263,9 @@ export class GoalService {
         const month = now.getMonth() + 1;
         const year = now.getFullYear();
         const transactions = await prisma.transaction.findMany({ where: { clinicId } });
-        const revenue = transactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-        const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0);
-        const currentProfit = revenue - expenses;
+        const revenue = transactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0) || 0;
+        const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0) || 0;
+        const currentProfit = (revenue || 0) - (expenses || 0);
         const goal = await prisma.financialGoal.upsert({
             where: { id: `goal-${clinicId}-${month}-${year}-PROFIT` },
             update: { target: targetProfit, achieved: currentProfit },

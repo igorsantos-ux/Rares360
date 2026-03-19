@@ -1,17 +1,14 @@
 import prisma from '../lib/prisma.js';
+import { CashSecurity } from '../middleware/CashSecurity.js';
 export class AccountPayableController {
     // Lista todas as Contas a Pagar (Parcelas individuais) com paginação e filtros
     static async list(req, res) {
         try {
-            let clinicId = req.user?.clinicId;
-            if (!clinicId && req.user?.role === 'ADMIN_GLOBAL') {
-                const firstClinic = await prisma.clinic.findFirst();
-                clinicId = firstClinic?.id;
-            }
+            const clinicId = req.clinicId;
             if (!clinicId) {
                 return res.status(401).json({ message: 'Clínica não identificada.' });
             }
-            const { page = 1, limit = 20, filter, search = '' } = req.query;
+            const { page = 1, limit = 20, filter, search = '', startDate, endDate } = req.query;
             const skip = (Number(page) - 1) * Number(limit);
             const take = Number(limit);
             const today = new Date();
@@ -43,6 +40,14 @@ export class AccountPayableController {
             }
             else if (filter === 'pagas') {
                 where.status = 'PAGO';
+            }
+            // Filtro de Data (startDate / endDate)
+            if (startDate || endDate) {
+                where.dueDate = {
+                    ...(where.dueDate || {}),
+                    ...(startDate ? { gte: new Date(startDate) } : {}),
+                    ...(endDate ? { lte: new Date(endDate) } : {})
+                };
             }
             // Busca por descrição ou fornecedor (se houver termo)
             if (search) {
@@ -163,17 +168,14 @@ export class AccountPayableController {
     // Cria uma Conta a Pagar (À vista ou Parcelada)
     static async create(req, res) {
         try {
-            let clinicId = req.user?.clinicId;
-            if (!clinicId && req.user?.role === 'ADMIN_GLOBAL') {
-                const firstClinic = await prisma.clinic.findFirst();
-                clinicId = firstClinic?.id;
-            }
+            const clinicId = req.clinicId;
             if (!clinicId) {
-                return res.status(401).json({ message: 'Clínica não identificada.' });
+                return res.status(401).json({ message: 'Clínica não identificada.', error: 'MISSING_CLINIC_ID' });
             }
             const { description, documentNumber, totalAmount, paymentMethod, isInstallment, installmentsCount, installmentInterval, supplierName, supplierCnpj, interestValue, penaltyValue, bank, observation, fileUrl, costCenter, costType, installments // Array de parcelas vindas do front
              } = req.body;
             if (!description || !totalAmount || !installments || !Array.isArray(installments) || installments.length === 0) {
+                console.error('Campos obrigatórios de Contas a Pagar ausentes:', { description, totalAmount, installments });
                 return res.status(400).json({ message: 'Dados incompletos. Informe descrição, valor e as parcelas.' });
             }
             // Obrigatoriedade de Centro de Custo e Tipo (v14.0)
@@ -210,6 +212,7 @@ export class AccountPayableController {
                         amount: Number(inst.amount),
                         dueDate: new Date(inst.dueDate),
                         status: inst.status || 'PENDENTE',
+                        paidAt: inst.status === 'PAGO' ? new Date(inst.dueDate) : null,
                         paymentMethod: paymentMethod || null
                     };
                 });
@@ -236,6 +239,14 @@ export class AccountPayableController {
             if (!['PENDENTE', 'PAGO', 'ATRASADO', 'CANCELADO'].includes(status)) {
                 return res.status(400).json({ message: 'Status inválido' });
             }
+            const installment = await prisma.accountPayableInstallment.findUnique({
+                where: { id }
+            });
+            if (!installment)
+                return res.status(404).json({ message: 'Parcela não encontrada' });
+            // Bloqueio se o dia estiver fechado
+            const clinicId = req.user?.clinicId;
+            await CashSecurity.validateClosure(clinicId, installment.dueDate);
             const updated = await prisma.accountPayableInstallment.update({
                 where: { id },
                 data: {
@@ -261,6 +272,14 @@ export class AccountPayableController {
             });
             if (!installment) {
                 return res.status(404).json({ message: 'Parcela não encontrada' });
+            }
+            const clinicId = req.user?.clinicId;
+            // Bloqueio se o dia estiver fechado (usando a data base da parcela)
+            const installmentData = await prisma.accountPayableInstallment.findUnique({
+                where: { id }
+            });
+            if (installmentData) {
+                await CashSecurity.validateClosure(clinicId, installmentData.dueDate);
             }
             // Exclui a parcela
             await prisma.accountPayableInstallment.delete({

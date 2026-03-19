@@ -17,6 +17,7 @@ export class AuthService {
             return jwt.verify(token, JWT_SECRET);
         }
         catch (error) {
+            console.error('--- JWT VERIFY ERROR ---', error.message);
             return null;
         }
     }

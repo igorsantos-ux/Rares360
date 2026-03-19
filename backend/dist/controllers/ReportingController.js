@@ -5,8 +5,11 @@ export class ReportingController {
     static async getDashboardKPIs(req, res) {
         try {
             const clinicId = req.clinicId;
-            const summary = await FinancialService.getSummary(clinicId);
-            const flow = await CashFlowService.getMonthlyFlow(clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate) : undefined;
+            const end = endDate ? new Date(endDate) : undefined;
+            const summary = await FinancialService.getSummary(clinicId, start, end);
+            const flow = await CashFlowService.getMonthlyFlow(clinicId, start, end);
             res.json({ ...summary, ...flow });
         }
         catch (error) {
@@ -15,7 +18,10 @@ export class ReportingController {
     }
     static async getCashFlow(req, res) {
         try {
-            const data = await CashFlowService.getMonthlyFlow(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate) : undefined;
+            const end = endDate ? new Date(endDate) : undefined;
+            const data = await CashFlowService.getMonthlyFlow(req.clinicId, start, end);
             res.json(data);
         }
         catch (error) {
@@ -24,7 +30,10 @@ export class ReportingController {
     }
     static async getDRE(req, res) {
         try {
-            const data = await CashFlowService.getDRE(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate) : undefined;
+            const end = endDate ? new Date(endDate) : undefined;
+            const data = await CashFlowService.getDRE(req.clinicId, start, end);
             res.json(data);
         }
         catch (error) {

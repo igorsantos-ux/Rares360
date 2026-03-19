@@ -65,4 +65,35 @@ export class CoreController {
             res.status(500).json({ error: 'Internal server error' });
         }
     }
+    static async registerMovement(req, res) {
+        try {
+            const { itemId, type, quantity, reason } = req.body;
+            if (!itemId || !type || !quantity) {
+                return res.status(400).json({ error: 'ItemId, type e quantity são obrigatórios' });
+            }
+            const data = await InventoryService.registerMovement({
+                itemId,
+                type,
+                quantity: Number(quantity),
+                reason,
+                clinicId: req.clinicId,
+                userId: req.userId
+            });
+            res.status(201).json(data);
+        }
+        catch (error) {
+            console.error('Erro ao registrar movimentação:', error);
+            res.status(400).json({ error: error.message || 'Erro ao processar movimentação' });
+        }
+    }
+    static async getStockHistory(req, res) {
+        try {
+            const data = await InventoryService.getMovementHistory(req.clinicId);
+            res.json(data);
+        }
+        catch (error) {
+            console.error('Erro ao buscar histórico:', error);
+            res.status(500).json({ error: 'Erro ao carregar histórico' });
+        }
+    }
 }
