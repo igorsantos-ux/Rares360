@@ -1,8 +1,7 @@
-import React from 'react';
-import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
+import Joyride, { STATUS } from 'react-joyride';
+import type { Step, CallBackProps } from 'react-joyride';
 import { useAuth } from '../contexts/AuthContext';
 import { authApi } from '../services/api';
-import { motion, AnimatePresence } from 'framer-motion';
 
 export const OnboardingTour = () => {
     const { user, completeOnboarding: markAsSeenInContext } = useAuth();
