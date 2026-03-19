@@ -50,6 +50,7 @@ api.interceptors.response.use(
 export const authApi = {
     login: (data: any) => api.post('auth/login', data),
     me: () => api.get('auth/me'),
+    completeOnboarding: () => api.patch('auth/onboarding'),
 };
 
 export const saasApi = {

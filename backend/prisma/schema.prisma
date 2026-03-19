@@ -77,6 +77,7 @@ model User {
   clinic         Clinic?        @relation(fields: [clinicId], references: [id])
   closedChapters DailyClosure[] @relation("ClosedBy")
   isActive       Boolean        @default(true)
+  hasSeenOnboarding Boolean     @default(false)
   createdAt DateTime @default(now())
 
   @@index([clinicId])

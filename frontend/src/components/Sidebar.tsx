@@ -46,8 +46,8 @@ const Sidebar = () => {
     const navItems = [
         { label: "Principal", items: [
             { icon: <LayoutDashboard size={20} />, label: "Painel Financeiro", path: "/dashboard" },
-            { icon: <CheckSquare size={20} />, label: "Tarefas", path: "/tasks" },
-            { icon: <LockIcon size={20} />, label: "Caixa", path: "/fechamento-caixa" },
+            { icon: <CheckSquare size={20} />, label: "Tarefas", path: "/tasks", id: "tarefas-dia" },
+            { icon: <LockIcon size={20} />, label: "Caixa", path: "/fechamento-caixa", id: "fechamento-caixa" },
             { icon: <FileText size={20} />, label: "DRE", path: "/dre" },
             { icon: <Activity size={20} />, label: "DFC", path: "/dfc" },
         ]},
@@ -60,9 +60,9 @@ const Sidebar = () => {
         { label: "Gestão", items: [
             { icon: <Calculator size={20} />, label: "Precificação", path: "/pricing" },
             { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
-            { icon: <Package size={20} />, label: "Estoque", path: "/inventory" },
+            { icon: <Package size={20} />, label: "Estoque", path: "/inventory", id: "estoque-insumos" },
             { icon: <Target size={20} />, label: "Metas", path: "/goals" },
-            { icon: <FolderOpen size={20} />, label: "Documentos", path: "/documents" },
+            { icon: <FolderOpen size={20} />, label: "Documentos", path: "/documents", id: "documentos-compliance" },
         ]}
     ];
 
@@ -113,6 +113,7 @@ const Sidebar = () => {
 
 const SidebarLink = ({ item, active }: { item: any; active: boolean }) => (
     <Link
+        id={item.id}
         to={item.path}
         className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 group relative overflow-hidden ${active
             ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20'

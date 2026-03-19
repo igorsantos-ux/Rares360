@@ -7,6 +7,7 @@ interface User {
     email: string;
     role: 'ADMIN_GLOBAL' | 'CLINIC_ADMIN' | 'USER';
     clinicId?: string;
+    hasSeenOnboarding?: boolean;
     clinic?: {
         name: string;
     };
@@ -17,6 +18,7 @@ interface AuthContextType {
     token: string | null;
     login: (token: string, user: User) => void;
     logout: () => void;
+    completeOnboarding: () => void;
     loading: boolean;
 }
 
@@ -59,8 +61,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(null);
     };
 
+    const completeOnboarding = () => {
+        if (user) {
+            setUser({ ...user, hasSeenOnboarding: true });
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, token, login, logout, completeOnboarding, loading }}>
             {children}
         </AuthContext.Provider>
     );

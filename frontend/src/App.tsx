@@ -27,6 +27,7 @@ import SaaSManagement from './pages/SaaSManagement';
 import Automations from './pages/Automations';
 import { useAuth } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
+import { OnboardingTour } from './components/OnboardingTour';
 
 function App() {
   const location = useLocation();
@@ -48,6 +49,7 @@ function App() {
   return (
     <div className={`flex min-h-screen ${isPublicPage ? 'bg-white' : 'bg-[#F0EAD6]'}`}>
       <Toaster position="top-right" />
+      <OnboardingTour />
       
       {/* Sidebar Fixa para Desktop */}
       {showHeader && (

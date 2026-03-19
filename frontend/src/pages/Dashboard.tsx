@@ -194,7 +194,7 @@ const Dashboard = () => {
             </section>
 
             {/* SEÇÃO 3: O Dashboard de Metas (Destaque Central) */}
-            <div className="bg-[#697D58] text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
+            <div id="ritmo-meta" className="bg-[#697D58] text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white/5 rounded-full -mr-48 -mt-48 blur-3xl"></div>
                 
                 <div className="relative z-10 flex flex-col lg:flex-row justify-between gap-12">
