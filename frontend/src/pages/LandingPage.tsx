@@ -364,7 +364,7 @@ const LandingPage = () => {
                             to="/contact"
                             className="inline-flex items-center gap-4 px-16 py-8 bg-[#DEB587] text-[#2D3325] text-2xl font-bold rounded-full shadow-2xl shadow-black/40 hover:scale-105 hover:shadow-[#DEB587]/20 active:scale-95 transition-all group"
                         >
-                            [ Falar com um Especialista ] <ArrowRight className="group-hover:translate-x-2 transition-transform" />
+                            Falar com um Especialista <ArrowRight className="group-hover:translate-x-2 transition-transform" />
                         </Link>
                     </motion.div>
                 </div>
