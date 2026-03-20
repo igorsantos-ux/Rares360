@@ -11,6 +11,7 @@ import {
     Flame,
     Loader2
 } from 'lucide-react';
+import { Progress } from '../components/ui/Progress';
 
 const Goals = () => {
     const { data: response, isLoading } = useQuery({
@@ -24,9 +25,9 @@ const Goals = () => {
     // Calcular resumo localmente caso não venha do backend
     const summary = {
         globalProgress: goalsList.length > 0
-            ? Math.round(goalsList.reduce((acc: number, g: any) => acc + (Math.min((g.current / g.target) * 100, 100)), 0) / goalsList.length)
+            ? Math.round(goalsList.reduce((acc: number, g: any) => acc + (g.target > 0 ? Math.min(((g.current || g.achieved || 0) / g.target) * 100, 100) : 0), 0) / goalsList.length)
             : 0,
-        achieved: goalsList.filter((g: any) => g.current >= g.target).length,
+        achieved: goalsList.filter((g: any) => (g.current || g.achieved || 0) >= g.target).length,
         delayed: 0 // Backend ainda não envia status de atraso
     };
 
@@ -99,31 +100,30 @@ const Goals = () => {
                                     {goal.type === 'finance' ? <BarChart3 size={28} /> : goal.type === 'growth' ? <TrendingUp size={28} /> : <Target size={28} />}
                                 </div>
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                    <Clock size={12} /> {goal.deadline || 'Mensal'}
+                                    <Clock size={12} /> {goal.month}/{goal.year}
                                 </span>
                             </div>
 
                             <h4 className="text-xl font-black text-[#697D58] mb-2">{goal.title || (goal.type === 'PROFIT' ? 'Meta de Lucro' : 'Objetivo')}</h4>
 
-                            <div className="mb-6">
-                                <div className="flex justify-between items-end mb-3">
-                                    <span className="text-2xl font-black text-slate-800">
-                                        {goal.type === 'finance' || goal.type === 'PROFIT' ? `R$ ${(goal.current || goal.achieved || 0).toLocaleString('pt-BR')}` : goal.type === 'efficiency' ? `${goal.current}%` : goal.current}
-                                    </span>
-                                    <span className="text-xs font-bold text-slate-400">Objetivo: {goal.type === 'finance' || goal.type === 'PROFIT' ? `R$ ${goal.target.toLocaleString('pt-BR')}` : goal.type === 'efficiency' ? `${goal.target}%` : goal.target}</span>
+                                <div className="mb-6">
+                                    <div className="flex justify-between items-end mb-3">
+                                        <span className="text-2xl font-black text-slate-800">
+                                            {goal.type === 'finance' || goal.type === 'PROFIT' || goal.type.toUpperCase() === 'FATURAMENTO' ? `R$ ${(goal.current || goal.achieved || 0).toLocaleString('pt-BR')}` : goal.type === 'efficiency' ? `${goal.current}%` : goal.current}
+                                        </span>
+                                        <span className="text-xs font-bold text-slate-400">Objetivo: {goal.type === 'finance' || goal.type === 'PROFIT' || goal.type.toUpperCase() === 'FATURAMENTO' ? `R$ ${goal.target.toLocaleString('pt-BR')}` : goal.type === 'efficiency' ? `${goal.target}%` : goal.target}</span>
+                                    </div>
+                                    <Progress value={Math.min(((goal.current || goal.achieved || 0) / goal.target) * 100, 100)} />
                                 </div>
-                                <div className="h-4 bg-slate-100 rounded-full overflow-hidden p-1 shadow-inner">
-                                    <div
-                                        className={`h-full rounded-full transition-all duration-1000 shadow-md ${goal.type === 'finance' || goal.type === 'PROFIT' ? 'bg-[#8A9A5B]' : 'bg-[#DEB587]'
-                                            }`}
-                                        style={{ width: `${Math.min(((goal.current || goal.achieved || 0) / goal.target) * 100, 100)}%` }}
-                                    ></div>
-                                </div>
-                            </div>
 
-                            <button className="w-full py-4 bg-slate-50 text-slate-400 group-hover:bg-[#8A9A5B] group-hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
-                                Ver Detalhes <ArrowUpRight size={16} />
-                            </button>
+                            <div className="flex gap-2 mt-auto">
+                                <button className="flex-1 py-4 bg-slate-50 text-slate-400 group-hover:bg-[#8A9A5B] group-hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                    Ver Detalhes <ArrowUpRight size={16} />
+                                </button>
+                                <button className="px-4 py-4 bg-slate-50 text-slate-400 hover:bg-[#DEB587] hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center shadow-inner">
+                                    Editar
+                                </button>
+                            </div>
                         </div>
                     ))
                 )}

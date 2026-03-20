@@ -85,7 +85,7 @@ const Dashboard = () => {
 
     // --- Lógica de Metas e Produtividade (Somente após carregar) ---
     const meta = dashboard?.goal || 600000;
-    const realizado = dashboard?.netRevenue || 0;
+    const realizado = dashboard?.receivedRevenue || 0; // Faturamento Realizado = RECEBIDO
     const bruto = dashboard?.grossRevenue || 0;
     const pendenteReceber = dashboard?.pendingReceivables || 0;
     const totalPacientes = dashboard?.totalPatients || 0;
@@ -108,15 +108,15 @@ const Dashboard = () => {
         return count;
     };
 
-    const diasUteisRestantes = Math.max(getBusinessDays(diaAtual + 1, ultimoDiaMes), 1);
+    const diasUteisRestantes = Math.max(getBusinessDays(diaAtual + 1, ultimoDiaMes), 0);
     const diasTrabalhados = Math.max(diaAtual, 1);
 
     // Indicadores Dinâmicos
-    const ritmoNecessario = gapMeta / diasUteisRestantes;
+    const ritmoNecessario = diasUteisRestantes > 0 ? gapMeta / diasUteisRestantes : 0;
     const ticketMedioDia = realizado / diasTrabalhados;
     const ticketMedioPaciente = totalPacientes > 0 ? realizado / totalPacientes : 0;
     const projecaoPacientes = ticketMedioPaciente > 0 ? Math.ceil(gapMeta / ticketMedioPaciente) : 0;
-    const progressoMeta = Math.min(Math.round((realizado / meta) * 100), 100);
+    const progressoMeta = meta > 0 ? Math.min(Math.round((realizado / meta) * 100), 100) : 0;
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">

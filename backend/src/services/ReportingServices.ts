@@ -305,9 +305,57 @@ export class BillingService {
 
 export class GoalService {
     static async getGoals(clinicId: string) {
-        return await prisma.financialGoal.findMany({
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+
+        const goals = await prisma.financialGoal.findMany({
             where: { clinicId }
         });
+
+        // Para metas de faturamento do mês atual, calculamos o progresso real
+        const currentMonthFaturamento = await prisma.transaction.aggregate({
+            where: {
+                clinicId,
+                type: 'INCOME',
+                status: 'PAID',
+                date: {
+                    gte: new Date(year, month - 1, 1),
+                    lte: new Date(year, month, 0, 23, 59, 59)
+                }
+            },
+            _sum: { amount: true }
+        });
+
+        const actualFaturamento = currentMonthFaturamento._sum.amount || 0;
+        const remainingBusinessDays = this.getRemainingBusinessDays();
+
+        return goals.map(goal => {
+            const isCurrentMonth = goal.month === month && goal.year === year;
+            const isFaturamento = goal.type.toUpperCase() === 'FATURAMENTO' || goal.type.toUpperCase() === 'FINANCE';
+
+            return {
+                ...goal,
+                current: (isCurrentMonth && isFaturamento) ? actualFaturamento : goal.achieved,
+                remainingBusinessDays: isCurrentMonth ? remainingBusinessDays : 0,
+                status: (goal.achieved >= goal.target) ? 'CONCLUIDA' : 'EM_ANDAMENTO'
+            };
+        });
+    }
+
+    private static getRemainingBusinessDays(): number {
+        const today = new Date();
+        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        let businessDays = 0;
+
+        for (let day = today.getDate() + 1; day <= lastDayOfMonth; day++) {
+            const date = new Date(today.getFullYear(), today.getMonth(), day);
+            const dayOfWeek = date.getDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Sunday, 6 = Saturday
+                businessDays++;
+            }
+        }
+        return Math.max(businessDays, 0);
     }
 
     static async calculateSmartGoal(clinicId: string, targetProfit: number) {

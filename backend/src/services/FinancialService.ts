@@ -60,6 +60,9 @@ export class FinancialService {
 
         const grossRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + t.amount, 0);
         const netRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + (t.netAmount || t.amount), 0);
+        const receivedRevenue = incomeTransactions
+            .filter((t: any) => t.status === 'PAID')
+            .reduce((acc: number, t: any) => acc + (t.netAmount || t.amount), 0);
         
         const paidExpenses = expenseTransactions
             .filter((t: any) => t.status === 'PAID')
@@ -80,6 +83,7 @@ export class FinancialService {
         return {
             grossRevenue,
             netRevenue,
+            receivedRevenue,
             revenue: grossRevenue, // Manter compatibilidade
             expenses: paidExpenses,
             netProfit: netRevenue - paidExpenses,
