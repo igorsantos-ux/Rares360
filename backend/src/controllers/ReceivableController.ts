@@ -212,7 +212,9 @@ export class ReceivableController {
                 status = 'PENDENTE',
                 fileUrl,
                 category,
-                paymentMethod
+                paymentMethod,
+                quantity = 1,
+                isExecuted = false
             } = req.body;
 
             if (!description || !amount || !dueDate) {
@@ -236,6 +238,8 @@ export class ReceivableController {
                     date: transactionDate, // Sincroniza com a data selecionada
                     fileUrl,
                     patientId,
+                    quantity: Number(quantity) || 1,
+                    isExecuted: Boolean(isExecuted),
                     clinicId: clinicId!
                 }
             });

@@ -14,17 +14,11 @@ const receivableSchema = z.object({
   dueDate: z.string().min(1, 'A data de vencimento é obrigatória'),
   status: z.string(),
   fileUrl: z.string().optional(),
+  quantity: z.number().min(1, 'A quantidade deve ser pelo menos 1'),
+  isExecuted: z.boolean().default(false),
 });
 
-interface ReceivableFormData {
-  description: string;
-  patientId: string;
-  procedureName: string;
-  amount: number;
-  dueDate: string;
-  status: string;
-  fileUrl?: string;
-}
+type ReceivableFormData = z.infer<typeof receivableSchema>;
 
 interface Props {
   isOpen: boolean;
@@ -39,7 +33,7 @@ export function AccountReceivableSheet({ isOpen, onClose, onSave }: Props) {
   const [isLoadingPatients, setIsLoadingPatients] = useState(false);
 
   const { register, handleSubmit, formState: { errors }, reset } = useForm<ReceivableFormData>({
-    resolver: zodResolver(receivableSchema),
+    resolver: zodResolver(receivableSchema) as any,
     defaultValues: {
       description: '',
       patientId: '',
@@ -48,6 +42,8 @@ export function AccountReceivableSheet({ isOpen, onClose, onSave }: Props) {
       dueDate: new Date().toISOString().split('T')[0],
       status: 'PENDENTE',
       fileUrl: '',
+      quantity: 1,
+      isExecuted: false,
     }
   });
 
@@ -82,7 +78,7 @@ export function AccountReceivableSheet({ isOpen, onClose, onSave }: Props) {
     setSelectedFile(null);
   };
 
-  const onSubmit: SubmitHandler<ReceivableFormData> = async (data) => {
+  const onSubmit: SubmitHandler<ReceivableFormData> = async (data: any) => {
     try {
       setIsSubmitting(true);
       let finalFileUrl = data.fileUrl;
@@ -235,6 +231,37 @@ export function AccountReceivableSheet({ isOpen, onClose, onSave }: Props) {
                       className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl px-5 py-4 text-slate-700 font-bold focus:ring-4 focus:ring-[#8A9A5B]/10 outline-none transition-all"
                     />
                     {errors.dueDate && <span className="text-red-500 text-[10px] font-black uppercase tracking-tight">{errors.dueDate.message}</span>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-6">
+                  {/* Quantidade */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#697D58] uppercase tracking-widest flex items-center gap-2">
+                      <Activity size={14} /> Quantidade Comprada
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      {...register('quantity', { valueAsNumber: true })}
+                      className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl px-5 py-4 text-slate-700 font-bold focus:ring-4 focus:ring-[#8A9A5B]/10 outline-none transition-all"
+                    />
+                    {errors.quantity && <span className="text-red-500 text-[10px] font-black uppercase tracking-tight">{errors.quantity.message}</span>}
+                  </div>
+
+                  {/* Realizado */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-[#697D58] uppercase tracking-widest flex items-center gap-2">
+                      <Activity size={14} /> Status de Execução
+                    </label>
+                    <div className="flex items-center gap-3 bg-white border border-[#8A9A5B]/20 rounded-2xl px-5 py-4 h-[60px]">
+                      <input
+                        type="checkbox"
+                        {...register('isExecuted')}
+                        className="w-6 h-6 rounded-lg text-[#8A9A5B] focus:ring-[#8A9A5B]/20 border-[#8A9A5B]/20 cursor-pointer"
+                      />
+                      <span className="text-sm font-bold text-slate-600">Já foi realizado?</span>
+                    </div>
                   </div>
                 </div>
 

@@ -99,6 +99,8 @@ model Transaction {
   dueDate            DateTime?
   fileUrl            String?
   patientId          String?
+  quantity           Float               @default(1)
+  isExecuted         Boolean             @default(false)
   procedureExecution ProcedureExecution?
   clinic             Clinic              @relation(fields: [clinicId], references: [id])
   doctor             Doctor?             @relation(fields: [doctorId], references: [id])
