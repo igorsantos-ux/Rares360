@@ -71,11 +71,11 @@ export const saasApi = {
 };
 
 export const financialApi = {
-    getSummary: () => api.get('financial/summary'),
-    getBreakEven: () => api.get('financial/break-even'),
-    getEvolution: () => api.get('financial/evolution'),
-    getDailyEvolution: () => api.get('financial/daily-evolution'),
-    getTransactions: () => api.get('financial/transactions'),
+    getSummary: (params?: { startDate?: string; endDate?: string }) => api.get('financial/summary', { params }),
+    getBreakEven: (params?: { startDate?: string; endDate?: string }) => api.get('financial/break-even', { params }),
+    getEvolution: (params?: { startDate?: string; endDate?: string }) => api.get('financial/evolution', { params }),
+    getDailyEvolution: (params?: { startDate?: string; endDate?: string }) => api.get('financial/daily-evolution', { params }),
+    getTransactions: (params?: { startDate?: string; endDate?: string }) => api.get('financial/transactions', { params }),
     createTransaction: (data: any) => api.post('financial/transactions', data),
 };
 

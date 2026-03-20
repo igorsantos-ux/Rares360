@@ -37,7 +37,10 @@ export class FinancialController {
 
     static async getEvolution(req: any, res: Response) {
         try {
-            const evolution = await FinancialService.getEvolution(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate as string) : undefined;
+            const end = endDate ? new Date(endDate as string) : undefined;
+            const evolution = await FinancialService.getEvolution(req.clinicId, start, end);
             res.json(evolution);
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });
@@ -46,7 +49,10 @@ export class FinancialController {
 
     static async getDailyEvolution(req: any, res: Response) {
         try {
-            const daily = await FinancialService.getDailyEvolution(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate as string) : undefined;
+            const end = endDate ? new Date(endDate as string) : undefined;
+            const daily = await FinancialService.getDailyEvolution(req.clinicId, start, end);
             res.json(daily);
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });

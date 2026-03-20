@@ -20,6 +20,39 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [isSyncing, setIsSyncing] = useState(false);
+    const [period, setPeriod] = useState<'diário' | 'semanal' | 'mensal' | 'semestral' | 'anual'>('mensal');
+
+    const getDateParams = () => {
+        const now = new Date();
+        let start = new Date();
+        let end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+        switch (period) {
+            case 'diário':
+                start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+                break;
+            case 'semanal':
+                start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                start.setHours(0, 0, 0, 0);
+                break;
+            case 'mensal':
+                start = new Date(now.getFullYear(), now.getMonth(), 1);
+                end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+                break;
+            case 'semestral':
+                start = new Date(now.getFullYear(), now.getMonth() - 6, 1);
+                break;
+            case 'anual':
+                start = new Date(now.getFullYear(), 0, 1);
+                break;
+        }
+        return { 
+            startDate: start.toISOString(), 
+            endDate: end.toISOString() 
+        };
+    };
+
+    const periodParams = getDateParams();
     
     // Gatilho de Sincronização Automática
     useEffect(() => {
@@ -41,19 +74,19 @@ const Dashboard = () => {
     const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
 
     const { data: dashboard, isLoading, error } = useQuery({
-        queryKey: ['dashboard-real'],
-        queryFn: () => financialApi.getSummary().then(res => res.data),
+        queryKey: ['dashboard-real', period],
+        queryFn: () => financialApi.getSummary(periodParams).then(res => res.data),
         retry: 1
     });
 
     const { data: dailyEvolution } = useQuery({
-        queryKey: ['financial-daily-evolution'],
-        queryFn: () => financialApi.getDailyEvolution().then(res => res.data)
+        queryKey: ['financial-daily-evolution', period],
+        queryFn: () => financialApi.getDailyEvolution(periodParams).then(res => res.data)
     });
 
     const { data: evolution } = useQuery({
-        queryKey: ['financial-evolution'],
-        queryFn: () => financialApi.getEvolution().then(res => res.data)
+        queryKey: ['financial-evolution', period],
+        queryFn: () => financialApi.getEvolution(periodParams).then(res => res.data)
     });
 
     if (error) {
@@ -136,6 +169,23 @@ const Dashboard = () => {
                         )}
                     </div>
                 </div>
+                {/* Filtros de Período */}
+                <div className="flex bg-slate-100/50 p-1 rounded-2xl border border-slate-200/50">
+                    {(['diário', 'semanal', 'mensal', 'semestral', 'anual'] as const).map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => setPeriod(p)}
+                            className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 ${
+                                period === p 
+                                ? 'bg-white text-[#697D58] shadow-sm ring-1 ring-black/5' 
+                                : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                            }`}
+                        >
+                            {p}
+                        </button>
+                    ))}
+                </div>
+
                 <div className="flex items-center gap-3">
                     <button
                         onClick={() => setIsTransactionModalOpen(true)}
@@ -290,7 +340,7 @@ const Dashboard = () => {
                                             style={{ height: `${heightReal}%`, zIndex: 2 }}
                                         />
                                         <div className="opacity-0 group-hover:opacity-100 absolute -top-12 bg-[#1A202C] text-white text-[9px] p-2 rounded-lg z-20 whitespace-nowrap shadow-xl">
-                                            Dia {day.day}: R$ {day.accumulated.toLocaleString('pt-BR')}
+                                            {day.date || `Dia ${day.day}`}: R$ {day.accumulated.toLocaleString('pt-BR')}
                                         </div>
                                     </div>
                                 );
