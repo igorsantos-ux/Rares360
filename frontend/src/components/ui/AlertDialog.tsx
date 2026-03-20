@@ -71,65 +71,67 @@ const AlertDialog = ({
                         className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
                     />
 
-                    {/* Modal */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[480px] bg-[#FDFCFB] rounded-[2.5rem] shadow-2xl z-[110] overflow-hidden border border-slate-100"
-                    >
-                        {/* Close Button */}
-                        {!isPending && (
-                            <button 
-                                onClick={onClose}
-                                className="absolute top-8 right-8 p-2 hover:bg-slate-50 rounded-full text-slate-300 transition-colors"
-                            >
-                                <X size={20} />
-                            </button>
-                        )}
-
-                        <div className="p-10 flex flex-col items-center text-center">
-                            {/* Icon Container */}
-                            {Icon && (
-                                <div className={`w-20 h-20 ${iconBg || currentVariant.iconBg} rounded-3xl flex items-center justify-center ${iconColor || currentVariant.icon} mb-8 border border-white/50 shadow-sm`}>
-                                    <Icon size={40} strokeWidth={1.5} />
-                                </div>
+                    {/* Modal Wrapper para Centralização Perfeita */}
+                    <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 pointer-events-none">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="w-full max-w-[480px] bg-[#FDFCFB] rounded-[2.5rem] shadow-2xl border border-slate-100 overflow-hidden pointer-events-auto"
+                        >
+                            {/* close button and content same as before */}
+                            {!isPending && (
+                                <button 
+                                    onClick={onClose}
+                                    className="absolute top-8 right-8 p-2 hover:bg-slate-50 rounded-full text-slate-300 transition-colors"
+                                >
+                                    <X size={20} />
+                                </button>
                             )}
 
-                            {/* Content */}
-                            <h3 className="text-2xl font-black text-[#1A202C] tracking-tight mb-4 leading-tight">
-                                {title}
-                            </h3>
-                            <div className="text-sm text-slate-500 font-medium leading-relaxed mb-10 max-w-[340px] mx-auto">
-                                {description}
-                            </div>
+                            <div className="p-10 flex flex-col items-center text-center">
+                                {/* Icon Container */}
+                                {Icon && (
+                                    <div className={`w-20 h-20 ${iconBg || currentVariant.iconBg} rounded-3xl flex items-center justify-center ${iconColor || currentVariant.icon} mb-8 border border-white/50 shadow-sm`}>
+                                        <Icon size={40} strokeWidth={1.5} />
+                                    </div>
+                                )}
 
-                            {/* Actions */}
-                            <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
-                                <button
-                                    onClick={onClose}
-                                    disabled={isPending}
-                                    className="flex-1 px-8 py-4 rounded-2xl border border-slate-200 text-slate-500 font-bold text-sm hover:bg-white hover:border-slate-300 transition-all active:scale-95 disabled:opacity-50"
-                                >
-                                    {cancelText}
-                                </button>
-                                <button
-                                    onClick={onConfirm}
-                                    disabled={isPending}
-                                    className={`flex-[1.5] px-8 py-4 rounded-2xl text-white font-black text-sm shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 whitespace-nowrap ${currentVariant.confirm}`}
-                                >
-                                    {isPending ? (
-                                        <>
-                                            <Loader2 size={18} className="animate-spin" />
-                                            <span>Processando...</span>
-                                        </>
-                                    ) : (
-                                        <span>{confirmText}</span>
-                                    )}
-                                </button>
+                                {/* Content */}
+                                <h3 className="text-2xl font-black text-[#1A202C] tracking-tight mb-4 leading-tight">
+                                    {title}
+                                </h3>
+                                <div className="text-sm text-slate-500 font-medium leading-relaxed mb-10 max-w-[340px] mx-auto">
+                                    {description}
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+                                    <button
+                                        onClick={onClose}
+                                        disabled={isPending}
+                                        className="flex-1 px-8 py-4 rounded-2xl border border-slate-200 text-slate-500 font-bold text-sm hover:bg-white hover:border-slate-300 transition-all active:scale-95 disabled:opacity-50"
+                                    >
+                                        {cancelText}
+                                    </button>
+                                    <button
+                                        onClick={onConfirm}
+                                        disabled={isPending}
+                                        className={`flex-[1.5] px-8 py-4 rounded-2xl text-white font-black text-sm shadow-xl transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-50 whitespace-nowrap ${currentVariant.confirm}`}
+                                    >
+                                        {isPending ? (
+                                            <>
+                                                <Loader2 size={18} className="animate-spin" />
+                                                <span>Processando...</span>
+                                            </>
+                                        ) : (
+                                            <span>{confirmText}</span>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    </motion.div>
+                        </motion.div>
+                    </div>
                 </>
             )}
         </AnimatePresence>
