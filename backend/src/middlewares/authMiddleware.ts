@@ -50,7 +50,7 @@ export const tenantMiddleware = (req: any, res: Response, next: NextFunction) =>
         clinicId = req.user.clinicId;
     }
 
-    if (!clinicId) {
+    if (!clinicId && req.user.role !== 'ADMIN_GLOBAL') {
         return res.status(401).json({ error: 'Clinic ID não identificado', message: 'Clinic ID não identificado' });
     }
 
