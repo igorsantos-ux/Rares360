@@ -350,6 +350,17 @@ export class SaaSController {
         }
     }
 
+    static async deleteUser(req: any, res: Response) {
+        try {
+            const { id } = req.params;
+            await prisma.user.delete({ where: { id } });
+            res.json({ message: 'Usuário excluído com sucesso' });
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            res.status(500).json({ error: 'Erro ao excluir usuário' });
+        }
+    }
+    
     static async getBillingSummary(req: any, res: Response) {
         try {
             const clinics = await prisma.clinic.findMany({

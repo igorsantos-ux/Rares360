@@ -277,6 +277,20 @@ const SaaSManagement = () => {
         }
     };
 
+    const handleDeleteUser = async (userId: string, userName: string) => {
+        if (!confirm(`Tem certeza que deseja excluir o usuário "${userName}"?`)) return;
+
+        setIsLoading(true);
+        try {
+            await saasApi.deleteUser(userId);
+            fetchData();
+        } catch (error: any) {
+            alert(error.response?.data?.error || 'Erro ao excluir usuário');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
     return (
         <div className="min-h-screen bg-[#F0EAD6] text-[#1A202C] p-6 md:p-10 animate-in fade-in duration-700">
@@ -465,14 +479,18 @@ const SaaSManagement = () => {
                                                             >
                                                                 <Settings size={18} />
                                                             </button>
-                                                            {activeTab === 'clinics' && (
+                                                            {(activeTab === 'clinics' || activeTab === 'users') && (
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        handleDeleteClinic(item.id, item.name);
+                                                                        if (activeTab === 'clinics') {
+                                                                            handleDeleteClinic(item.id, item.name);
+                                                                        } else if (activeTab === 'users') {
+                                                                            handleDeleteUser(item.id, item.name);
+                                                                        }
                                                                     }}
                                                                     className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-500 transition-all"
-                                                                    title="Excluir Clínica"
+                                                                    title={activeTab === 'clinics' ? "Excluir Clínica" : "Excluir Usuário"}
                                                                 >
                                                                     <Trash2 size={18} />
                                                                 </button>

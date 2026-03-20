@@ -62,6 +62,7 @@ export const saasApi = {
     updateClinic: (id: string, data: any) => api.patch(`saas/clinics/${id}`, data),
     deleteClinic: (id: string) => api.delete(`saas/clinics/${id}`),
     updateUser: (id: string, data: any) => api.patch(`saas/users/${id}`, data),
+    deleteUser: (id: string) => api.delete(`saas/users/${id}`),
     uploadLogo: (formData: FormData) => api.post('saas/clinics/upload-logo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
