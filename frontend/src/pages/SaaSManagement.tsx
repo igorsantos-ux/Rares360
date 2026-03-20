@@ -489,7 +489,7 @@ const SaaSManagement = () => {
                                                                             handleDeleteUser(item.id, item.name);
                                                                         }
                                                                     }}
-                                                                    className="p-2 hover:bg-red-500/10 rounded-lg text-slate-400 hover:text-red-500 transition-all"
+                                                                    className="p-2 hover:bg-red-500/10 rounded-lg text-red-400 hover:text-red-500 transition-all"
                                                                     title={activeTab === 'clinics' ? "Excluir Clínica" : "Excluir Usuário"}
                                                                 >
                                                                     <Trash2 size={18} />
