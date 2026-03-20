@@ -241,11 +241,20 @@ export class SaaSController {
             // Delete all related records first to avoid foreign key constraints
             await prisma.$transaction([
                 prisma.transaction.deleteMany({ where: { clinicId: id } }),
+                prisma.accountPayable.deleteMany({ where: { clinicId: id } }),
+                prisma.dailyClosure.deleteMany({ where: { clinicId: id } }),
+                prisma.inventoryItem.deleteMany({ where: { clinicId: id } }),
+                prisma.stockMovement.deleteMany({ where: { clinicId: id } }),
+                prisma.financialGoal.deleteMany({ where: { clinicId: id } }),
+                prisma.lead.deleteMany({ where: { clinicId: id } }),
+                prisma.document.deleteMany({ where: { clinicId: id } }),
+                prisma.clinicDocument.deleteMany({ where: { clinicId: id } }),
+                prisma.pricingSimulation.deleteMany({ where: { clinicId: id } }),
+                prisma.procedurePricing.deleteMany({ where: { clinicId: id } }),
+                prisma.procedureExecution.deleteMany({ where: { clinicId: id } }),
+                prisma.task.deleteMany({ where: { clinicId: id } }),
                 prisma.doctor.deleteMany({ where: { clinicId: id } }),
                 prisma.patient.deleteMany({ where: { clinicId: id } }),
-                prisma.stockItem.deleteMany({ where: { clinicId: id } }),
-                prisma.financialGoal.deleteMany({ where: { clinicId: id } }),
-                prisma.document.deleteMany({ where: { clinicId: id } }),
                 prisma.user.deleteMany({ where: { clinicId: id } }),
                 prisma.clinic.delete({ where: { id } })
             ]);
