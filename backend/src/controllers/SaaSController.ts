@@ -355,8 +355,11 @@ export class SaaSController {
             const { id } = req.params;
             await prisma.user.delete({ where: { id } });
             res.json({ message: 'Usuário excluído com sucesso' });
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error deleting user:', error);
+            if (error.code === 'P2003') {
+                return res.status(400).json({ error: 'Não é possível excluir este usuário pois ele possui registros financeiros (ex: fechamento de caixa) vinculados.' });
+            }
             res.status(500).json({ error: 'Erro ao excluir usuário' });
         }
     }
