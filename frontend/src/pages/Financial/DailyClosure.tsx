@@ -199,14 +199,6 @@ const DailyClosure = () => {
                     >
                       Entradas
                     </button>
-                    <button 
-                      onClick={() => setActiveTab('expense')}
-                      className={`px-4 py-2 text-[9px] font-black uppercase tracking-wider rounded-xl transition-all ${
-                        activeTab === 'expense' ? 'bg-white text-red-500 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-red-500'
-                      }`}
-                    >
-                      Saídas
-                    </button>
                   </div>
                 </div>
               </div>
