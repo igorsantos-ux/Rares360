@@ -1,4 +1,3 @@
-// Version: 11.0.1
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,14 +9,14 @@ datasource db {
 }
 
 model Clinic {
-  id                    String          @id @default(uuid())
-  name                  String          // Nome de exibição principal
+  id                    String               @id @default(uuid())
+  name                  String
   razaoSocial           String?
-  cnpj                  String?         @unique
+  cnpj                  String?              @unique
   inscricaoEstadual     String?
   inscricaoMunicipal    String?
   cnae                  String?
-  regimeTributario      String?         @default("SIMPLES")
+  regimeTributario      String?              @default("SIMPLES")
   dataAbertura          DateTime?
   cep                   String?
   logradouro            String?
@@ -45,69 +44,65 @@ model Clinic {
   crmResponsavel        String?
   registroVigilancia    String?
   cnes                  String?
-  pricePerUser          Float           @default(50.0)
-  isActive              Boolean         @default(true)
-  users                 User[]
-  transactions          Transaction[]
-  doctors               Doctor[]
-  patients              Patient[]
-  inventoryItems        InventoryItem[]
-  goals                 FinancialGoal[]
-  documents             Document[]
-  clinicDocuments       ClinicDocument[]
+  pricePerUser          Float                @default(50.0)
+  isActive              Boolean              @default(true)
+  createdAt             DateTime             @default(now())
   accountPayables       AccountPayable[]
+  clinicDocuments       ClinicDocument[]
+  dailyClosures         DailyClosure[]
+  doctors               Doctor[]
+  documents             Document[]
+  goals                 FinancialGoal[]
+  inventoryItems        InventoryItem[]
+  leads                 Lead[]
+  patients              Patient[]
   pricingSimulations    PricingSimulation[]
+  procedureExecutions   ProcedureExecution[]
   procedurePricings     ProcedurePricing[]
   stockMovements        StockMovement[]
-  leads                 Lead[]
-  dailyClosures         DailyClosure[]
-  procedureExecutions   ProcedureExecution[]
   tasks                 Task[]
-  createdAt             DateTime        @default(now())
+  transactions          Transaction[]
+  users                 User[]
 }
 
-
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      String   // "ADMIN_GLOBAL" or "CLINIC_ADMIN"
-  clinicId       String?
-  clinic         Clinic?        @relation(fields: [clinicId], references: [id])
-  closedChapters DailyClosure[] @relation("ClosedBy")
-  isActive       Boolean        @default(true)
-  hasSeenOnboarding Boolean     @default(false)
-  createdAt DateTime @default(now())
+  id                String         @id @default(uuid())
+  email             String         @unique
+  password          String
+  name              String
+  role              String
+  clinicId          String?
+  createdAt         DateTime       @default(now())
+  isActive          Boolean        @default(true)
+  hasSeenOnboarding Boolean        @default(false)
+  closedChapters    DailyClosure[] @relation("ClosedBy")
+  clinic            Clinic?        @relation(fields: [clinicId], references: [id])
 
   @@index([clinicId])
 }
 
 model Transaction {
-  id            String   @id @default(uuid())
-  description   String
-  amount        Float
-  netAmount     Float    @default(0) // Valor líquido (pós taxas)
-  type          String   // "INCOME" or "EXPENSE"
-  status        String   @default("PAID") // "PAID", "PENDING", "OVERDUE"
-  paymentMethod String?  // "Cartão", "Pix", "Dinheiro", etc.
-  category      String   // "Tecnologias", "Procedimentos", "Produtos", "Fixo", "Variável"
-  centerOfCost  String   @default("Operacional")
-  procedureName String?
-  cost          Float    @default(0)
-  date          DateTime @default(now())
-  doctorId      String?
-  doctor        Doctor?  @relation(fields: [doctorId], references: [id])
-  
-  fileUrl       String?  // URL do comprovante / anexo no Supabase Storage
-  dueDate       DateTime? // Data de vencimento para pendenciais
-  
-  patientId     String?
-  patient       Patient? @relation(fields: [patientId], references: [id])
-  
-  clinicId      String
-  clinic        Clinic   @relation(fields: [clinicId], references: [id])
+  id                 String              @id @default(uuid())
+  description        String
+  amount             Float
+  netAmount          Float               @default(0)
+  type               String
+  status             String              @default("PAID")
+  paymentMethod      String?
+  category           String
+  centerOfCost       String              @default("Operacional")
+  procedureName      String?
+  cost               Float               @default(0)
+  date               DateTime            @default(now())
+  doctorId           String?
+  clinicId           String
+  dueDate            DateTime?
+  fileUrl            String?
+  patientId          String?
   procedureExecution ProcedureExecution?
+  clinic             Clinic              @relation(fields: [clinicId], references: [id])
+  doctor             Doctor?             @relation(fields: [doctorId], references: [id])
+  patient            Patient?            @relation(fields: [patientId], references: [id])
 
   @@index([clinicId, date])
   @@index([clinicId, status])
@@ -118,48 +113,45 @@ model Doctor {
   name         String
   specialty    String
   commission   Float
-  transactions Transaction[]
-  
   clinicId     String
   clinic       Clinic        @relation(fields: [clinicId], references: [id])
+  transactions Transaction[]
 
   @@index([clinicId])
 }
 
 model Patient {
-  id             String        @id @default(uuid())
-  fullName       String
-  socialName     String?
-  cpf            String?       @unique
-  rg             String?
-  birthDate      DateTime?
-  gender         String?
-  color          String?
-  maritalStatus  String?
-  profession     String?
-  education      String?
-  religion       String?
-  phone          String?
-  email          String?
-  address        String?
-  origin         String?
-  weight         Float?
-  height         Float?
-  disability     String?
-  allergies      String?
-  smoker         Boolean       @default(false)
-  priority       String?
-  insurance      String?
-  insurancePlan  String?
-  photoUrl       String?
-  
-  transactions   Transaction[]
+  id                  String               @id @default(uuid())
+  fullName            String
+  socialName          String?
+  cpf                 String?              @unique
+  rg                  String?
+  birthDate           DateTime?
+  gender              String?
+  color               String?
+  maritalStatus       String?
+  profession          String?
+  education           String?
+  religion            String?
+  phone               String?
+  email               String?
+  address             String?
+  origin              String?
+  weight              Float?
+  height              Float?
+  disability          String?
+  allergies           String?
+  smoker              Boolean              @default(false)
+  priority            String?
+  insurance           String?
+  insurancePlan       String?
+  photoUrl            String?
+  createdAt           DateTime             @default(now())
+  clinicId            String
+  clinic              Clinic               @relation(fields: [clinicId], references: [id])
   procedureExecutions ProcedureExecution[]
-  tasks          Task[]
-  createdAt      DateTime      @default(now())
-  
-  clinicId       String
-  clinic         Clinic        @relation(fields: [clinicId], references: [id])
+  tasks               Task[]
+  transactions        Transaction[]
 
   @@index([clinicId, fullName])
 }
@@ -170,7 +162,6 @@ model Lead {
   source    String
   status    String
   createdAt DateTime @default(now())
-
   clinicId  String
   clinic    Clinic   @relation(fields: [clinicId], references: [id])
 
@@ -178,83 +169,72 @@ model Lead {
 }
 
 model InventoryItem {
-  id             String    @id @default(uuid())
+  id             String          @id @default(uuid())
   name           String
   category       String
-  unit           String    @default("Unidade")
-  quantity       Float     @default(0)
-  minQuantity    Float     @default(0)
-  unitCost       Float     @default(0)
+  unit           String          @default("Unidade")
+  quantity       Float           @default(0)
+  minQuantity    Float           @default(0)
+  unitCost       Float           @default(0)
   supplier       String?
   expirationDate DateTime?
   batch          String?
-  lastRestock    DateTime  @default(now())
-  
+  lastRestock    DateTime        @default(now())
   clinicId       String
   clinic         Clinic          @relation(fields: [clinicId], references: [id])
+  movements      StockMovement[]
 
   @@index([clinicId, name])
-  movements      StockMovement[]
-}
-
-enum MovementType {
-  ENTRADA
-  SAIDA
 }
 
 model StockMovement {
-  id        String       @id @default(uuid())
+  id        String        @id @default(uuid())
   type      MovementType
   quantity  Float
-  reason    String?      // Compra, Uso em Procedimento, Perda, Ajuste, etc.
-  createdAt DateTime     @default(now())
-  
+  reason    String?
+  createdAt DateTime      @default(now())
   userId    String?
-  
   itemId    String
-  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  
   clinicId  String
   clinic    Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([clinicId, itemId])
 }
 
 model FinancialGoal {
-  id        String   @id @default(uuid())
-  month     Int
-  year      Int
-  target    Float
-  achieved  Float    @default(0)
-  type      String
-  
-  clinicId  String
-  clinic    Clinic @relation(fields: [clinicId], references: [id])
+  id       String @id @default(uuid())
+  month    Int
+  year     Int
+  target   Float
+  achieved Float  @default(0)
+  type     String
+  clinicId String
+  clinic   Clinic @relation(fields: [clinicId], references: [id])
 }
 
 model Document {
   id        String   @id @default(uuid())
   name      String
   url       String
-  type      String   // "Contract", "PatientDoc", "Admin"
+  type      String
   category  String?
   createdAt DateTime @default(now())
-  
   clinicId  String
-  clinic    Clinic @relation(fields: [clinicId], references: [id])
+  clinic    Clinic   @relation(fields: [clinicId], references: [id])
 }
 
 model ClinicDocument {
   id         String    @id @default(uuid())
   clinicId   String
-  clinic     Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  title      String    // Nome do documento
-  category   String    // Clínica / Médico / Templates
-  status     String    @default("PENDENTE") // PENDENTE / ENVIADO
-  fileUrl    String?   // Link do Supabase
-  expiryDate DateTime? // Opcional
+  title      String
+  category   String
+  status     String    @default("PENDENTE")
+  fileUrl    String?
+  expiryDate DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
+  clinic     Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
   @@index([clinicId])
 }
@@ -263,27 +243,25 @@ model AccountPayable {
   id                  String                      @id @default(uuid())
   description         String
   documentNumber      String?
-  supplierName        String?                     // Nome do Fornecedor / Credor
-  supplierCnpj        String?                     // CNPJ do Fornecedor
   totalAmount         Float
-  interestValue       Float                       @default(0) // Juros
-  penaltyValue        Float                       @default(0) // Multa
   paymentMethod       String?
-  bank                String?                     // Banco (Itaú, Bradesco, etc)
-  observation         String?                     // Observações
-  fileUrl             String?                     // URL do ficheiro no Supabase Storage
   isInstallment       Boolean                     @default(false)
   installmentsCount   Int                         @default(1)
-  installmentInterval String?                     // "MONTHLY", "BIWEEKLY", "WEEKLY", "CUSTOM" ou dias
-  costCenter          String?                     // Centro de Custo
-  costType            String?                     // Tipo de Custo (Fixo, Variável, etc)
-  status              String                      @default("PENDENTE") // PENDENTE, PAGO, ATRASADO
+  installmentInterval String?
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
-  
   clinicId            String
+  interestValue       Float                       @default(0)
+  penaltyValue        Float                       @default(0)
+  supplierCnpj        String?
+  supplierName        String?
+  bank                String?
+  fileUrl             String?
+  observation         String?
+  costCenter          String?
+  costType            String?
+  status              String                      @default("PENDENTE")
   clinic              Clinic                      @relation(fields: [clinicId], references: [id])
-  
   installments        AccountPayableInstallment[]
 
   @@index([clinicId, status])
@@ -292,34 +270,31 @@ model AccountPayable {
 model AccountPayableInstallment {
   id                String         @id @default(uuid())
   accountPayableId  String
-  accountPayable    AccountPayable @relation(fields: [accountPayableId], references: [id], onDelete: Cascade)
-  
   installmentNumber Int
   amount            Float
   dueDate           DateTime
-  status            String         @default("PENDENTE") // PENDENTE, PAGO, ATRASADO, CANCELADO
+  status            String         @default("PENDENTE")
   paidAt            DateTime?
   paymentMethod     String?
+  accountPayable    AccountPayable @relation(fields: [accountPayableId], references: [id], onDelete: Cascade)
 }
 
 model PricingSimulation {
-  id                  String          @id @default(uuid())
-  name                String
-  sellingPrice        Float
-  totalCost           Float
-  netProfit           Float
-  profitMargin        Float
-  cardFeePercentage   Float           @default(0)
-  taxPercentage       Float           @default(0)
-  fixedCost           Float           @default(0)
-  commission          Float           @default(0)
-  supplies            PricingSupply[]
-  
-  clinicId            String
-  clinic              Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  id                String          @id @default(uuid())
+  name              String
+  sellingPrice      Float
+  totalCost         Float
+  netProfit         Float
+  profitMargin      Float
+  cardFeePercentage Float           @default(0)
+  taxPercentage     Float           @default(0)
+  fixedCost         Float           @default(0)
+  commission        Float           @default(0)
+  clinicId          String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  clinic            Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  supplies          PricingSupply[]
 }
 
 model PricingSupply {
@@ -327,93 +302,88 @@ model PricingSupply {
   name                String
   quantity            Float
   cost                Float
-  
   pricingSimulationId String?
-  pricingSimulation   PricingSimulation? @relation(fields: [pricingSimulationId], references: [id], onDelete: Cascade)
-
   procedurePricingId  String?
+  pricingSimulation   PricingSimulation? @relation(fields: [pricingSimulationId], references: [id], onDelete: Cascade)
   procedurePricing    ProcedurePricing?  @relation(fields: [procedurePricingId], references: [id], onDelete: Cascade)
 }
 
 model ProcedurePricing {
-  id                  String          @id @default(uuid())
-  name                String
-  durationMinutes     Int             @default(0)
-  totalCost           Float
-  currentPrice        Float
-  targetMargin        Float           @default(50)
-  supplies            PricingSupply[]
-  
-  clinicId            String
-  clinic              Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-}
-
-enum ClosureStatus {
-  OPEN
-  CLOSED
+  id              String          @id @default(uuid())
+  name            String
+  durationMinutes Int             @default(0)
+  totalCost       Float
+  currentPrice    Float
+  targetMargin    Float           @default(50)
+  clinicId        String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  supplies        PricingSupply[]
+  clinic          Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 }
 
 model DailyClosure {
   id             String        @id @default(uuid())
-  clinicId       String
-  clinic         Clinic        @relation(fields: [clinicId], references: [id])
-  date           DateTime      // Data do fechamento (foco no dia)
+  date           DateTime
   openingBalance Float         @default(0)
   totalIncomes   Float         @default(0)
   totalExpenses  Float         @default(0)
   closingBalance Float         @default(0)
-  status         ClosureStatus @default(CLOSED)
   closedAt       DateTime      @default(now())
   closedById     String
+  clinicId       String
+  status         ClosureStatus @default(CLOSED)
+  notes          String?
+  clinic         Clinic        @relation(fields: [clinicId], references: [id])
   closedBy       User          @relation("ClosedBy", fields: [closedById], references: [id])
-  notes          String?       @db.Text
 
   @@unique([clinicId, date])
 }
 
 model ProcedureExecution {
-  id            String    @id @default(uuid())
+  id            String       @id @default(uuid())
   clinicId      String
-  clinic        Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   patientId     String
-  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  procedureId   String?   // ID do ProcedurePricing (opcional para faturamento manual)
-  procedureName String    // Nome do procedimento (para histórico)
-  transactionId String?   @unique // Link para a venda original
+  procedureId   String?
+  procedureName String
+  transactionId String?      @unique
+  status        String       @default("PENDENTE")
+  billedAt      DateTime     @default(now())
+  executedAt    DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  clinic        Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
   transaction   Transaction? @relation(fields: [transactionId], references: [id])
-  
-  status        String    @default("PENDENTE") // PENDENTE / EXECUTADO
-  billedAt      DateTime  @default(now())      // Data da venda
-  executedAt    DateTime?                      // Data da execução efetiva
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
   tasks         Task[]
 
   @@index([clinicId, status])
 }
 
 model Task {
-  id            String    @id @default(uuid())
-  clinicId      String
-  clinic        Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  patientId     String
-  patient       Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  
-  executionId   String?
-  execution     ProcedureExecution? @relation(fields: [executionId], references: [id], onDelete: SetNull)
-  
-  title         String
-  dueDate       DateTime
-  status        String    @default("ABERTA") // ABERTA / CONCLUÍDA
-  type          String    @default("FOLLOW_UP") // "FOLLOW_UP", "ADMIN", "OTHER"
-  
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id          String              @id @default(uuid())
+  clinicId    String
+  patientId   String
+  executionId String?
+  title       String
+  dueDate     DateTime
+  status      String              @default("ABERTA")
+  type        String              @default("FOLLOW_UP")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  clinic      Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  execution   ProcedureExecution? @relation(fields: [executionId], references: [id])
+  patient     Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@index([clinicId, dueDate])
+}
+
+enum MovementType {
+  ENTRADA
+  SAIDA
+}
+
+enum ClosureStatus {
+  OPEN
+  CLOSED
 }

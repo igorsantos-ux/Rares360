@@ -214,12 +214,12 @@ const Dashboard = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                             <div className="p-6 bg-black/10 rounded-3xl border border-white/5">
                                 <p className="text-[10px] font-black text-[#DEB587] uppercase tracking-widest mb-2">Ritmo Necessário</p>
-                                <h5 className="text-3xl font-black">R$ {ritmoNecessario.toLocaleString('pt-BR')}</h5>
+                                <h5 className="text-3xl font-black">R$ {ritmoNecessario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h5>
                                 <p className="text-[10px] text-[#F0EAD6]/50 mt-1">Por dia útil para bater a meta</p>
                             </div>
                             <div className="p-6 bg-black/10 rounded-3xl border border-white/5">
                                 <p className="text-[10px] font-black text-[#DEB587] uppercase tracking-widest mb-2">Gap da Meta</p>
-                                <h5 className="text-3xl font-black">R$ {gapMeta.toLocaleString('pt-BR')}</h5>
+                                <h5 className="text-3xl font-black">R$ {gapMeta.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h5>
                                 <p className="text-[10px] text-[#F0EAD6]/50 mt-1">Faltam para o objetivo</p>
                             </div>
                         </div>
