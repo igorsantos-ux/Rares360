@@ -16,12 +16,15 @@ import { pricingApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { ProcedurePricingSheet } from '../components/Pricing/ProcedurePricingSheet';
 import DateFilter from '../components/DateFilter';
+import AlertDialog from '../components/ui/AlertDialog';
 
 const Pricing = () => {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [selectedProcedure, setSelectedProcedure] = useState<any>(null);
+    const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
 
     // Estados para Filtro de Data
     const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
@@ -224,9 +227,8 @@ const Pricing = () => {
                                                 </button>
                                                 <button 
                                                     onClick={() => {
-                                                        if (confirm('Deseja remover este diagnóstico?')) {
-                                                            deleteMutation.mutate(proc.id);
-                                                        }
+                                                        setItemToDelete({ id: proc.id, name: proc.name });
+                                                        setIsConfirmDeleteOpen(true);
                                                     }}
                                                     className="p-2.5 bg-white rounded-xl shadow-sm border border-red-100 text-red-300 hover:text-red-500 hover:border-red-200 transition-all"
                                                 >
@@ -256,6 +258,30 @@ const Pricing = () => {
                 onClose={() => setIsSheetOpen(false)}
                 onSave={() => queryClient.invalidateQueries({ queryKey: ['pricing-diagnosis'] })}
                 procedure={selectedProcedure}
+            />
+
+            <AlertDialog
+                isOpen={isConfirmDeleteOpen}
+                onClose={() => { setIsConfirmDeleteOpen(false); setItemToDelete(null); }}
+                onConfirm={() => {
+                    if (itemToDelete) {
+                        deleteMutation.mutate(itemToDelete.id);
+                        setIsConfirmDeleteOpen(false);
+                        setItemToDelete(null);
+                    }
+                }}
+                title="Remover Diagnóstico"
+                description={
+                    <>
+                        Deseja realmente remover o diagnóstico do procedimento <span className="font-bold text-slate-800">"{itemToDelete?.name}"</span>?
+                        Esta ação não poderá ser desfeita.
+                    </>
+                }
+                confirmText="Sim, Remover"
+                cancelText="Cancelar"
+                icon={Trash2}
+                variant="danger"
+                isPending={deleteMutation.isPending}
             />
         </div>
     );

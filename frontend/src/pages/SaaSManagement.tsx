@@ -12,6 +12,7 @@ import { saasApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FileDown, CreditCard, Edit3, Check, X as XIcon, Trash2, Image as ImageIcon, Upload } from 'lucide-react';
+import AlertDialog from '../components/ui/AlertDialog';
 
 const InputField = ({ label, value, onChange, placeholder = '', type = 'text', required = false }: any) => (
     <div className="space-y-1.5">
@@ -80,6 +81,9 @@ const SaaSManagement = () => {
     useEffect(() => {
         fetchData();
     }, []);
+
+    const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'clinic' | 'user' } | null>(null);
 
     const fetchData = async () => {
         setIsLoading(true);
@@ -210,15 +214,18 @@ const SaaSManagement = () => {
         }
     };
 
-    const handleDeleteClinic = async (clinicId: string, clinicName: string) => {
-        if (!confirm(`TEM CERTEZA ABSOLUTA que deseja excluir a clínica "${clinicName}"? ESTA AÇÃO É IRREVERSÍVEL! TODOS os usuários, faturas, médicos e pacientes vinculados a esta clínica serão excluídos permanentemente.`)) {
-            return;
-        }
+    const handleDeleteClinic = (clinicId: string, clinicName: string) => {
+        setItemToDelete({ id: clinicId, name: clinicName, type: 'clinic' });
+        setIsConfirmDeleteOpen(true);
+    };
 
+    const confirmDeleteClinic = async (clinicId: string) => {
         setIsLoading(true);
         try {
             await saasApi.deleteClinic(clinicId);
             fetchData();
+            setIsConfirmDeleteOpen(false);
+            setItemToDelete(null);
         } catch (error: any) {
             alert(error.response?.data?.error || 'Erro ao excluir clínica');
         } finally {
@@ -277,13 +284,18 @@ const SaaSManagement = () => {
         }
     };
 
-    const handleDeleteUser = async (userId: string, userName: string) => {
-        if (!confirm(`Tem certeza que deseja excluir o usuário "${userName}"?`)) return;
+    const handleDeleteUser = (userId: string, userName: string) => {
+        setItemToDelete({ id: userId, name: userName, type: 'user' });
+        setIsConfirmDeleteOpen(true);
+    };
 
+    const confirmDeleteUser = async (userId: string) => {
         setIsLoading(true);
         try {
             await saasApi.deleteUser(userId);
             fetchData();
+            setIsConfirmDeleteOpen(false);
+            setItemToDelete(null);
         } catch (error: any) {
             alert(error.response?.data?.error || 'Erro ao excluir usuário');
         } finally {
@@ -1109,6 +1121,36 @@ const SaaSManagement = () => {
                     </div>
                 )}
             </AnimatePresence>
+            <AlertDialog
+                isOpen={isConfirmDeleteOpen}
+                onClose={() => { setIsConfirmDeleteOpen(false); setItemToDelete(null); }}
+                onConfirm={() => {
+                    if (itemToDelete?.type === 'clinic') {
+                        confirmDeleteClinic(itemToDelete.id);
+                    } else if (itemToDelete?.type === 'user') {
+                        confirmDeleteUser(itemToDelete.id);
+                    }
+                }}
+                title={itemToDelete?.type === 'clinic' ? 'Remover Clínica' : 'Remover Usuário'}
+                description={
+                    itemToDelete?.type === 'clinic' ? (
+                        <>
+                            Você está prestes a excluir a clínica <span className="font-bold text-slate-800">"{itemToDelete.name}"</span>. 
+                            Esta ação é <span className="text-red-500 font-black uppercase tracking-widest text-[10px]">irreversível</span> e todos os dados vinculados (usuários, registros, etc) serão apagados permanentemente.
+                        </>
+                    ) : (
+                        <>
+                            Deseja realmente excluir o usuário <span className="font-bold text-slate-800">"{itemToDelete?.name}"</span>?
+                            Esta operação não poderá ser desfeita.
+                        </>
+                    )
+                }
+                confirmText={itemToDelete?.type === 'clinic' ? 'Sim, Excluir APP/Clínica' : 'Confirmar Exclusão'}
+                cancelText="Cancelar"
+                icon={Trash2}
+                variant="danger"
+                isPending={isLoading}
+            />
         </div>
     );
 };
