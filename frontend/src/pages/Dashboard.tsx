@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Target,
-    Plus,
     TrendingDown,
     DollarSign,
     Wallet,
@@ -17,7 +15,6 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
     const { user } = useAuth();
-    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const [isSyncing, setIsSyncing] = useState(false);
     const [period, setPeriod] = useState<'diário' | 'semanal' | 'mensal' | 'semestral' | 'anual'>('mensal');
