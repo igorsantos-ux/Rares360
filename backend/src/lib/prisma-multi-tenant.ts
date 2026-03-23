@@ -14,7 +14,6 @@ const TENANT_MODELS = [
   'Document',
   'ClinicDocument',
   'AccountPayable',
-  'AccountPayableInstallment',
   'PricingSimulation',
   'ProcedurePricing',
   'DailyClosure',
