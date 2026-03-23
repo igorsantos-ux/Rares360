@@ -71,7 +71,6 @@ const Dashboard = () => {
         triggerSync();
     }, [queryClient]);
 
-    const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
 
     const { data: dashboard, isLoading, error } = useQuery({
         queryKey: ['dashboard-real', period],
@@ -190,15 +189,6 @@ const Dashboard = () => {
                     ))}
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setIsTransactionModalOpen(true)}
-                        className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all"
-                    >
-                        <Plus size={20} />
-                        Novo Lançamento
-                    </button>
-                </div>
             </div>
 
             {/* SEÇÃO 1: O "Termômetro" do Mês */}
@@ -415,23 +405,6 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            {/* Transaction Modal (Same as original) */}
-            {isTransactionModalOpen && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-6">
-                    {/* ... (Modal code remains same but integrated) */}
-                    <div className="bg-white p-10 rounded-3xl max-w-md w-full relative">
-                         <button onClick={() => setIsTransactionModalOpen(false)} className="absolute top-6 right-6 p-2 text-slate-300 hover:text-red-400">
-                             <Plus size={24} className="rotate-45" />
-                         </button>
-                         <h3 className="text-2xl font-black text-[#697D58] mb-6">Novo Lançamento</h3>
-                         <p className="text-slate-400 text-sm mb-8">Utilize as telas de Faturamento ou Contas a Pagar para lançamentos detalhados.</p>
-                         <div className="flex flex-col gap-4">
-                            <button onClick={() => navigate('/faturamento')} className="py-4 bg-[#8A9A5B] text-white font-bold rounded-2xl shadow-lg">Lançar Receita</button>
-                            <button onClick={() => navigate('/contas-a-pagar')} className="py-4 bg-[#DEB587] text-white font-bold rounded-2xl shadow-lg">Lançar Despesa</button>
-                         </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
