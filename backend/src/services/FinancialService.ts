@@ -37,8 +37,8 @@ export class FinancialService {
             prisma.financialGoal.findFirst({
                 where: {
                     clinicId,
-                    month: now.getMonth() + 1,
-                    year: now.getFullYear()
+                    month: (startDate || now).getMonth() + 1,
+                    year: (startDate || now).getFullYear()
                 }
             })
         ]);
@@ -61,21 +61,21 @@ export class FinancialService {
         const grossRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + t.amount, 0);
         const netRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + (t.netAmount || t.amount), 0);
         const receivedRevenue = incomeTransactions
-            .filter((t: any) => t.status === 'PAID')
+            .filter((t: any) => ['PAID', 'RECEBIDO', 'PAGO'].includes(t.status))
             .reduce((acc: number, t: any) => acc + (t.netAmount || t.amount), 0);
         
         const paidExpenses = expenseTransactions
-            .filter((t: any) => t.status === 'PAID')
+            .filter((t: any) => ['PAID', 'RECEBIDO', 'PAGO'].includes(t.status))
             .reduce((acc: number, t: any) => acc + t.amount, 0) + 
             normalizedPaidInstallments.reduce((acc: number, t: any) => acc + t.amount, 0);
 
         const pendingExpenses = expenseTransactions
-            .filter((t: any) => t.status === 'PENDING')
+            .filter((t: any) => ['PENDING', 'PENDENTE'].includes(t.status))
             .reduce((acc: number, t: any) => acc + t.amount, 0) + 
             normalizedPendingInstallments.reduce((acc: number, t: any) => acc + t.amount, 0);
 
         const pendingReceivables = incomeTransactions
-            .filter((t: any) => t.status === 'PENDING')
+            .filter((t: any) => ['PENDING', 'PENDENTE'].includes(t.status))
             .reduce((acc: number, t: any) => acc + t.amount, 0);
 
         const uniquePatients = new Set(incomeTransactions.map((t: any) => t.patientId).filter(Boolean)).size;
@@ -196,8 +196,8 @@ export class FinancialService {
         const goal = await prisma.financialGoal.findFirst({
             where: {
                 clinicId,
-                month: now.getMonth() + 1,
-                year: now.getFullYear()
+                month: start.getMonth() + 1,
+                year: start.getFullYear()
             }
         });
 

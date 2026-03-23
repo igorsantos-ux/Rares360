@@ -98,8 +98,12 @@ const Dashboard = () => {
                 <h3 className="text-lg font-black text-slate-700">Ops! Ocorreu um erro</h3>
                 <p className="text-slate-400 font-medium text-center max-w-xs">Não conseguimos carregar seus dados financeiros. Verifique sua conexão.</p>
                 <button 
-                    onClick={() => queryClient.invalidateQueries({ queryKey: ['dashboard-real'] })}
-                    className="mt-4 px-6 py-2 bg-[#8A9A5B] text-white rounded-xl font-bold text-sm shadow-md"
+                    onClick={() => {
+                        queryClient.invalidateQueries({ queryKey: ['dashboard-real'] });
+                        queryClient.invalidateQueries({ queryKey: ['financial-daily-evolution'] });
+                        queryClient.invalidateQueries({ queryKey: ['financial-evolution'] });
+                    }}
+                    className="mt-4 px-6 py-2 bg-[#8A9A5B] text-white rounded-xl font-bold text-sm shadow-md hover:bg-[#697D58] transition-all"
                 >
                     Tentar Novamente
                 </button>
