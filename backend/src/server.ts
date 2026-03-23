@@ -24,6 +24,7 @@ import cashRoutes from './routes/cashRoutes.js';
 import procedureRoutes from './routes/procedureRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import { SeedService } from './services/SeedService.js';
+import { MigrationService } from './services/MigrationService.js';
 
 
 
@@ -91,4 +92,5 @@ const port = 3001;
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Server is officially listening on 0.0.0.0:${port}`);
     SeedService.autoSeedIfEmpty().catch(err => console.error('Erro no auto-seed background:', err));
+    MigrationService.runSoftMigrations().catch(err => console.error('Erro no soft-migration background:', err));
 });
