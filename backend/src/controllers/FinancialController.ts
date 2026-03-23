@@ -18,9 +18,13 @@ export class FinancialController {
 
             const summary = await FinancialService.getSummary(req.clinicId, start, end);
             res.json(summary);
-        } catch (error) {
-            console.error('[FinancialController.getSummary] Error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+        } catch (error: any) {
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({ 
+                error: 'Internal server error', 
+                message: error.message,
+                code: error.code 
+            });
         }
     }
 
@@ -31,9 +35,13 @@ export class FinancialController {
             const end = endDate ? new Date(endDate as string) : undefined;
             const breakEven = await FinancialService.getBreakEven(req.clinicId, start, end);
             res.json(breakEven);
-        } catch (error) {
-            console.error('[FinancialController.getBreakEven] Error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+        } catch (error: any) {
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({ 
+                error: 'Internal server error', 
+                message: error.message,
+                code: error.code 
+            });
         }
     }
 
@@ -44,9 +52,13 @@ export class FinancialController {
             const end = endDate ? new Date(endDate as string) : undefined;
             const evolution = await FinancialService.getEvolution(req.clinicId, start, end);
             res.json(evolution);
-        } catch (error) {
-            console.error('[FinancialController.getEvolution] Error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+        } catch (error: any) {
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({ 
+                error: 'Internal server error', 
+                message: error.message,
+                code: error.code 
+            });
         }
     }
 
@@ -57,9 +69,13 @@ export class FinancialController {
             const end = endDate ? new Date(endDate as string) : undefined;
             const daily = await FinancialService.getDailyEvolution(req.clinicId, start, end);
             res.json(daily);
-        } catch (error) {
-            console.error('[FinancialController.getDailyEvolution] Error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+        } catch (error: any) {
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({ 
+                error: 'Internal server error', 
+                message: error.message,
+                code: error.code 
+            });
         }
     }
 
@@ -75,8 +91,13 @@ export class FinancialController {
                 clinicId: req.clinicId
             });
             res.status(201).json(data);
-        } catch (error) {
-            res.status(500).json({ error: 'Internal server error' });
+        } catch (error: any) {
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({ 
+                error: 'Internal server error', 
+                message: error.message,
+                code: error.code 
+            });
         }
     }
 
@@ -87,9 +108,13 @@ export class FinancialController {
             const end = endDate ? new Date(endDate as string) : undefined;
             const transactions = await FinancialService.getTransactions(req.clinicId, start, end);
             res.json(transactions);
-        } catch (error) {
-            console.error('[FinancialController.getTransactions] Error:', error);
-            res.status(500).json({ error: 'Internal server error' });
+        } catch (error: any) {
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({ 
+                error: 'Internal server error', 
+                message: error.message,
+                code: error.code 
+            });
         }
     }
 }
