@@ -110,12 +110,19 @@ const SaaSManagement = () => {
             setUsers(usersRes.data);
             setBillingData(billingRes.data);
 
-            // Leads é um módulo novo, buscamos separadamente para não quebrar o dashboard caso falhe
             try {
                 const leadsRes = await leadsApi.getLeads();
                 setLeads(leadsRes.data);
-            } catch (err) {
+            } catch (err: any) {
                 console.warn('Módulo de Leads ainda não disponível ou erro na busca:', err);
+                const status = err.response?.status;
+                if (status === 403) {
+                    toast.error('Você não tem permissão para visualizar Leads.');
+                } else if (status === 404) {
+                    console.info('Endpoint de leads não encontrado (deploy em andamento?)');
+                } else {
+                    toast.error('Erro ao carregar Leads. Verifique a conexão.');
+                }
                 setLeads([]);
             }
         } catch (error) {
@@ -446,7 +453,7 @@ const SaaSManagement = () => {
                                     <tr className="border-b border-[#8A9A5B]/10 bg-[#8A9A5B]/5">
                                         <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Nome</th>
                                         <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
-                                            {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : 'Usuários Reg.'}
+                                            {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : activeTab === 'leads' ? 'Contato' : 'Usuários Reg.'}
                                         </th>
                                         <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
                                             {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : 'Vl. por Usuário'}
