@@ -65,6 +65,7 @@ const SaaSManagement = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPrice, setEditingPrice] = useState<string | null>(null);
     const [tempPrice, setTempPrice] = useState<string>('');
+    const [searchTerm, setSearchTerm] = useState('');
 
     // Form States
     const [newClinic, setNewClinic] = useState({
@@ -425,13 +426,30 @@ const SaaSManagement = () => {
                 {/* Main Content Area */}
                 <div className="lg:col-span-3 space-y-6">
                     <div className="flex justify-between items-center mb-4">
-                        <div className="relative">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : activeTab === 'users' ? 'usuário' : activeTab === 'leads' ? 'lead' : 'fatura'}...`}
-                                className="bg-white border border-[#8A9A5B]/10 rounded-2xl py-3 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/50 w-64 text-sm font-medium shadow-sm transition-all"
-                            />
+                        <div className="flex gap-4">
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : activeTab === 'users' ? 'usuário' : activeTab === 'leads' ? 'lead' : 'fatura'}...`}
+                                    className="bg-white border border-[#8A9A5B]/10 rounded-2xl py-3 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/50 w-64 text-sm font-medium shadow-sm transition-all"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                            <button
+                                onClick={fetchData}
+                                disabled={isLoading}
+                                className="p-3 bg-white border border-[#8A9A5B]/10 rounded-2xl text-[#8A9A5B] hover:bg-[#8A9A5B]/5 hover:scale-105 active:scale-95 transition-all shadow-sm"
+                                title="Atualizar dados"
+                            >
+                                <motion.div
+                                    animate={isLoading ? { rotate: 360 } : {}}
+                                    transition={isLoading ? { repeat: Infinity, duration: 2, ease: "linear" } : {}}
+                                >
+                                    <Plus className={`transform ${isLoading ? '' : 'rotate-45'}`} size={20} />
+                                </motion.div>
+                            </button>
                         </div>
                         {activeTab !== 'leads' && activeTab !== 'billing' && (
                             <button
@@ -466,7 +484,15 @@ const SaaSManagement = () => {
                                 </thead>
                                 <tbody>
                                     <AnimatePresence>
-                                        {(activeTab === 'clinics' ? clinics : activeTab === 'users' ? users : activeTab === 'billing' ? billingData : leads).map((item) => (
+                                        {(activeTab === 'clinics' ? clinics : activeTab === 'users' ? users : activeTab === 'billing' ? billingData : leads)
+                                            .filter(item => 
+                                                !searchTerm || 
+                                                item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                                item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                item.cnpj?.includes(searchTerm) ||
+                                                item.whatsapp?.includes(searchTerm)
+                                            )
+                                            .map((item) => (
                                             <motion.tr
                                                 key={item.id}
                                                 initial={{ opacity: 0, y: 10 }}
