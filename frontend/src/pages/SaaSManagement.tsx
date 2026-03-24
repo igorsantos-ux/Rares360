@@ -99,18 +99,27 @@ const SaaSManagement = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [clinicsRes, usersRes, billingRes, leadsRes] = await Promise.all([
+            // Buscamos dados essenciais primeiro
+            const [clinicsRes, usersRes, billingRes] = await Promise.all([
                 saasApi.getClinics(),
                 saasApi.getUsers(),
-                saasApi.getBilling(),
-                leadsApi.getLeads()
+                saasApi.getBilling()
             ]);
+            
             setClinics(clinicsRes.data);
             setUsers(usersRes.data);
             setBillingData(billingRes.data);
-            setLeads(leadsRes.data);
+
+            // Leads é um módulo novo, buscamos separadamente para não quebrar o dashboard caso falhe
+            try {
+                const leadsRes = await leadsApi.getLeads();
+                setLeads(leadsRes.data);
+            } catch (err) {
+                console.warn('Módulo de Leads ainda não disponível ou erro na busca:', err);
+                setLeads([]);
+            }
         } catch (error) {
-            console.error('Failed to fetch SaaS data', error);
+            console.error('Failed to fetch critical SaaS data', error);
         } finally {
             setIsLoading(false);
         }
