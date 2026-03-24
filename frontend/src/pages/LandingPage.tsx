@@ -428,10 +428,10 @@ const LandingPage = () => {
                             </a>
                         </div>
                         <div className="flex gap-4 pt-4">
-                            <a href="#" className="p-3 bg-white/5 rounded-full hover:bg-[#DEB587] hover:text-[#2D3325] transition-all">
+                            <a href="https://www.instagram.com/robertaalaminor?igsh=MWEzMWd2M2RpbjcwdA==" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-full hover:bg-[#DEB587] hover:text-[#2D3325] transition-all">
                                 <Instagram size={20} />
                             </a>
-                            <a href="#" className="p-3 bg-white/5 rounded-full hover:bg-[#DEB587] hover:text-[#2D3325] transition-all">
+                            <a href="https://www.linkedin.com/in/roberta-alamino-230326295/" target="_blank" rel="noopener noreferrer" className="p-3 bg-white/5 rounded-full hover:bg-[#DEB587] hover:text-[#2D3325] transition-all">
                                 <Linkedin size={20} />
                             </a>
                         </div>

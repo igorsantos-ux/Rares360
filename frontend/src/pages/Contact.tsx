@@ -90,8 +90,8 @@ export const Contact = () => {
                             <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 flex flex-col gap-6">
                                 <h4 className="text-lg font-black text-[#697D58] uppercase tracking-widest">Nossas Redes</h4>
                                 <div className="flex gap-4">
-                                    <SocialLink icon={<Linkedin size={20} />} href="#" />
-                                    <SocialLink icon={<Instagram size={20} />} href="#" />
+                                    <SocialLink icon={<Linkedin size={20} />} href="https://www.linkedin.com/in/roberta-alamino-230326295/" />
+                                    <SocialLink icon={<Instagram size={20} />} href="https://www.instagram.com/robertaalaminor?igsh=MWEzMWd2M2RpbjcwdA==" />
                                 </div>
                             </div>
                             
