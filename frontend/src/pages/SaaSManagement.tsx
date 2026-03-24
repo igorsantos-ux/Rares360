@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { saasApi, leadsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import AlertDialog from '../components/ui/AlertDialog';
 
