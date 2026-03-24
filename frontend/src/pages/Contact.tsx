@@ -12,6 +12,7 @@ import {
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { leadsApi } from '../services/api';
 
 export const Contact = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,12 +28,16 @@ export const Contact = () => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        // Simulando envio (Posteriormente integrar com backend ou serviço de email)
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        toast.success('Mensagem enviada com sucesso! Entraremos em contato em breve.');
-        setFormData({ name: '', email: '', whatsapp: '', subject: '', message: '' });
-        setIsSubmitting(false);
+        try {
+            const response = await leadsApi.createLead(formData);
+            toast.success(response.data.message || 'Mensagem enviada com sucesso! Entraremos em contato em breve.');
+            setFormData({ name: '', email: '', whatsapp: '', subject: '', message: '' });
+        } catch (error: any) {
+            console.error('Error sending lead:', error);
+            toast.error(error.response?.data?.error || 'Erro ao enviar mensagem. Tente novamente.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (

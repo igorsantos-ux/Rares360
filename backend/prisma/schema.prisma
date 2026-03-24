@@ -389,3 +389,23 @@ enum ClosureStatus {
   OPEN
   CLOSED
 }
+
+model GlobalLead {
+  id        String           @id @default(uuid())
+  name      String
+  email     String
+  whatsapp  String
+  subject   String
+  message   String
+  status    GlobalLeadStatus @default(NOVO)
+  score     Int              @default(0)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+}
+
+enum GlobalLeadStatus {
+  NOVO
+  EM_CONTATO
+  CONVERTIDO
+  ARQUIVADO
+}

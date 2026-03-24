@@ -172,4 +172,10 @@ export const tasksApi = {
     complete: (id: string) => api.patch(`tasks/${id}/complete`),
 };
 
+export const leadsApi = {
+    createLead: (data: any) => api.post('leads', data),
+    getLeads: () => api.get('leads'),
+    updateStatus: (id: string, status: string) => api.patch(`leads/${id}/status`, { status }),
+};
+
 export default api;

@@ -6,12 +6,24 @@ import {
     Settings,
     LogOut,
     Search,
-    LayoutDashboard
+    LayoutDashboard,
+    FileDown,
+    CreditCard,
+    Edit3,
+    Check,
+    X as XIcon,
+    Trash2,
+    Image as ImageIcon,
+    Upload,
+    MessageSquare,
+    Star,
+    CheckCircle,
+    Clock,
+    Phone
 } from 'lucide-react';
-import { saasApi } from '../services/api';
+import { saasApi, leadsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileDown, CreditCard, Edit3, Check, X as XIcon, Trash2, Image as ImageIcon, Upload } from 'lucide-react';
 import AlertDialog from '../components/ui/AlertDialog';
 
 const InputField = ({ label, value, onChange, placeholder = '', type = 'text', required = false }: any) => (
@@ -47,8 +59,9 @@ const SaaSManagement = () => {
     const { logout, user } = useAuth();
     const [clinics, setClinics] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
+    const [leads, setLeads] = useState<any[]>([]);
     const [billingData, setBillingData] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<'clinics' | 'users' | 'billing'>('clinics');
+    const [activeTab, setActiveTab] = useState<'clinics' | 'users' | 'billing' | 'leads'>('clinics');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPrice, setEditingPrice] = useState<string | null>(null);
@@ -88,14 +101,16 @@ const SaaSManagement = () => {
     const fetchData = async () => {
         setIsLoading(true);
         try {
-            const [clinicsRes, usersRes, billingRes] = await Promise.all([
+            const [clinicsRes, usersRes, billingRes, leadsRes] = await Promise.all([
                 saasApi.getClinics(),
                 saasApi.getUsers(),
-                saasApi.getBilling()
+                saasApi.getBilling(),
+                leadsApi.getLeads()
             ]);
             setClinics(clinicsRes.data);
             setUsers(usersRes.data);
             setBillingData(billingRes.data);
+            setLeads(leadsRes.data);
         } catch (error) {
             console.error('Failed to fetch SaaS data', error);
         } finally {
@@ -303,6 +318,28 @@ const SaaSManagement = () => {
         }
     };
 
+    const handleUpdateLeadStatus = async (leadId: string, status: string) => {
+        setIsSubmitting(true);
+        try {
+            await leadsApi.updateStatus(leadId, status);
+            fetchData();
+        } catch (error) {
+            alert('Erro ao atualizar status do lead');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const getStatusStyles = (status: string) => {
+        switch (status) {
+            case 'NOVO': return 'bg-blue-100 text-blue-700 border-blue-200';
+            case 'EM_CONTATO': return 'bg-amber-100 text-amber-700 border-amber-200';
+            case 'CONVERTIDO': return 'bg-green-100 text-green-700 border-green-200';
+            case 'ARQUIVADO': return 'bg-slate-100 text-slate-700 border-slate-200';
+            default: return 'bg-slate-100 text-slate-700 border-slate-200';
+        }
+    };
+
 
     return (
         <div className="min-h-screen bg-[#F0EAD6] text-[#1A202C] p-6 md:p-10 animate-in fade-in duration-700">
@@ -348,6 +385,13 @@ const SaaSManagement = () => {
                         <CreditCard size={24} />
                         <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Faturamento</span>
                     </button>
+                    <button
+                        onClick={() => setActiveTab('leads')}
+                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 border ${activeTab === 'leads' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 border-transparent' : 'bg-white/50 text-[#697D58] border-[#8A9A5B]/10 hover:bg-white'}`}
+                    >
+                        <MessageSquare size={24} />
+                        <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Leads</span>
+                    </button>
 
                     {/* Stats Card */}
                     <div className="p-8 rounded-[2.5rem] bg-[#697D58] text-white shadow-2xl relative overflow-hidden group">
@@ -357,7 +401,7 @@ const SaaSManagement = () => {
                         <p className="text-[#F0EAD6]/60 text-xs font-black uppercase tracking-[0.2em] mb-4">Total Ativo</p>
                         <div className="flex items-end gap-2">
                             <span className="text-5xl font-black">
-                                {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : billingData.length}
+                                {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : leads.length}
                             </span>
                         </div>
                     </div>
@@ -370,16 +414,18 @@ const SaaSManagement = () => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                             <input
                                 type="text"
-                                placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : activeTab === 'users' ? 'usuário' : 'fatura'}...`}
+                                placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : activeTab === 'users' ? 'usuário' : activeTab === 'leads' ? 'lead' : 'fatura'}...`}
                                 className="bg-white border border-[#8A9A5B]/10 rounded-2xl py-3 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/50 w-64 text-sm font-medium shadow-sm transition-all"
                             />
                         </div>
-                        <button
-                            onClick={() => setIsModalOpen(true)}
-                            className="bg-[#8A9A5B] hover:scale-[1.02] active:scale-95 text-white p-4 rounded-2xl shadow-xl shadow-[#8A9A5B]/20 transition-all flex items-center gap-2 font-black uppercase text-xs tracking-widest"
-                        >
-                            <Plus size={20} /> Novo {activeTab === 'clinics' ? 'Clínica' : 'Usuário'}
-                        </button>
+                        {activeTab !== 'leads' && activeTab !== 'billing' && (
+                            <button
+                                onClick={() => setIsModalOpen(true)}
+                                className="bg-[#8A9A5B] hover:scale-[1.02] active:scale-95 text-white p-4 rounded-2xl shadow-xl shadow-[#8A9A5B]/20 transition-all flex items-center gap-2 font-black uppercase text-xs tracking-widest"
+                            >
+                                <Plus size={20} /> Novo {activeTab === 'clinics' ? 'Clínica' : 'Usuário'}
+                            </button>
+                        )}
                     </div>
 
                     <div className="bg-white/70 border border-[#8A9A5B]/10 rounded-[2.5rem] overflow-hidden backdrop-blur-md shadow-xl">
@@ -396,16 +442,16 @@ const SaaSManagement = () => {
                                             {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : 'Usuários Reg.'}
                                         </th>
                                         <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
-                                            {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : 'Vl. por Usuário'}
+                                            {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : 'Vl. por Usuário'}
                                         </th>
-                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
-                                            {activeTab === 'billing' ? 'Total Fatura' : 'Ações'}
+                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest text-right">
+                                            {activeTab === 'billing' ? 'Total Fatura' : activeTab === 'leads' ? 'Status e Ações' : 'Ações'}
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <AnimatePresence>
-                                        {(activeTab === 'clinics' ? clinics : activeTab === 'users' ? users : billingData).map((item) => (
+                                        {(activeTab === 'clinics' ? clinics : activeTab === 'users' ? users : activeTab === 'billing' ? billingData : leads).map((item) => (
                                             <motion.tr
                                                 key={item.id}
                                                 initial={{ opacity: 0, y: 10 }}
@@ -414,13 +460,31 @@ const SaaSManagement = () => {
                                             >
                                                 <td className="p-6">
                                                     <div className="font-extrabold flex items-center gap-3 text-[#1A202C]">
-                                                        <div className={`w-2 h-2 rounded-full ${activeTab === 'clinics' ? (item.isActive ? 'bg-[#8A9A5B]' : 'bg-[#DEB587]') : activeTab === 'users' ? 'bg-[#697D58]' : 'bg-[#DEB587]'}`}></div>
-                                                        {item.name}
+                                                        {activeTab === 'leads' ? (
+                                                            <div className="w-10 h-10 rounded-xl bg-slate-50 border border-[#8A9A5B]/10 flex items-center justify-center text-[#697D58]">
+                                                                <Users size={18} />
+                                                            </div>
+                                                        ) : (
+                                                            <div className={`w-2 h-2 rounded-full ${activeTab === 'clinics' ? (item.isActive ? 'bg-[#8A9A5B]' : 'bg-[#DEB587]') : activeTab === 'users' ? 'bg-[#697D58]' : 'bg-[#DEB587]'}`}></div>
+                                                        )}
+                                                        <div>
+                                                            <p className="font-extrabold">{item.name}</p>
+                                                            {activeTab === 'leads' && (
+                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                                    {new Date(item.createdAt).toLocaleDateString()} às {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                     {activeTab === 'users' && <span className="text-[10px] text-slate-400 font-bold block mt-1 uppercase tracking-wider">{item.clinic?.name || 'Acesso Global'}</span>}
                                                 </td>
                                                 <td className="p-6 text-slate-500 font-semibold text-sm">
-                                                    {activeTab === 'clinics' ? (item.cnpj || 'Não info') : activeTab === 'users' ? item.email : `${item.userCount} usuários`}
+                                                    {activeTab === 'clinics' ? (item.cnpj || 'Não info') : activeTab === 'users' ? item.email : activeTab === 'leads' ? (
+                                                        <div className="space-y-1">
+                                                            <p className="text-slate-800 font-bold">{item.email}</p>
+                                                            <p className="text-[10px]">{item.whatsapp}</p>
+                                                        </div>
+                                                    ) : `${item.userCount} usuários`}
                                                 </td>
                                                 <td className="p-6">
                                                     {activeTab === 'billing' ? (
@@ -449,6 +513,13 @@ const SaaSManagement = () => {
                                                                 </>
                                                             )}
                                                         </div>
+                                                    ) : activeTab === 'leads' ? (
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 border ${item.score >= 80 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                                                                <Star size={12} className={item.score >= 80 ? 'fill-orange-500' : ''} />
+                                                                <span className="text-xs font-black">{item.score}</span>
+                                                            </div>
+                                                        </div>
                                                     ) : (
                                                         <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-tight uppercase border ${activeTab === 'clinics' ? 'bg-[#8A9A5B]/10 text-[#697D58] border-[#8A9A5B]/20' : 'bg-[#DEB587]/10 text-[#697D58] border-[#DEB587]/20'}`}>
                                                             {activeTab === 'clinics' ? (item.isActive ? 'Ativo' : 'Inativo') : item.role}
@@ -473,6 +544,30 @@ const SaaSManagement = () => {
                                                                     className="p-2 bg-[#8A9A5B] hover:scale-105 rounded-xl transition-all flex items-center gap-1 text-[10px] font-bold shadow-md shadow-[#8A9A5B]/20"
                                                                 >
                                                                     <FileDown size={14} /> XML
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    ) : activeTab === 'leads' ? (
+                                                        <div className="flex items-center justify-end gap-4">
+                                                            <select 
+                                                                value={item.status}
+                                                                onChange={(e) => handleUpdateLeadStatus(item.id, e.target.value)}
+                                                                className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border focus:outline-none transition-all cursor-pointer ${getStatusStyles(item.status)}`}
+                                                            >
+                                                                <option value="NOVO">Novo</option>
+                                                                <option value="EM_CONTATO">Em Contato</option>
+                                                                <option value="CONVERTIDO">Convertido</option>
+                                                                <option value="ARQUIVADO">Arquivado</option>
+                                                            </select>
+                                                            <div className="flex items-center gap-1">
+                                                                <a 
+                                                                    href={`https://wa.me/${item.whatsapp.replace(/\D/g, '')}?text=Olá ${item.name}, tudo bem? Sou consultor da Rares360. Recebi seu interesse no assunto "${item.subject}". Podemos conversar?`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="p-2 bg-[#25D366] text-white rounded-lg hover:scale-110 transition-all shadow-md shadow-[#25D366]/20"
+                                                                    title="Chamar no WhatsApp"
+                                                                >
+                                                                    <Phone size={16} />
                                                                 </a>
                                                             </div>
                                                         </div>
