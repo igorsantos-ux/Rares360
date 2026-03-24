@@ -15,8 +15,22 @@ export class MigrationService {
                 ALTER TABLE "Transaction" ADD COLUMN IF NOT EXISTS "isExecuted" BOOLEAN DEFAULT false;
             `);
 
-            // Garantir que a tabela FinancialGoal existe (simplificado, se não existir o prisma já falharia em outras partes, 
-            // mas aqui focamos em colunas novas em tabelas existentes que quebram o findMany)
+            // Garantir que a tabela GlobalLead existe
+            await prisma.$executeRawUnsafe(`
+                CREATE TABLE IF NOT EXISTS "GlobalLead" (
+                    "id" TEXT NOT NULL,
+                    "name" TEXT NOT NULL,
+                    "email" TEXT NOT NULL,
+                    "whatsapp" TEXT NOT NULL,
+                    "subject" TEXT NOT NULL,
+                    "message" TEXT NOT NULL,
+                    "status" TEXT NOT NULL DEFAULT 'NOVO',
+                    "score" INTEGER NOT NULL DEFAULT 0,
+                    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT "GlobalLead_pkey" PRIMARY KEY ("id")
+                );
+            `);
             
             console.log('✅ Soft Migrations completed successfully.');
         } catch (error) {
