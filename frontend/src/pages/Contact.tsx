@@ -78,14 +78,14 @@ export const Contact = () => {
                             <ContactCard 
                                 icon={<Mail size={24} />}
                                 title="E-mail Direto"
-                                value="contato@rares360.com.br"
-                                href="mailto:contato@rares360.com.br"
+                                value="robertaarodrigues12@gmail.com"
+                                href="mailto:robertaarodrigues12@gmail.com"
                             />
                             <ContactCard 
                                 icon={<Phone size={24} />}
                                 title="WhatsApp Business"
-                                value="+55 11 99999-9999"
-                                href="https://wa.me/5511999999999"
+                                value="+55 11 94949-7419"
+                                href="https://wa.me/5511949497419"
                             />
                             <div className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 flex flex-col gap-6">
                                 <h4 className="text-lg font-black text-[#697D58] uppercase tracking-widest">Nossas Redes</h4>
@@ -149,7 +149,7 @@ export const Contact = () => {
                                             value={formData.whatsapp}
                                             onChange={e => setFormData({...formData, whatsapp: e.target.value})}
                                             className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/20 font-bold text-sm transition-all"
-                                            placeholder="(11) 99999-9999"
+                                            placeholder="(11) 94949-7419"
                                         />
                                     </div>
                                     <div className="space-y-2">

@@ -414,17 +414,17 @@ const LandingPage = () => {
                     <div className="space-y-8">
                         <h5 className="text-[#DEB587] text-xs font-black uppercase tracking-[0.3em]">Conecte-se</h5>
                         <div className="space-y-4">
-                            <a href="mailto:contato@rares.com.br" className="flex items-center gap-3 hover:text-white transition-colors group">
+                            <a href="mailto:robertaarodrigues12@gmail.com" className="flex items-center gap-3 hover:text-white transition-colors group">
                                 <div className="p-2.5 bg-white/5 rounded-lg group-hover:bg-white/10 transition-colors">
                                     <Mail size={18} />
                                 </div>
-                                <span className="font-light">contato@rares.com.br</span>
+                                <span className="font-light">robertaarodrigues12@gmail.com</span>
                             </a>
-                            <a href="#" className="flex items-center gap-3 hover:text-white transition-colors group">
+                            <a href="https://wa.me/5511949497419" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 hover:text-white transition-colors group">
                                 <div className="p-2.5 bg-white/5 rounded-lg group-hover:bg-white/10 transition-colors">
                                     <Phone size={18} />
                                 </div>
-                                <span className="font-light">+55 (11) 99999-9999</span>
+                                <span className="font-light">+55 11 94949-7419</span>
                             </a>
                         </div>
                         <div className="flex gap-4 pt-4">
