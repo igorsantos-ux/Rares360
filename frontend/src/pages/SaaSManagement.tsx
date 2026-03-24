@@ -17,8 +17,6 @@ import {
     Upload,
     MessageSquare,
     Star,
-    CheckCircle,
-    Clock,
     Phone
 } from 'lucide-react';
 import { saasApi, leadsApi } from '../services/api';
