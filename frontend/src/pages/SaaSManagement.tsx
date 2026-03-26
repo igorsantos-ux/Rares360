@@ -75,7 +75,8 @@ const SaaSManagement = () => {
         codigoServico: '', aliquotaISS: '', certificadoDigitalUrl: '',
         banco: '', agencia: '', conta: '', tipoConta: '', chavePix: '',
         logo: '', corMarca: '', responsavelAdmin: '', responsavelTecnico: '', crmResponsavel: '',
-        registroVigilancia: '', cnes: '', pricePerUser: '50.0'
+        registroVigilancia: '', cnes: '', pricePerUser: '50.0',
+        implementationFee: '0', monthlyFee: '0', proposalUrl: ''
     });
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'CLINIC_ADMIN', clinicId: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -84,7 +85,7 @@ const SaaSManagement = () => {
     // Management Modal States
     const [isManagementModalOpen, setIsManagementModalOpen] = useState(false);
     const [selectedClinic, setSelectedClinic] = useState<any>(null);
-    const [managementTab, setManagementTab] = useState<'perfil' | 'acesso' | 'usuarios'>('perfil');
+    const [managementTab, setManagementTab] = useState<'perfil' | 'precificacao' | 'acesso' | 'usuarios'>('perfil');
 
     // User Management Modal States
     const [isUserManagementModalOpen, setIsUserManagementModalOpen] = useState(false);
@@ -160,7 +161,8 @@ const SaaSManagement = () => {
                 codigoServico: '', aliquotaISS: '', certificadoDigitalUrl: '',
                 banco: '', agencia: '', conta: '', tipoConta: '', chavePix: '',
                 logo: '', corMarca: '', responsavelAdmin: '', responsavelTecnico: '', crmResponsavel: '',
-                registroVigilancia: '', cnes: '', pricePerUser: '50.0'
+                registroVigilancia: '', cnes: '', pricePerUser: '50.0',
+                implementationFee: '0', monthlyFee: '0', proposalUrl: ''
             });
             fetchData();
         } catch (error: any) {
@@ -214,6 +216,29 @@ const SaaSManagement = () => {
         } catch (error) {
             console.error('Erro ao fazer upload da logo:', error);
             alert('Erro ao fazer upload da imagem.');
+        }
+    };
+    
+    const handleProposalUpload = async (e: React.ChangeEvent<HTMLInputElement>, isNew: boolean = false) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await saasApi.uploadLogo(formData); // Reutilizando a mesma rota de upload
+            const fileUrl = response.data.url;
+
+            if (isNew) {
+                setNewClinic({ ...newClinic, proposalUrl: fileUrl });
+            } else if (selectedClinic) {
+                setSelectedClinic({ ...selectedClinic, proposalUrl: fileUrl });
+            }
+            toast.success('Proposta anexada com sucesso!');
+        } catch (error) {
+            console.error('Erro ao fazer upload da proposta:', error);
+            alert('Erro ao anexar arquivo.');
         }
     };
 
@@ -685,7 +710,8 @@ const SaaSManagement = () => {
                                             { id: 3, label: 'Contato' },
                                             { id: 4, label: 'Fiscal' },
                                             { id: 5, label: 'Bancos' },
-                                            { id: 6, label: 'Sistema' }
+                                            { id: 6, label: 'Sistema' },
+                                            { id: 7, label: 'Precificação' }
                                         ].map(s => (
                                             <button
                                                 key={s.id}
@@ -736,7 +762,6 @@ const SaaSManagement = () => {
                                                         { label: 'MEI', value: 'MEI' }
                                                     ]} />
                                                     <InputField label="Data de Abertura" type="date" value={newClinic.dataAbertura} onChange={(v: any) => setNewClinic({ ...newClinic, dataAbertura: v })} />
-                                                    <InputField label="Mensalidade Padrão" type="number" value={newClinic.pricePerUser} onChange={(v: any) => setNewClinic({ ...newClinic, pricePerUser: v })} />
                                                 </div>
                                             </div>
                                         )}
@@ -817,6 +842,45 @@ const SaaSManagement = () => {
                                                 </div>
                                             </div>
                                         )}
+
+                                        {/* Section 7: Precificação */}
+                                        {formSection === 7 && (
+                                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <InputField label="Valor de Implementação" type="number" value={newClinic.implementationFee} onChange={(v: any) => setNewClinic({ ...newClinic, implementationFee: v })} />
+                                                    <InputField label="Valor da Mensalidade" type="number" value={newClinic.monthlyFee} onChange={(v: any) => setNewClinic({ ...newClinic, monthlyFee: v })} />
+                                                </div>
+                                                
+                                                <div className="p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                                                    <p className="text-xs font-black text-slate-700 uppercase tracking-widest mb-1">Anexo da Proposta</p>
+                                                    <p className="text-[10px] text-slate-400 font-bold mb-3">PDF, Imagens ou Documentos da Proposta Comercial</p>
+                                                    
+                                                    {newClinic.proposalUrl ? (
+                                                        <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-[#8A9A5B]/20 mb-3">
+                                                            <div className="w-10 h-10 bg-[#8A9A5B]/10 rounded-lg flex items-center justify-center text-[#8A9A5B]">
+                                                                <Plus size={20} className="rotate-45" />
+                                                            </div>
+                                                            <div className="flex-1 overflow-hidden">
+                                                                <p className="text-xs font-bold truncate">Proposta Anexada</p>
+                                                                <a href={newClinic.proposalUrl} target="_blank" rel="noreferrer" className="text-[10px] text-[#8A9A5B] font-black uppercase tracking-widest hover:underline">Visualizar Arquivo</a>
+                                                            </div>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => setNewClinic({ ...newClinic, proposalUrl: '' })}
+                                                                className="p-2 text-red-400 hover:bg-red-50 rounded-lg"
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <label className="inline-flex items-center px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black text-[#697D58] uppercase tracking-widest cursor-pointer hover:bg-[#8A9A5B]/5 hover:border-[#8A9A5B]/30 transition-all">
+                                                            <Upload size={14} className="mr-2" /> Anexar Proposta
+                                                            <input type="file" className="hidden" onChange={(e) => handleProposalUpload(e, true)} />
+                                                        </label>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="flex gap-4 pt-6 border-t border-[#8A9A5B]/10">
@@ -828,7 +892,7 @@ const SaaSManagement = () => {
                                         >
                                             Anterior
                                         </button>
-                                        {formSection < 6 ? (
+                                        {formSection < 7 ? (
                                             <button
                                                 type="button"
                                                 onClick={() => setFormSection(s => s + 1)}
@@ -897,16 +961,16 @@ const SaaSManagement = () => {
                             </div>
 
                             <div className="flex border-b border-[#8A9A5B]/10">
-                                {['perfil', 'acesso', 'usuarios'].map((tab: any) => (
+                                {['perfil', 'precificacao', 'acesso', 'usuarios'].map((tab: any) => (
                                     <button
                                         key={tab}
                                         onClick={() => setManagementTab(tab)}
                                         className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${managementTab === tab ? 'text-[#697D58] border-b-2 border-[#697D58] bg-[#697D58]/5' : 'text-slate-400 hover:text-slate-600'
                                             }`}
                                     >
-                                        {tab}
-                                    </button>
-                                ))}
+                                         {tab === 'precificacao' ? 'precificação' : tab}
+                                     </button>
+                                 ))}
                             </div>
 
                             <div className="p-8 max-h-[60vh] overflow-y-auto">
@@ -1011,7 +1075,48 @@ const SaaSManagement = () => {
                                                 <InputField label="CRM Responsável" value={selectedClinic.crmResponsavel} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, crmResponsavel: v })} />
                                                 <InputField label="Reg. Vigilância" value={selectedClinic.registroVigilancia} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, registroVigilancia: v })} />
                                                 <InputField label="CNES" value={selectedClinic.cnes} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, cnes: v })} />
-                                                <InputField label="Preço por Usuário (R$)" type="number" value={selectedClinic.pricePerUser} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, pricePerUser: v })} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {managementTab === 'precificacao' && (
+                                    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Configurações de Preço</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <InputField label="Valor de Implementação" type="number" value={selectedClinic.implementationFee ?? 0} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, implementationFee: v })} />
+                                                <InputField label="Valor da Mensalidade" type="number" value={selectedClinic.monthlyFee ?? 0} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, monthlyFee: v })} />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Proposta Comercial</h4>
+                                            <div className="p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
+                                                {selectedClinic.proposalUrl ? (
+                                                    <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-[#8A9A5B]/20">
+                                                        <div className="w-12 h-12 bg-[#8A9A5B]/10 rounded-xl flex items-center justify-center text-[#8A9A5B]">
+                                                            <Plus size={24} className="rotate-45" />
+                                                        </div>
+                                                        <div className="flex-1 overflow-hidden">
+                                                            <p className="text-xs font-black text-slate-700 truncate">Proposta Anexada</p>
+                                                            <div className="flex gap-3 mt-1">
+                                                                <a href={selectedClinic.proposalUrl} target="_blank" rel="noreferrer" className="text-[10px] text-[#8A9A5B] font-black uppercase tracking-widest hover:underline">Ver Proposta</a>
+                                                                <button onClick={() => setSelectedClinic({ ...selectedClinic, proposalUrl: '' })} className="text-[10px] text-red-500 font-black uppercase tracking-widest hover:underline">Remover</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex flex-col items-center">
+                                                        <label className="cursor-pointer flex flex-col items-center group">
+                                                            <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-sm text-slate-300 group-hover:text-[#8A9A5B] transition-colors mb-4">
+                                                                <Upload size={24} />
+                                                            </div>
+                                                            <p className="text-[10px] font-black text-[#697D58] uppercase tracking-widest">Anexar Proposta Comercial</p>
+                                                            <input type="file" className="hidden" onChange={(e) => handleProposalUpload(e, false)} />
+                                                        </label>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>

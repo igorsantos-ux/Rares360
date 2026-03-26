@@ -112,7 +112,10 @@ export class SaaSController {
                     crmResponsavel,
                     registroVigilancia,
                     cnes,
-                    pricePerUser: parseFloatSafe(pricePerUser) || 50.0
+                    pricePerUser: parseFloatSafe(pricePerUser) || 50.0,
+                    implementationFee: parseFloatSafe(req.body.implementationFee) || 0,
+                    monthlyFee: parseFloatSafe(req.body.monthlyFee) || 0,
+                    proposalUrl: req.body.proposalUrl || null
                 }
             });
 
@@ -224,6 +227,9 @@ export class SaaSController {
                     registroVigilancia,
                     cnes,
                     pricePerUser: parseFloatSafe(pricePerUser),
+                    implementationFee: parseFloatSafe(req.body.implementationFee),
+                    monthlyFee: parseFloatSafe(req.body.monthlyFee),
+                    proposalUrl: req.body.proposalUrl,
                     isActive
                 }
             });

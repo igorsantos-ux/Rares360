@@ -45,6 +45,9 @@ model Clinic {
   registroVigilancia    String?
   cnes                  String?
   pricePerUser          Float                @default(50.0)
+  implementationFee     Float?               @default(0)
+  monthlyFee            Float?               @default(0)
+  proposalUrl           String?
   isActive              Boolean              @default(true)
   createdAt             DateTime             @default(now())
   accountPayables       AccountPayable[]
