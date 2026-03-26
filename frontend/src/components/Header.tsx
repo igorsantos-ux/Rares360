@@ -57,7 +57,9 @@ const Header = () => {
                     
                     <div className="flex flex-col">
                         <h1 className="text-xl font-black text-slate-800 tracking-tight">{currentTitle}</h1>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">Rares360 • Healthcare Management</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">
+                            {user?.clinic?.name ? `${user.clinic.name} • Healthcare Management` : 'Rares360 • Healthcare Management'}
+                        </p>
                     </div>
                 </div>
 
