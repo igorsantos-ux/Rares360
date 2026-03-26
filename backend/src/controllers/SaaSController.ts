@@ -353,14 +353,30 @@ export class SaaSController {
     static async deleteUser(req: any, res: Response) {
         try {
             const { id } = req.params;
+            console.log(`[SaaS] Tentando excluir usuário: ${id}`);
+            
             await prisma.user.delete({ where: { id } });
+            
+            console.log(`[SaaS] Usuário ${id} excluído com sucesso.`);
             res.json({ message: 'Usuário excluído com sucesso' });
         } catch (error: any) {
-            console.error('Error deleting user:', error);
+            console.error('[SaaS Error] Falha ao excluir usuário:', error);
+            
             if (error.code === 'P2003') {
-                return res.status(400).json({ error: 'Não é possível excluir este usuário pois ele possui registros financeiros (ex: fechamento de caixa) vinculados.' });
+                return res.status(400).json({ 
+                    error: 'Não é possível excluir este usuário pois ele possui registros financeiros (ex: fechamento de caixa) vinculados.' 
+                });
             }
-            res.status(500).json({ error: 'Erro ao excluir usuário' });
+
+            if (error.code === 'P2025') {
+                return res.status(404).json({ 
+                    error: 'Usuário não encontrado.' 
+                });
+            }
+
+            res.status(500).json({ 
+                error: 'Erro interno ao excluir usuário. Verifique se existem registros vinculados ou tente novamente.' 
+            });
         }
     }
     

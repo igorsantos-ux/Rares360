@@ -16,6 +16,7 @@ router.delete('/clinics/:id', SaaSController.deleteClinic);
 router.get('/users', SaaSController.listUsers);
 router.post('/users', SaaSController.createUser);
 router.patch('/users/:id', SaaSController.updateUser);
+router.delete('/users/:id', SaaSController.deleteUser);
 
 router.get('/billing', SaaSController.getBillingSummary);
 router.get('/billing/:clinicId/pdf', SaaSController.generateInvoicePDF);
