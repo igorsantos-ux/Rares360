@@ -4,10 +4,11 @@ import prisma from '../lib/prisma.js';
 export class LeadController {
     static async createLead(req: Request, res: Response) {
         try {
-            const { name, email, whatsapp, subject, message } = req.body;
-
-            if (!name || !email || !whatsapp || !subject || !message) {
-                return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
+            const { name, email, whatsapp, subject, message, diagnostic } = req.body;
+            
+            // diagnostic can be optional or required depending on the step
+            if (!name || !email || !whatsapp || !subject) {
+                return res.status(400).json({ error: 'Dados básicos são obrigatórios' });
             }
 
             // Lead Scoring Logic
@@ -24,16 +25,19 @@ export class LeadController {
             }
 
             // 2. Assunto Estratégico (+30)
-            // No formulário: Consultoria, SaaS, Parceria, Outros
-            // User request: "Consultoria Estratégica" ou "Implementação"
             const strategicSubjects = ['Consultoria', 'SaaS', 'Implementação'];
             if (strategicSubjects.includes(subject)) {
                 score += 30;
             }
 
             // 3. Mensagem Longa (+20)
-            if (message.length > 100) {
+            if (message && message.length > 100) {
                 score += 20;
+            }
+
+            // 4. Diagnostic Bonus (+30 if completed)
+            if (diagnostic && typeof diagnostic === 'object' && Object.keys(diagnostic).length > 10) {
+                score += 30;
             }
 
             const lead = await prisma.globalLead.create({
@@ -42,7 +46,8 @@ export class LeadController {
                     email,
                     whatsapp,
                     subject,
-                    message,
+                    message: message || '',
+                    diagnostic: diagnostic || null,
                     score,
                     status: 'NOVO'
                 }

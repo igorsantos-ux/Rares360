@@ -92,6 +92,10 @@ const SaaSManagement = () => {
     const [selectedUser, setSelectedUser] = useState<any>(null);
     const [userManagementTab, setUserManagementTab] = useState<'perfil' | 'seguranca' | 'acesso'>('perfil');
 
+    // Lead Diagnostic Modal States
+    const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState(false);
+    const [selectedLead, setSelectedLead] = useState<any>(null);
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -626,15 +630,25 @@ const SaaSManagement = () => {
                                                                 <option value="ARQUIVADO">Arquivado</option>
                                                             </select>
                                                             <div className="flex items-center gap-1">
-                                                                <a 
-                                                                    href={`https://wa.me/${item.whatsapp.replace(/\D/g, '')}?text=Olá ${item.name}, tudo bem? Sou consultor da Rares360. Recebi seu interesse no assunto "${item.subject}". Podemos conversar?`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    className="p-2 bg-[#25D366] text-white rounded-lg hover:scale-110 transition-all shadow-md shadow-[#25D366]/20"
-                                                                    title="Chamar no WhatsApp"
-                                                                >
-                                                                    <Phone size={16} />
-                                                                </a>
+                                                                <button 
+                                                                        onClick={() => {
+                                                                            setSelectedLead(item);
+                                                                            setIsDiagnosticModalOpen(true);
+                                                                        }}
+                                                                        className="p-2 bg-[#8A9A5B]/10 text-[#697D58] rounded-lg hover:bg-[#8A9A5B] hover:text-white transition-all shadow-sm"
+                                                                        title="Ver Diagnóstico"
+                                                                    >
+                                                                        <Search size={16} />
+                                                                    </button>
+                                                                    <a 
+                                                                        href={`https://wa.me/${item.whatsapp.replace(/\D/g, '')}?text=Olá ${item.name}, tudo bem? Sou consultor da Rares360. Recebi seu interesse no assunto "${item.subject}". Podemos conversar?`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="p-2 bg-[#25D366] text-white rounded-lg hover:scale-110 transition-all shadow-md shadow-[#25D366]/20"
+                                                                        title="Chamar no WhatsApp"
+                                                                    >
+                                                                        <Phone size={16} />
+                                                                    </a>
                                                             </div>
                                                         </div>
                                                     ) : (
@@ -1392,8 +1406,151 @@ const SaaSManagement = () => {
                 variant="danger"
                 isPending={isLoading}
             />
+
+            {/* Modal de Diagnóstico do Lead */}
+            <AnimatePresence>
+                {isDiagnosticModalOpen && selectedLead && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setIsDiagnosticModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white rounded-[2rem] shadow-2xl w-full max-w-3xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            <div className="bg-[#697D58] p-8 text-white flex justify-between items-center shrink-0">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                        <MessageSquare className="text-white" size={28} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black">Diagnóstico Completo</h2>
+                                        <p className="text-[#F0EAD6]/80 text-sm font-medium mt-0.5">Lead: {selectedLead.name}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsDiagnosticModalOpen(false)}
+                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors backdrop-blur-md"
+                                >
+                                    <XIcon size={24} />
+                                </button>
+                            </div>
+
+                            <div className="p-8 overflow-y-auto space-y-8 bg-slate-50">
+                                {/* Informações de Contato */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="p-4 bg-white rounded-2xl border border-slate-100">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">E-mail</p>
+                                        <p className="text-sm font-bold text-slate-700 break-all">{selectedLead.email}</p>
+                                    </div>
+                                    <div className="p-4 bg-white rounded-2xl border border-slate-100">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp</p>
+                                        <p className="text-sm font-bold text-slate-700">{selectedLead.whatsapp}</p>
+                                    </div>
+                                    <div className="p-4 bg-white rounded-2xl border border-slate-100">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Score</p>
+                                        <div className="flex items-center gap-2">
+                                            <Star size={14} className={selectedLead.score >= 80 ? 'text-orange-500 fill-orange-500' : 'text-slate-400'} />
+                                            <p className="text-sm font-black text-slate-700">{selectedLead.score} pontos</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {selectedLead.diagnostic ? (
+                                    <div className="space-y-6">
+                                        <div className="space-y-4">
+                                            <h4 className="text-xs font-black text-[#697D58] uppercase tracking-[0.2em] border-b border-[#8A9A5B]/10 pb-2">Respostas do Diagnóstico</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                                <DiagnosticItem label="Tipo de Clínica" value={selectedLead.diagnostic.clinicType} />
+                                                <DiagnosticItem label="Tempo de Operação" value={selectedLead.diagnostic.operationTime} />
+                                                <DiagnosticItem label="Nº de Profissionais" value={selectedLead.diagnostic.professionalsCount} />
+                                                <DiagnosticItem label="Principal Desafio" value={selectedLead.diagnostic.mainChallenge} />
+                                                <DiagnosticItem label="Faturamento Mensal" value={selectedLead.diagnostic.monthlyRevenue} />
+                                                <DiagnosticItem label="Possui DRE?" value={selectedLead.diagnostic.hasDRE} />
+                                                <DiagnosticItem label="Possui DFC?" value={selectedLead.diagnostic.hasDFC} />
+                                                <DiagnosticItem label="Custos Organizados?" value={selectedLead.diagnostic.organizedCosts} />
+                                                <DiagnosticItem label="Sabe a Margem?" value={selectedLead.diagnostic.knowsMargin} />
+                                                <DiagnosticItem label="Meta de Faturamento?" value={selectedLead.diagnostic.knowsRevenueGoal} />
+                                                <DiagnosticItem label="Destaque: Proc. Alta Margem" value={selectedLead.diagnostic.knowsHighMarginProcedures} />
+                                                <DiagnosticItem label="Identificou Margem Negativa?" value={selectedLead.diagnostic.identifiedNegativeMargin} />
+                                                <DiagnosticItem label="Controle de Leads" value={selectedLead.diagnostic.knowsMonthlyLeads} />
+                                                <DiagnosticItem label="Moniitara Conversão?" value={selectedLead.diagnostic.monitorsConversion} />
+                                                <DiagnosticItem label="Follow-up Estruturado?" value={selectedLead.diagnostic.structuredFollowUp} />
+                                                <DiagnosticItem label="Estoque Confiável?" value={selectedLead.diagnostic.reliableInventory} />
+                                                <DiagnosticItem label="Custo de Insumos?" value={selectedLead.diagnostic.knowsSupplyCosts} />
+                                                <DiagnosticItem label="Controle de Retorno?" value={selectedLead.diagnostic.patientReturnControl} />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-xs font-black text-[#697D58] uppercase tracking-[0.2em] border-b border-[#8A9A5B]/10 pb-2">Fatores de Precificação</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {selectedLead.diagnostic.pricingFactors?.length > 0 ? (
+                                                    selectedLead.diagnostic.pricingFactors.map((f: string) => (
+                                                        <span key={f} className="px-3 py-1.5 bg-[#8A9A5B]/10 text-[#697D58] border border-[#8A9A5B]/20 rounded-lg text-[10px] font-black uppercase">
+                                                            {f}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-xs text-slate-400 font-bold">Nenhum fator selecionado</span>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {selectedLead.message && (
+                                            <div className="space-y-2">
+                                                <h4 className="text-xs font-black text-[#697D58] uppercase tracking-[0.2em]">Observações Adicionais</h4>
+                                                <div className="p-4 bg-white rounded-2xl border border-slate-100 italic text-slate-600 font-medium text-sm">
+                                                    "{selectedLead.message}"
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="py-20 text-center">
+                                        <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300 mb-4">
+                                            <MessageSquare size={32} />
+                                        </div>
+                                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Este lead não enviou dados de diagnóstico (formulário legado)</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-6 border-t border-[#8A9A5B]/10 bg-white shrink-0 flex gap-4">
+                                <button
+                                    onClick={() => setIsDiagnosticModalOpen(false)}
+                                    className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 transition-all"
+                                >
+                                    Fechar
+                                </button>
+                                <a 
+                                    href={`https://wa.me/${selectedLead.whatsapp.replace(/\D/g, '')}?text=Olá ${selectedLead.name}, analisei seu diagnóstico estratégico...`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-[2] py-4 bg-[#25D366] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-[#25D366]/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2"
+                                >
+                                    Iniciar Consultoria no WhatsApp <Phone size={16} />
+                                </a>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
+
+const DiagnosticItem = ({ label, value }: { label: string; value: any }) => (
+    <div className="space-y-1">
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
+        <p className="text-sm font-bold text-slate-700">{value || '-'}</p>
+    </div>
+);
 
 export default SaaSManagement;
