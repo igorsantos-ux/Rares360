@@ -1,12 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
     ChevronLeft, 
     ChevronRight,
-    Mail, 
-    Phone, 
     Send,
-    Linkedin,
-    Instagram,
     MessageSquare,
     Clock,
     CheckCircle2,
@@ -264,19 +259,19 @@ export const Contact = () => {
                                                 label="1. Qual o tipo de clínica?"
                                                 options={["Estética", "Dermatologia", "Nutrologia", "Ginecologia", "Multidiciplinar", "Outro"]}
                                                 value={formData.diagnostic.clinicType}
-                                                onChange={(v) => updateDiagnostic('clinicType', v)}
+                                                onChange={(v: string) => updateDiagnostic('clinicType', v)}
                                             />
                                             <Question 
                                                 label="2. Há quanto tempo a clínica está em operação?"
                                                 options={["Ainda vou iniciar", "0-12 meses", "1-3 anos", "3-5 anos", "+5 anos"]}
                                                 value={formData.diagnostic.operationTime}
-                                                onChange={(v) => updateDiagnostic('operationTime', v)}
+                                                onChange={(v: string) => updateDiagnostic('operationTime', v)}
                                             />
                                             <Question 
                                                 label="3. Quantos profissionais atendem atualmente?"
                                                 options={["Apenas 1", "2-3", "4-6", "+6"]}
                                                 value={formData.diagnostic.professionalsCount}
-                                                onChange={(v) => updateDiagnostic('professionalsCount', v)}
+                                                onChange={(v: string) => updateDiagnostic('professionalsCount', v)}
                                             />
                                         </div>
                                     )}
@@ -288,25 +283,25 @@ export const Contact = () => {
                                                 label="4. Qual o principal desafio hoje?"
                                                 options={["Falta de previsibilidade financeira", "Dificuldade em precificar", "Baixa conversão de pacientes", "Falta de organização financeira", "Crescimento desestruturado", "Falta de tempo para gestão", "Não sei exatamente onde está o problema"]}
                                                 value={formData.diagnostic.mainChallenge}
-                                                onChange={(v) => updateDiagnostic('mainChallenge', v)}
+                                                onChange={(v: string) => updateDiagnostic('mainChallenge', v)}
                                             />
                                             <Question 
                                                 label="5. Qual o faturamento médio mensal atual?"
                                                 options={["Até 30 mil", "30-80 mil", "80-150 mil", "150-300 mil", "+300 mil"]}
                                                 value={formData.diagnostic.monthlyRevenue}
-                                                onChange={(v) => updateDiagnostic('monthlyRevenue', v)}
+                                                onChange={(v: string) => updateDiagnostic('monthlyRevenue', v)}
                                             />
                                             <Question 
                                                 label="6. Você possui DRE estruturado?"
                                                 options={["Sim e utilizo para tomada de decisão", "Tenho, mas não utilizo estrategicamente", "Não tenho"]}
                                                 value={formData.diagnostic.hasDRE}
-                                                onChange={(v) => updateDiagnostic('hasDRE', v)}
+                                                onChange={(v: string) => updateDiagnostic('hasDRE', v)}
                                             />
                                             <Question 
                                                 label="7. Seu fluxo de caixa (DFC) gera previsibilidade financeira?"
                                                 options={["Sim, consigo prever receitas e despesas", "Parcialmente", "Não possuo controle claro"]}
                                                 value={formData.diagnostic.hasDFC}
-                                                onChange={(v) => updateDiagnostic('hasDFC', v)}
+                                                onChange={(v: string) => updateDiagnostic('hasDFC', v)}
                                             />
                                         </div>
                                     )}
@@ -318,19 +313,19 @@ export const Contact = () => {
                                                 label="8. Seu contas a pagar está organizado por centro de custo?"
                                                 options={["Sim", "Parcialmente", "Não"]}
                                                 value={formData.diagnostic.organizedCosts}
-                                                onChange={(v) => updateDiagnostic('organizedCosts', v)}
+                                                onChange={(v: string) => updateDiagnostic('organizedCosts', v)}
                                             />
                                             <Question 
                                                 label="9. Você sabe qual é a margem de lucro da clínica?"
                                                 options={["Sim, com segurança", "Tenho uma estimativa", "Não sei"]}
                                                 value={formData.diagnostic.knowsMargin}
-                                                onChange={(v) => updateDiagnostic('knowsMargin', v)}
+                                                onChange={(v: string) => updateDiagnostic('knowsMargin', v)}
                                             />
                                             <Question 
                                                 label="10. Hoje você consegue identificar quanto precisa faturar por mês para atingir sua meta?"
                                                 options={["Sim", "Tenho uma estimativa", "Não"]}
                                                 value={formData.diagnostic.knowsRevenueGoal}
-                                                onChange={(v) => updateDiagnostic('knowsRevenueGoal', v)}
+                                                onChange={(v: string) => updateDiagnostic('knowsRevenueGoal', v)}
                                             />
                                             <div className="space-y-4">
                                                 <label className="text-xs font-black text-[#697D58] uppercase tracking-widest block">11. Sua precificação considera: (múltipla escolha)</label>
@@ -362,25 +357,25 @@ export const Contact = () => {
                                                 label="12. Você sabe quais procedimentos possuem maior margem de lucro?"
                                                 options={["Sim", "Não"]}
                                                 value={formData.diagnostic.knowsHighMarginProcedures}
-                                                onChange={(v) => updateDiagnostic('knowsHighMarginProcedures', v)}
+                                                onChange={(v: string) => updateDiagnostic('knowsHighMarginProcedures', v)}
                                             />
                                             <Question 
                                                 label="13. Já identificou procedimentos com margem negativa?"
                                                 options={["Sim", "Não"]}
                                                 value={formData.diagnostic.identifiedNegativeMargin}
-                                                onChange={(v) => updateDiagnostic('identifiedNegativeMargin', v)}
+                                                onChange={(v: string) => updateDiagnostic('identifiedNegativeMargin', v)}
                                             />
                                             <Question 
                                                 label="14. Você sabe quantos leads entram por mês na clínica?"
                                                 options={["Sim", "Não"]}
                                                 value={formData.diagnostic.knowsMonthlyLeads}
-                                                onChange={(v) => updateDiagnostic('knowsMonthlyLeads', v)}
+                                                onChange={(v: string) => updateDiagnostic('knowsMonthlyLeads', v)}
                                             />
                                             <Question 
                                                 label="15. Sua taxa de conversão é monitorada?"
                                                 options={["Sim", "Não"]}
                                                 value={formData.diagnostic.monitorsConversion}
-                                                onChange={(v) => updateDiagnostic('monitorsConversion', v)}
+                                                onChange={(v: string) => updateDiagnostic('monitorsConversion', v)}
                                             />
                                         </div>
                                     )}
@@ -392,25 +387,25 @@ export const Contact = () => {
                                                 label="16. Existe acompanhamento estruturado de pacientes que não fecharam?"
                                                 options={["Sim", "Não"]}
                                                 value={formData.diagnostic.structuredFollowUp}
-                                                onChange={(v) => updateDiagnostic('structuredFollowUp', v)}
+                                                onChange={(v: string) => updateDiagnostic('structuredFollowUp', v)}
                                             />
                                             <Question 
                                                 label="17. O estoque é controlado de forma confiável?"
                                                 options={["Sim", "Não"]}
                                                 value={formData.diagnostic.reliableInventory}
-                                                onChange={(v) => updateDiagnostic('reliableInventory', v)}
+                                                onChange={(v: string) => updateDiagnostic('reliableInventory', v)}
                                             />
                                             <Question 
                                                 label="18. Você sabe o custo real dos insumos por procedimento?"
                                                 options={["Sim", "Não"]}
                                                 value={formData.diagnostic.knowsSupplyCosts}
-                                                onChange={(v) => updateDiagnostic('knowsSupplyCosts', v)}
+                                                onChange={(v: string) => updateDiagnostic('knowsSupplyCosts', v)}
                                             />
                                             <Question 
                                                 label="19. Existe controle de retorno dos pacientes para continuidade dos tratamentos?"
                                                 options={["Sim", "Não"]}
                                                 value={formData.diagnostic.patientReturnControl}
-                                                onChange={(v) => updateDiagnostic('patientReturnControl', v)}
+                                                onChange={(v: string) => updateDiagnostic('patientReturnControl', v)}
                                             />
                                             <div className="space-y-2">
                                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações Adicionais (Opcional)</label>
