@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import prisma from '../lib/prisma.js';
+import prisma, { basePrisma } from '../lib/prisma.js';
 import { AuthService } from '../services/AuthService.js';
 import { BillingService } from '../services/BillingService.js';
 import multer from 'multer';
@@ -39,7 +39,7 @@ export class SaaSController {
     // Gestão de Clínicas
     static async listClinics(req: any, res: Response) {
         try {
-            const clinics = await prisma.clinic.findMany({
+            const clinics = await basePrisma.clinic.findMany({
                 include: {
                     _count: {
                         select: { users: true }
@@ -76,7 +76,7 @@ export class SaaSController {
                 return isNaN(f) ? null : f;
             };
 
-            const clinic = await prisma.clinic.create({
+            const clinic = await basePrisma.clinic.create({
                 data: {
                     name,
                     razaoSocial,
@@ -139,7 +139,7 @@ export class SaaSController {
                 { title: 'Termo de Uso de Imagem', category: 'Templates' }
             ];
 
-            await prisma.clinicDocument.createMany({
+            await basePrisma.clinicDocument.createMany({
                 data: suggestedDocuments.map(doc => ({
                     ...doc,
                     clinicId: clinic.id,
@@ -189,7 +189,7 @@ export class SaaSController {
                 return isNaN(f) ? undefined : f;
             };
 
-            const clinic = await prisma.clinic.update({
+            const clinic = await basePrisma.clinic.update({
                 where: { id },
                 data: {
                     name,
@@ -245,24 +245,24 @@ export class SaaSController {
             const { id } = req.params;
 
             // Delete all related records first to avoid foreign key constraints
-            await prisma.$transaction([
-                prisma.transaction.deleteMany({ where: { clinicId: id } }),
-                prisma.accountPayable.deleteMany({ where: { clinicId: id } }),
-                prisma.dailyClosure.deleteMany({ where: { clinicId: id } }),
-                prisma.inventoryItem.deleteMany({ where: { clinicId: id } }),
-                prisma.stockMovement.deleteMany({ where: { clinicId: id } }),
-                prisma.financialGoal.deleteMany({ where: { clinicId: id } }),
-                prisma.lead.deleteMany({ where: { clinicId: id } }),
-                prisma.document.deleteMany({ where: { clinicId: id } }),
-                prisma.clinicDocument.deleteMany({ where: { clinicId: id } }),
-                prisma.pricingSimulation.deleteMany({ where: { clinicId: id } }),
-                prisma.procedurePricing.deleteMany({ where: { clinicId: id } }),
-                prisma.procedureExecution.deleteMany({ where: { clinicId: id } }),
-                prisma.task.deleteMany({ where: { clinicId: id } }),
-                prisma.doctor.deleteMany({ where: { clinicId: id } }),
-                prisma.patient.deleteMany({ where: { clinicId: id } }),
-                prisma.user.deleteMany({ where: { clinicId: id } }),
-                prisma.clinic.delete({ where: { id } })
+            await basePrisma.$transaction([
+                basePrisma.transaction.deleteMany({ where: { clinicId: id } }),
+                basePrisma.accountPayable.deleteMany({ where: { clinicId: id } }),
+                basePrisma.dailyClosure.deleteMany({ where: { clinicId: id } }),
+                basePrisma.inventoryItem.deleteMany({ where: { clinicId: id } }),
+                basePrisma.stockMovement.deleteMany({ where: { clinicId: id } }),
+                basePrisma.financialGoal.deleteMany({ where: { clinicId: id } }),
+                basePrisma.lead.deleteMany({ where: { clinicId: id } }),
+                basePrisma.document.deleteMany({ where: { clinicId: id } }),
+                basePrisma.clinicDocument.deleteMany({ where: { clinicId: id } }),
+                basePrisma.pricingSimulation.deleteMany({ where: { clinicId: id } }),
+                basePrisma.procedurePricing.deleteMany({ where: { clinicId: id } }),
+                basePrisma.procedureExecution.deleteMany({ where: { clinicId: id } }),
+                basePrisma.task.deleteMany({ where: { clinicId: id } }),
+                basePrisma.doctor.deleteMany({ where: { clinicId: id } }),
+                basePrisma.patient.deleteMany({ where: { clinicId: id } }),
+                basePrisma.user.deleteMany({ where: { clinicId: id } }),
+                basePrisma.clinic.delete({ where: { id } })
             ]);
 
             res.json({ message: 'Clínica e todos os dados vinculados foram excluídos com sucesso' });
@@ -275,7 +275,7 @@ export class SaaSController {
     // Gestão de Usuários
     static async listUsers(req: any, res: Response) {
         try {
-            const users = await prisma.user.findMany({
+            const users = await basePrisma.user.findMany({
                 include: { clinic: { select: { name: true } } }
             });
             res.json(users);
@@ -288,13 +288,13 @@ export class SaaSController {
         try {
             const { name, email, password, role, clinicId } = req.body;
 
-            const existingUser = await prisma.user.findUnique({ where: { email } });
+            const existingUser = await basePrisma.user.findUnique({ where: { email } });
             if (existingUser) {
                 return res.status(400).json({ error: 'Email já cadastrado' });
             }
 
             const hashedPassword = await AuthService.hashPassword(password);
-            const user = await prisma.user.create({
+            const user = await basePrisma.user.create({
                 data: {
                     name,
                     email,
@@ -334,7 +334,7 @@ export class SaaSController {
                 data.password = await AuthService.hashPassword(password);
             }
 
-            const user = await prisma.user.update({
+            const user = await basePrisma.user.update({
                 where: { id },
                 data
             });
@@ -361,7 +361,7 @@ export class SaaSController {
             const { id } = req.params;
             console.log(`[SaaS] Tentando excluir usuário: ${id}`);
             
-            await prisma.user.delete({ where: { id } });
+            await basePrisma.user.delete({ where: { id } });
             
             console.log(`[SaaS] Usuário ${id} excluído com sucesso.`);
             res.json({ message: 'Usuário excluído com sucesso' });
@@ -388,7 +388,7 @@ export class SaaSController {
     
     static async getBillingSummary(req: any, res: Response) {
         try {
-            const clinics = await prisma.clinic.findMany({
+            const clinics = await basePrisma.clinic.findMany({
                 include: {
                     _count: {
                         select: { users: true }
@@ -414,7 +414,7 @@ export class SaaSController {
     static async generateInvoicePDF(req: any, res: Response) {
         try {
             const { clinicId } = req.params;
-            const clinic = await prisma.clinic.findUnique({
+            const clinic = await basePrisma.clinic.findUnique({
                 where: { id: clinicId },
                 include: { _count: { select: { users: true } } }
             });
@@ -439,7 +439,7 @@ export class SaaSController {
     static async generateInvoiceXML(req: any, res: Response) {
         try {
             const { clinicId } = req.params;
-            const clinic = await prisma.clinic.findUnique({
+            const clinic = await basePrisma.clinic.findUnique({
                 where: { id: clinicId },
                 include: { _count: { select: { users: true } } }
             });
