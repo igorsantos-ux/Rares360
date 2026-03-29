@@ -93,6 +93,7 @@ const port = 3001;
 
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Server is officially listening on 0.0.0.0:${port}`);
-    SeedService.autoSeedIfEmpty().catch(err => console.error('Erro no auto-seed background:', err));
-    MigrationService.runSoftMigrations().catch(err => console.error('Erro no soft-migration background:', err));
+    MigrationService.runSoftMigrations().then(() => {
+        SeedService.autoSeedIfEmpty().catch(err => console.error('Erro no auto-seed background:', err));
+    }).catch(err => console.error('Erro no soft-migration background:', err));
 });

@@ -14,6 +14,20 @@ export class MigrationService {
             await prisma.$executeRawUnsafe(`
                 ALTER TABLE "Transaction" ADD COLUMN IF NOT EXISTS "isExecuted" BOOLEAN DEFAULT false;
             `);
+            
+            // Adicionar colunas faltantes em Clinic (Precificação SaaS)
+            await prisma.$executeRawUnsafe(`
+                ALTER TABLE "Clinic" ADD COLUMN IF NOT EXISTS "implementationFee" DOUBLE PRECISION DEFAULT 0;
+            `);
+            await prisma.$executeRawUnsafe(`
+                ALTER TABLE "Clinic" ADD COLUMN IF NOT EXISTS "monthlyFee" DOUBLE PRECISION DEFAULT 0;
+            `);
+            await prisma.$executeRawUnsafe(`
+                ALTER TABLE "Clinic" ADD COLUMN IF NOT EXISTS "proposalUrl" TEXT;
+            `);
+            await prisma.$executeRawUnsafe(`
+                ALTER TABLE "Clinic" ADD COLUMN IF NOT EXISTS "pricePerUser" DOUBLE PRECISION DEFAULT 50.0;
+            `);
 
             // Garantir que a tabela GlobalLead existe
             await prisma.$executeRawUnsafe(`
