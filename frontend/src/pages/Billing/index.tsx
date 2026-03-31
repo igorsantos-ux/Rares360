@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportingApi } from '../../services/api';
+import api from '../../services/api';
 import {
     BarChart3,
     TrendingUp,
     Download,
+    UploadCloud,
     Loader2,
     PieChart as PieChartIcon,
     ArrowUpRight,
@@ -44,7 +46,9 @@ const BillingPage = () => {
         endDate: format(today, 'yyyy-MM-dd')
     });
 
-    const { data: dashboardData, isLoading, isError } = useQuery({
+    const [uploading, setUploading] = useState(false);
+
+    const { data: dashboardData, isLoading, isError, refetch } = useQuery({
         queryKey: ['billing-dashboard', dateRange.startDate, dateRange.endDate, groupBy],
         queryFn: async () => {
             const response = await reportingApi.getBillingAnalytics({
@@ -164,9 +168,46 @@ const BillingPage = () => {
                         ))}
                     </div>
 
-                    <button className="flex items-center gap-2 px-5 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
-                        <Download size={18} /> Exportar
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <input
+                                type="file"
+                                id="billing-excel-upload"
+                                className="hidden"
+                                accept=".xlsx, .xls, .csv"
+                                onChange={async (e) => {
+                                    const file = e.target.files?.[0];
+                                    if (!file) return;
+
+                                    setUploading(true);
+                                    const formData = new FormData();
+                                    formData.append('file', file);
+
+                                    try {
+                                        const response = await api.post('/import/transactions', formData, {
+                                            headers: { 'Content-Type': 'multipart/form-data' }
+                                        });
+                                        refetch();
+                                        alert(response.data.message || 'Planilha importada com sucesso!');
+                                    } catch (error: any) {
+                                        alert(error.response?.data?.message || 'Erro ao processar arquivo.');
+                                    } finally {
+                                        setUploading(false);
+                                        e.target.value = '';
+                                    }
+                                }}
+                            />
+                            <label
+                                htmlFor="billing-excel-upload"
+                                className={`flex items-center gap-2 px-5 py-3 ${uploading ? 'bg-slate-100 text-slate-400' : 'bg-white text-[#8A9A5B] border-2 border-[#8A9A5B]/20 hover:border-[#8A9A5B]'} rounded-2xl font-bold text-sm cursor-pointer transition-all active:scale-95`}
+                            >
+                                {uploading ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />} Importar
+                            </label>
+                        </div>
+                        <button className="flex items-center gap-2 px-5 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
+                            <Download size={18} /> Exportar
+                        </button>
+                    </div>
                 </div>
             </div>
 
