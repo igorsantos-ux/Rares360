@@ -5,7 +5,6 @@ import api from '../../services/api';
 import {
     BarChart3,
     TrendingUp,
-    Download,
     UploadCloud,
     Loader2,
     PieChart as PieChartIcon,
