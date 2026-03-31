@@ -199,14 +199,11 @@ const BillingPage = () => {
                             />
                             <label
                                 htmlFor="billing-excel-upload"
-                                className={`flex items-center gap-2 px-5 py-3 ${uploading ? 'bg-slate-100 text-slate-400' : 'bg-white text-[#8A9A5B] border-2 border-[#8A9A5B]/20 hover:border-[#8A9A5B]'} rounded-2xl font-bold text-sm cursor-pointer transition-all active:scale-95`}
+                                className={`flex items-center gap-2 px-5 py-3 ${uploading ? 'bg-slate-100 text-slate-400' : 'bg-[#8A9A5B] text-white hover:bg-[#7a8a4b]'} rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 cursor-pointer transition-all active:scale-95`}
                             >
                                 {uploading ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />} Importar
                             </label>
                         </div>
-                        <button className="flex items-center gap-2 px-5 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
-                            <Download size={18} /> Exportar
-                        </button>
                     </div>
                 </div>
             </div>
