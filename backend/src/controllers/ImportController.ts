@@ -23,38 +23,62 @@ export class ImportController {
             const data: any[] = xlsx.utils.sheet_to_json(worksheet);
 
             const transactionsToCreate = data.map((row: any) => {
-                // Mapeamento baseado no modelo "FLUXO DE CAIXA - INSTITUTO NASSARALLA.xlsx"
-                const valorRaw = row['Valor'] || 0;
+                // Normalizar as chaves para evitar problemas com espaços extras (ex: " PREÇO DE VENDA")
+                const cleanRow: any = {};
+                for (const key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+
+                const valorRaw = cleanRow['PREÇO DE VENDA'] || 0;
                 const valor = Math.abs(typeof valorRaw === 'string' ? parseFloat(valorRaw.replace(',', '.')) : valorRaw);
 
-                const tipo = row['Tipo']?.toUpperCase() === 'ENTRADA' ? 'INCOME' : 'EXPENSE';
-                const status = row['Status']?.toUpperCase() === 'PAGO' ? 'PAID' : 'PENDING';
+                const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || valorRaw;
+                const valorLiquido = Math.abs(typeof valorLiquidoRaw === 'string' ? parseFloat(valorLiquidoRaw.replace(',', '.')) : valorLiquidoRaw);
+
+                // Como é Faturamento, trataremos sempre como ENTRADA (INCOME)
+                const tipo = 'INCOME';
+                
+                // Tratar status - vamos assumir PAGO se houver valor, a menos que especificado
+                const status = 'PAID';
 
                 // Tratar datas (Excel serial ou string)
                 let dataTransacao = new Date();
-                if (row['Data de Pagamento']) {
-                    dataTransacao = new Date(row['Data de Pagamento']);
-                } else if (row['Data Vencimento']) {
-                    dataTransacao = new Date(row['Data Vencimento']);
+                const dataRaw = cleanRow['DATA DA VENDA'];
+                if (dataRaw) {
+                    if (typeof dataRaw === 'number') {
+                        // Excel serial date to JS Date
+                        dataTransacao = new Date(Math.round((dataRaw - 25569) * 86400 * 1000));
+                    } else {
+                        dataTransacao = new Date(dataRaw);
+                    }
                 }
 
+                const paciente = cleanRow['PACIENTE'] || 'Paciente não informado';
+                const procedimento = cleanRow['PROCEDIMENTO'] || 'Procedimento não informado';
+                const medico = cleanRow['MEDICO SOLICITANTE'] || cleanRow['MÉDICO EXECUTOR'] || '';
+
+                const descricao = `${procedimento} - ${paciente}${medico ? ` (${medico})` : ''}`;
+
                 return {
-                    description: row['Descrição'] || row['Subcategoria'] || 'Importação Excel',
+                    description: descricao,
                     amount: valor,
-                    netAmount: valor,
+                    netAmount: valorLiquido,
                     type: tipo,
                     status: status,
-                    category: row['Categoria'] || 'Importado',
-                    paymentMethod: row['Meio de Pagamento'] || 'Outros',
-                    centerOfCost: row['Centro de Custo'] || 'Operacional',
+                    category: cleanRow['TIPO'] || 'Faturamento',
+                    paymentMethod: cleanRow['FORMA DE PAGAMENTO'] || 'Outros',
+                    centerOfCost: 'Operacional', // Pode ser ajustado conforme a necessidade
                     date: isNaN(dataTransacao.getTime()) ? new Date() : dataTransacao,
                     clinicId: clinicId
                 };
             });
 
+            // Filtrar apenas linhas com valor maior que 0 para evitar importar linhas vazias  
+            const validTransactions = transactionsToCreate.filter(t => t.amount > 0);
+
             // Criar em lote
             const result = await prisma.transaction.createMany({
-                data: transactionsToCreate
+                data: validTransactions
             });
 
             return res.json({

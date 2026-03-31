@@ -308,8 +308,8 @@ const Automations = () => {
 
                         <div className="flex flex-col gap-4">
                             <a
-                                href="/templates/modelo_fluxo_caixa.xlsx"
-                                download
+                                href="/templates/FATURAMENTO_DIARIO.xlsx"
+                                download="FATURAMENTO_DIARIO.xlsx"
                                 className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-[#8A9A5B] transition-all"
                             >
                                 <div className="flex items-center gap-3">
@@ -317,7 +317,7 @@ const Automations = () => {
                                         <Download className="text-slate-400 group-hover:text-[#8A9A5B]" size={18} />
                                     </div>
                                     <div className="text-left">
-                                        <p className="text-xs font-bold text-slate-700">Modelo Fluxo de Caixa</p>
+                                        <p className="text-xs font-bold text-slate-700">Modelo Faturamento Diário</p>
                                         <p className="text-[10px] text-slate-400">Download em .xlsx</p>
                                     </div>
                                 </div>
