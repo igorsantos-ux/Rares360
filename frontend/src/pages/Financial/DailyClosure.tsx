@@ -30,7 +30,7 @@ const DailyClosure = () => {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'all' | 'income' | 'expense'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'income'>('all');
   const [notes, setNotes] = useState('');
   const [checklist, setChecklist] = useState({
     cash: false,
@@ -71,15 +71,16 @@ const DailyClosure = () => {
   
   const filteredTransactions = useMemo(() => {
     if (!transactions || !Array.isArray(transactions)) return [];
-    if (activeTab === 'all') return transactions;
-    return transactions.filter((t: any) => t.type.toLowerCase() === activeTab);
+    const incomesOnly = transactions.filter((t: any) => t.type === 'INCOME');
+    if (activeTab === 'all') return incomesOnly;
+    return incomesOnly.filter((t: any) => t.type.toLowerCase() === activeTab);
   }, [transactions, activeTab]);
 
   const totals = useMemo(() => {
     if (!transactions || !Array.isArray(transactions)) return { income: 0, expense: 0 };
     return {
-      income: transactions.filter((t: any) => t.type === 'INCOME' && t.status === 'PAID').reduce((acc, t) => acc + t.amount, 0),
-      expense: transactions.filter((t: any) => t.type === 'EXPENSE' && (t.status === 'PAID' || t.status === 'PAGO')).reduce((acc, t) => acc + t.amount, 0),
+      income: transactions.filter((t: any) => t.type === 'INCOME' && t.status === 'PAID').reduce((acc: number, t: any) => acc + t.amount, 0),
+      expense: 0,
     };
   }, [transactions]);
 
@@ -108,7 +109,7 @@ const DailyClosure = () => {
   });
 
   const openingBalance = statusData?.closureInfo?.openingBalance || 0;
-  const expectedClosing = openingBalance + totals.income - totals.expense;
+  const expectedClosing = openingBalance + totals.income;
   const canClose = checklist.cash && checklist.cards;
 
   const formatCurrency = (value: number) => {
@@ -128,7 +129,7 @@ const DailyClosure = () => {
       
       {/* 1. Dashboard de Resumo (Topo - Barra Horizontal) */}
       <div className="bg-white border border-slate-100 rounded-[2.5rem] shadow-sm overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-100">
+        <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-100">
           <div className="p-8">
             <div className="flex items-center gap-3 mb-2">
               <Calendar size={14} className="text-slate-400" />
@@ -145,13 +146,6 @@ const DailyClosure = () => {
             <p className="text-xl font-mono font-bold text-emerald-600 leading-none">+{formatCurrency(totals.income)}</p>
           </div>
 
-          <div className="p-8">
-            <div className="flex items-center gap-3 mb-2">
-              <TrendingDown size={14} className="text-red-400" />
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saídas</p>
-            </div>
-            <p className="text-xl font-mono font-bold text-red-500 leading-none">-{formatCurrency(totals.expense)}</p>
-          </div>
 
           <div className="p-8 bg-[#697D58]/5 relative">
             <div className="flex items-center gap-3 mb-2">
@@ -284,7 +278,7 @@ const DailyClosure = () => {
                     <Receipt size={40} strokeWidth={1.5} className="text-slate-200" />
                   </div>
                   <h3 className="text-base font-black text-slate-800 uppercase tracking-widest mb-2">Sem Movimentações</h3>
-                  <p className="text-sm text-slate-400 max-w-xs mx-auto font-medium">Inicie o dia registrando entradas ou saídas para compor o extrato de auditoria.</p>
+                  <p className="text-sm text-slate-400 max-w-xs mx-auto font-medium">Inicie o dia registrando entradas para compor o extrato de auditoria.</p>
                 </div>
               )}
             </div>

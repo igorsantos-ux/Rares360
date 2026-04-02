@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
 import { 
   X, 
-  TrendingUp, 
-  TrendingDown, 
   DollarSign, 
   CreditCard, 
   Loader2,
@@ -21,7 +19,7 @@ interface QuickTransactionModalProps {
 }
 
 const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, onClose, selectedDate }) => {
-  const [activeTab, setActiveTab] = useState<'income' | 'expense'>('income');
+  const activeTab: 'income' | 'expense' = 'income';
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
 
@@ -29,10 +27,7 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
     description: '',
     amount: '',
     paymentMethod: 'Pix',
-    category: 'Procedimentos',
-    supplierName: '', // Para saídas
-    costCenter: 'Operacional',
-    costType: 'Variável'
+    category: 'Procedimentos'
   });
 
   const incomeMutation = useMutation({
@@ -62,39 +57,7 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
     }
   });
 
-  const expenseMutation = useMutation({
-    mutationFn: async (data: any) => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/contas-a-pagar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'x-clinic-id': localStorage.getItem('clinicId') || ''
-        },
-        body: JSON.stringify({
-          description: data.description,
-          totalAmount: Number(data.amount),
-          paymentMethod: data.paymentMethod,
-          costCenter: data.costCenter,
-          costType: data.costType,
-          supplierName: data.supplierName || 'Diversos',
-          isInstallment: false,
-          installments: [{
-            installmentNumber: 1,
-            amount: Number(data.amount),
-            dueDate: selectedDate,
-            status: 'PAGO',
-            paymentMethod: data.paymentMethod
-          }]
-        })
-      });
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.message || errData.error || 'Falha ao criar saída');
-      }
-      return response.json();
-    }
-  });
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,11 +68,7 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
 
     setLoading(true);
     try {
-      if (activeTab === 'income') {
-        await incomeMutation.mutateAsync(formData);
-      } else {
-        await expenseMutation.mutateAsync(formData);
-      }
+      await incomeMutation.mutateAsync(formData);
       
       toast.success('Lançamento realizado com sucesso!');
       queryClient.invalidateQueries({ queryKey: ['day-transactions'] });
@@ -119,10 +78,7 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
         description: '',
         amount: '',
         paymentMethod: 'Pix',
-        category: 'Procedimentos',
-        supplierName: '',
-        costCenter: 'Operacional',
-        costType: 'Variável'
+        category: 'Procedimentos'
       });
     } catch (err: any) {
       toast.error(err.message || 'Erro ao processar lançamento');
@@ -155,25 +111,7 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
           </button>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="p-2 mx-8 mt-6 bg-slate-50 rounded-2xl border border-slate-100 flex gap-2">
-          <button 
-            onClick={() => setActiveTab('income')}
-            className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'income' ? 'bg-white text-emerald-600 shadow-sm border border-slate-100' : 'text-slate-400'
-            }`}
-          >
-            <TrendingUp size={14} /> Entrada (Receita)
-          </button>
-          <button 
-            onClick={() => setActiveTab('expense')}
-            className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all ${
-              activeTab === 'expense' ? 'bg-white text-red-500 shadow-sm border border-slate-100' : 'text-slate-400'
-            }`}
-          >
-            <TrendingDown size={14} /> Saída (Despesa)
-          </button>
-        </div>
+
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-8 space-y-6">
@@ -186,7 +124,7 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
               <input 
                 autoFocus
                 type="text"
-                placeholder={activeTab === 'income' ? "Ex: Venda de Botox, Consulta..." : "Ex: Compra de Café, Material de Escritório..."}
+                placeholder="Ex: Venda de Botox, Consulta..."
                 value={formData.description}
                 onChange={e => setFormData(p => ({ ...p, description: e.target.value }))}
                 className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-[#697D58]/20 focus:border-[#697D58] transition-all"
@@ -224,67 +162,21 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
               </select>
             </div>
 
-            {activeTab === 'income' ? (
-              <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                  <Tag size={12} /> Categoria
-                </label>
-                <select 
-                  value={formData.category}
-                  onChange={e => setFormData(p => ({ ...p, category: e.target.value }))}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-[#697D58]/20 focus:border-[#697D58] transition-all appearance-none cursor-pointer"
-                >
-                  <option value="Procedimentos">Procedimentos</option>
-                  <option value="Material">Venda de Material</option>
-                  <option value="Produtos">Produtos</option>
-                  <option value="Outros">Outros</option>
-                </select>
-              </div>
-            ) : (
-              <>
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <User size={12} /> Fornecedor / Credor
-                  </label>
-                  <input 
-                    type="text"
-                    placeholder="Ex: Amazon, Mercado Livre, Nome do Colaborador"
-                    value={formData.supplierName}
-                    onChange={e => setFormData(p => ({ ...p, supplierName: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-[#697D58]/20 focus:border-[#697D58] transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Tag size={12} /> Centro de Custo
-                  </label>
-                  <select 
-                    value={formData.costCenter}
-                    onChange={e => setFormData(p => ({ ...p, costCenter: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-[#697D58]/20 focus:border-[#697D58] transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="Operacional">Operacional</option>
-                    <option value="Administrativo">Administrativo</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="RH">Recursos Humanos</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                    <Filter size={12} /> Tipo de Custo
-                  </label>
-                  <select 
-                    value={formData.costType}
-                    onChange={e => setFormData(p => ({ ...p, costType: e.target.value }))}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-[#697D58]/20 focus:border-[#697D58] transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="Variável">Custos Variáveis</option>
-                    <option value="Fixo">Despesas Fixas</option>
-                    <option value="Investimento">Investimentos</option>
-                  </select>
-                </div>
-              </>
-            )}
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                <Tag size={12} /> Categoria
+              </label>
+              <select 
+                value={formData.category}
+                onChange={e => setFormData(p => ({ ...p, category: e.target.value }))}
+                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-[#697D58]/20 focus:border-[#697D58] transition-all appearance-none cursor-pointer"
+              >
+                <option value="Procedimentos">Procedimentos</option>
+                <option value="Material">Venda de Material</option>
+                <option value="Produtos">Produtos</option>
+                <option value="Outros">Outros</option>
+              </select>
+            </div>
 
           </div>
 
@@ -299,11 +191,7 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
              <button 
                 type="submit"
                 disabled={loading}
-                className={`flex-[2] py-5 rounded-3xl font-black text-[10px] uppercase tracking-widest text-white shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 ${
-                  activeTab === 'income' 
-                  ? 'bg-emerald-600 shadow-emerald-600/20 hover:bg-emerald-700' 
-                  : 'bg-red-500 shadow-red-500/20 hover:bg-red-600'
-                }`}
+                className="flex-[2] py-5 rounded-3xl font-black text-[10px] uppercase tracking-widest text-white shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3 bg-emerald-600 shadow-emerald-600/20 hover:bg-emerald-700"
              >
                 {loading ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} strokeWidth={4} />}
                 Confirmar Lançamento
@@ -318,39 +206,4 @@ const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, o
 
 export default QuickTransactionModal;
 
-// Mock User Icon for user in Saída Credor
-const User = ({ size, className }: { size?: number, className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-    <circle cx="12" cy="7" r="4" />
-  </svg>
-);
 
-// Mock Filter Icon
-const Filter = ({ size, className }: { size?: number, className?: string }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    width={size || 24} 
-    height={size || 24} 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2" 
-    strokeLinecap="round" 
-    strokeLinejoin="round" 
-    className={className}
-  >
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-  </svg>
-);
