@@ -5,7 +5,6 @@ import {
   Lock as LockIcon, 
   Unlock, 
   TrendingUp, 
-  TrendingDown, 
   DollarSign,
   Loader2,
   CreditCard,

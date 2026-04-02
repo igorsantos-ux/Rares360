@@ -19,7 +19,6 @@ interface QuickTransactionModalProps {
 }
 
 const QuickTransactionModal: React.FC<QuickTransactionModalProps> = ({ isOpen, onClose, selectedDate }) => {
-  const activeTab: 'income' | 'expense' = 'income';
   const [loading, setLoading] = useState(false);
   const queryClient = useQueryClient();
 
