@@ -144,26 +144,38 @@ const PatientsPage = () => {
                     </div>
                 </div>
 
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto min-h-[500px]">
+                    <div className="p-8 pb-0">
+                        {/* Always show headers to show the new structure */}
+                        <div className="grid grid-cols-6 gap-8 px-8 py-5 bg-slate-50/50 rounded-2xl border border-slate-100 mb-4 items-center">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Paciente & Classificação</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Contato</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Rentabilidade</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Visitas / Ticket</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">LTV</span>
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</span>
+                        </div>
+                    </div>
+
                     {displayPatients.length === 0 ? (
-                        <div className="py-20 flex flex-col items-center justify-center gap-4">
-                            <Users size={48} className="text-slate-200" />
-                            <p className="text-slate-400 font-bold text-sm uppercase tracking-widest text-center">
-                                {searchTerm ? 'Nenhum paciente encontrado para sua busca' : 'Nenhum paciente cadastrado na clínica'}
-                            </p>
+                        <div className="py-12 px-8 flex flex-col items-center justify-center gap-8 animate-in fade-in zoom-in duration-700">
+                            <div className="w-24 h-24 bg-[#F5F5DC] rounded-[2.5rem] flex items-center justify-center text-[#8A9A5B] shadow-inner shadow-[#8A9A5B]/10">
+                                <Users size={48} strokeWidth={1} />
+                            </div>
+                            <div className="text-center space-y-2 max-w-lg">
+                                <h3 className="text-2xl font-black text-[#697D58]">Bem-vindo ao Patient Concierge</h3>
+                                <p className="text-slate-500 font-medium text-sm">Sua clínica ainda não possui pacientes cadastrados. Cadastre seu primeiro paciente para ativar a análise de **Rentabilidade em Tempo Real** e o **Prontuário Inteligente (PEP)**.</p>
+                            </div>
+                            <button 
+                                onClick={handleNewPatient}
+                                className="group flex items-center gap-3 px-8 py-4 bg-[#8A9A5B] text-white rounded-[2rem] font-black text-sm shadow-2xl shadow-[#8A9A5B]/20 hover:scale-[1.05] active:scale-95 transition-all"
+                            >
+                                <UserPlus size={20} className="group-hover:rotate-12 transition-transform" />
+                                COMEÇAR AGORA
+                            </button>
                         </div>
                     ) : (
                         <table className="w-full text-left">
-                            <thead>
-                                <tr className="bg-slate-50/50">
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Paciente & Classificação</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contato</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Rentabilidade</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Visitas / Ticket Médio</th>
-                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Faturamento (LTV)</th>
-                                    <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
-                                </tr>
-                            </thead>
                             <tbody className="divide-y divide-[#8A9A5B]/5">
                                 {displayPatients.map((patient: any) => {
                                     const config = getClassificationConfig(patient.classification);
