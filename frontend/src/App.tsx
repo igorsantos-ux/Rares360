@@ -63,7 +63,7 @@ function App() {
         {showHeader && <Header />}
         
         <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'p-0' : (showHeader ? 'p-8 lg:p-12' : 'p-0')}`}>
-          <div className={isPublicPage ? '' : (showHeader ? 'max-w-7xl mx-auto' : '')}>
+          <div className={isPublicPage ? '' : (showHeader ? (location.pathname === '/agenda' ? 'max-w-[98%] mx-auto' : 'max-w-7xl mx-auto') : '')}>
             <Routes>
               {/* Public Routes - Auto-redirect if logged in */}
               <Route path="/" element={

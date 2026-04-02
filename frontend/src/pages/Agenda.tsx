@@ -116,7 +116,7 @@ const Agenda = () => {
     };
 
     return (
-        <div className="h-[calc(100vh-120px)] flex flex-col gap-6 animate-in fade-in duration-500">
+        <div className="min-h-[calc(100vh-80px)] h-full flex flex-col gap-6 animate-in fade-in duration-500">
             {/* Header / Toolbar */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                 <div>
