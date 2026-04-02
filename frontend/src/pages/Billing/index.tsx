@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportingApi } from '../../services/api';
 import api from '../../services/api';
-import {
     BarChart3,
     TrendingUp,
     UploadCloud,
@@ -14,7 +13,10 @@ import {
     Stethoscope,
     Tags,
     Crown,
-    User
+    User,
+    Download,
+    ArrowRight,
+    X
 } from 'lucide-react';
 import { 
     BarChart, 
@@ -46,6 +48,7 @@ const BillingPage = () => {
     });
 
     const [uploading, setUploading] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const { data: dashboardData, isLoading, isError, refetch } = useQuery({
         queryKey: ['billing-dashboard', dateRange.startDate, dateRange.endDate, groupBy],
@@ -168,41 +171,12 @@ const BillingPage = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <div className="relative">
-                            <input
-                                type="file"
-                                id="billing-excel-upload"
-                                className="hidden"
-                                accept=".xlsx, .xls, .csv"
-                                onChange={async (e) => {
-                                    const file = e.target.files?.[0];
-                                    if (!file) return;
-
-                                    setUploading(true);
-                                    const formData = new FormData();
-                                    formData.append('file', file);
-
-                                    try {
-                                        const response = await api.post('/import/transactions', formData, {
-                                            headers: { 'Content-Type': 'multipart/form-data' }
-                                        });
-                                        refetch();
-                                        alert(response.data.message || 'Planilha importada com sucesso!');
-                                    } catch (error: any) {
-                                        alert(error.response?.data?.message || 'Erro ao processar arquivo.');
-                                    } finally {
-                                        setUploading(false);
-                                        e.target.value = '';
-                                    }
-                                }}
-                            />
-                            <label
-                                htmlFor="billing-excel-upload"
-                                className={`flex items-center gap-2 px-5 py-3 ${uploading ? 'bg-slate-100 text-slate-400' : 'bg-[#8A9A5B] text-white hover:bg-[#7a8a4b]'} rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 cursor-pointer transition-all active:scale-95`}
-                            >
-                                {uploading ? <Loader2 size={18} className="animate-spin" /> : <UploadCloud size={18} />} Importar
-                            </label>
-                        </div>
+                        <button
+                            onClick={() => setIsImportModalOpen(true)}
+                            className="flex items-center gap-2 px-5 py-3 bg-[#8A9A5B] text-white hover:bg-[#7a8a4b] rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 transition-all active:scale-95"
+                        >
+                            <UploadCloud size={18} /> Importar
+                        </button>
                     </div>
                 </div>
             </div>
@@ -312,6 +286,99 @@ const BillingPage = () => {
                 <PieCard title="Origem dos Pacientes" data={distributions.origins} />
                 <PieCard title="Formas de Recebimento" data={distributions.paymentMethods} isCurrency />
             </div>
+
+            {/* Modal de Importação */}
+            {isImportModalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in slide-in-from-bottom-4 zoom-in-95 duration-300">
+                        <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-[#8A9A5B]/10 rounded-2xl flex items-center justify-center">
+                                    <UploadCloud className="text-[#8A9A5B]" size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-800">Importar Dados</h3>
+                                    <p className="text-xs font-bold text-slate-400 mt-0.5">XLSX, XLS ou CSV</p>
+                                </div>
+                            </div>
+                            <button 
+                                onClick={() => setIsImportModalOpen(false)}
+                                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-8 space-y-6">
+                            <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                                Suba seus dados de faturamento usando o nosso modelo padrão para atualizar as estatísticas do painel.
+                            </p>
+                            
+                            <a
+                                href="/templates/FATURAMENTO_DIARIO.xlsx"
+                                download="FATURAMENTO_DIARIO.xlsx"
+                                className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-[#8A9A5B] transition-all"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-white rounded-xl shadow-sm group-hover:bg-[#8A9A5B]/10 transition-colors">
+                                        <Download className="text-slate-400 group-hover:text-[#8A9A5B]" size={18} />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-xs font-bold text-slate-700">Baixar Modelo Padrão</p>
+                                        <p className="text-[10px] text-slate-400">Download em .xlsx</p>
+                                    </div>
+                                </div>
+                                <ArrowRight className="text-slate-300 group-hover:text-[#8A9A5B] transition-all group-hover:translate-x-1" size={16} />
+                            </a>
+
+                            <div className="relative">
+                                <input
+                                    type="file"
+                                    id="modal-excel-upload"
+                                    className="hidden"
+                                    accept=".xlsx, .xls, .csv"
+                                    onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+
+                                        setUploading(true);
+                                        const formData = new FormData();
+                                        formData.append('file', file);
+
+                                        try {
+                                            const response = await api.post('/import/transactions', formData, {
+                                                headers: { 'Content-Type': 'multipart/form-data' }
+                                            });
+                                            refetch();
+                                            setIsImportModalOpen(false);
+                                            alert(response.data.message || 'Planilha importada com sucesso!');
+                                        } catch (error: any) {
+                                            alert(error.response?.data?.message || 'Erro ao processar arquivo.');
+                                        } finally {
+                                            setUploading(false);
+                                            e.target.value = '';
+                                        }
+                                    }}
+                                />
+                                <label
+                                    htmlFor="modal-excel-upload"
+                                    className={`w-full py-8 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${uploading
+                                        ? 'bg-slate-50 border-slate-200 cursor-not-allowed'
+                                        : 'bg-white border-slate-200 hover:border-[#8A9A5B] hover:bg-[#8A9A5B]/5'
+                                        }`}
+                                >
+                                    <div className={`p-4 rounded-full ${uploading ? 'bg-slate-100' : 'bg-[#8A9A5B]/10 text-[#8A9A5B]'}`}>
+                                        {uploading ? <Loader2 className="animate-spin" size={32} /> : <UploadCloud size={32} />}
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-sm font-bold text-slate-700">Clique para selecionar o arquivo</p>
+                                        <p className="text-xs text-slate-400 mt-1">Máx 5MB</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
