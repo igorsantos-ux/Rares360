@@ -29,7 +29,8 @@ import {
     ResponsiveContainer,
     PieChart,
     Pie,
-    Cell
+    Cell,
+    LabelList
 } from 'recharts';
 import { format, subDays } from 'date-fns';
 
@@ -245,7 +246,14 @@ const BillingPage = () => {
                                 radius={[6, 6, 0, 0]} 
                                 barSize={40}
                                 animationDuration={1500}
-                            />
+                            >
+                                <LabelList 
+                                    dataKey="total" 
+                                    position="top" 
+                                    formatter={(val: number) => val > 0 ? `R$ ${(val / 1000).toFixed(1)}k` : ''} 
+                                    style={{ fill: '#697D58', fontSize: 11, fontWeight: 900 }} 
+                                />
+                            </Bar>
                         </BarChart>
                     </ResponsiveContainer>
                 </div>
