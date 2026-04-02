@@ -33,6 +33,7 @@ import {
     LabelList
 } from 'recharts';
 import { format, subDays } from 'date-fns';
+import { toast } from 'react-hot-toast';
 
 type GroupBy = 'day' | 'week' | 'month';
 
@@ -359,9 +360,22 @@ const BillingPage = () => {
                                             });
                                             refetch();
                                             setIsImportModalOpen(false);
-                                            alert(response.data.message || 'Planilha importada com sucesso!');
+                                            
+                                            if (response.data.count > 0) {
+                                                toast.success(response.data.message || 'Planilha importada com sucesso!', {
+                                                    duration: 5000,
+                                                    style: { fontWeight: 'bold', borderRadius: '1rem' }
+                                                });
+                                            } else {
+                                                toast.error(response.data.message || 'Nenhuma nova transação encontrada.', {
+                                                    duration: 5000,
+                                                    style: { fontWeight: 'bold', borderRadius: '1rem' }
+                                                });
+                                            }
                                         } catch (error: any) {
-                                            alert(error.response?.data?.message || 'Erro ao processar arquivo.');
+                                            toast.error(error.response?.data?.message || 'Erro ao processar arquivo.', {
+                                                style: { fontWeight: 'bold', borderRadius: '1rem' }
+                                            });
                                         } finally {
                                             setUploading(false);
                                             e.target.value = '';
