@@ -250,7 +250,7 @@ const BillingPage = () => {
                                 <LabelList 
                                     dataKey="total" 
                                     position="top" 
-                                    formatter={(val: number) => val > 0 ? `R$ ${(val / 1000).toFixed(1)}k` : ''} 
+                                    formatter={(val: any) => Number(val) > 0 ? `R$ ${(Number(val) / 1000).toFixed(1)}k` : ''} 
                                     style={{ fill: '#697D58', fontSize: 11, fontWeight: 900 }} 
                                 />
                             </Bar>
