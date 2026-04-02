@@ -1,0 +1,316 @@
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { 
+    X, 
+    Save, 
+    Loader2, 
+    User, 
+    Clock, 
+    Calendar,
+    MapPin,
+    Cpu,
+    Stethoscope,
+    AlertCircle,
+    CheckCircle2
+} from 'lucide-react';
+import { appointmentsApi, coreApi, pricingApi } from '../../services/api';
+import { AnimatePresence, motion } from 'framer-motion';
+import { toast } from 'react-hot-toast';
+import { useQuery } from '@tanstack/react-query';
+
+const appointmentSchema = z.object({
+  patientId: z.string().min(1, 'Paciente é obrigatório'),
+  professionalId: z.string().min(1, 'Profissional é obrigatório'),
+  procedureId: z.string().optional(),
+  roomId: z.string().optional(),
+  equipmentId: z.string().optional(),
+  startTime: z.string().min(1, 'Início é obrigatório'),
+  endTime: z.string().min(1, 'Fim é obrigatório'),
+  status: z.string().min(1, 'Status é obrigatório'),
+  isOverbook: z.boolean(),
+  isReturn: z.boolean(),
+  notes: z.string().optional(),
+});
+
+type AppointmentFormData = z.infer<typeof appointmentSchema>;
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  selectedDate?: Date | null;
+  appointment?: any;
+}
+
+const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointment }: Props) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { register, handleSubmit, watch, setValue, formState: { errors }, reset } = useForm<AppointmentFormData>({
+    resolver: zodResolver(appointmentSchema),
+    defaultValues: {
+      status: 'AGUARDANDO',
+      isOverbook: false,
+      isReturn: false,
+      startTime: '',
+      endTime: '',
+    }
+  });
+
+  const watchedProcedureId = watch('procedureId');
+  const watchedStartTime = watch('startTime');
+
+  // Buscar Pacientes, Profissionais, Salas e Equipamentos
+  const { data: patients } = useQuery({ queryKey: ['patients-list'], queryFn: () => coreApi.getPatients().then(res => res.data.data || res.data) });
+  const { data: resources } = useQuery({ queryKey: ['agenda-resources'], queryFn: () => appointmentsApi.getResources().then(res => res.data) });
+  const { data: procedures } = useQuery({ queryKey: ['procedures-list'], queryFn: () => pricingApi.getSimulations().then(res => res.data) });
+
+  // Efeito para sugerir Sala/Equipamento p/ Botox e calcular fim
+  useEffect(() => {
+    if (watchedProcedureId && procedures) {
+      const proc = procedures.find((p: any) => p.id === watchedProcedureId);
+      if (proc) {
+        // Cálculo de Tempo
+        if (watchedStartTime) {
+            const start = new Date(watchedStartTime);
+            const duration = proc.durationMinutes || 30;
+            const end = new Date(start.getTime() + duration * 60000);
+            
+            // Ajuste de fuso horário para o input datetime-local que espera YYYY-MM-DDTHH:mm
+            const tzOffset = end.getTimezoneOffset() * 60000;
+            const localEnd = new Date(end.getTime() - tzOffset).toISOString().slice(0, 16);
+            setValue('endTime', localEnd);
+        }
+
+        // Sugestão Botox (Regra de Negócio)
+        if (proc.name.toLowerCase().includes('botox')) {
+            const firstRoom = resources?.rooms?.[0];
+            const firstEquip = resources?.equipments?.[0];
+            if (firstRoom) setValue('roomId', firstRoom.id);
+            if (firstEquip) setValue('equipmentId', firstEquip.id);
+            toast('Procedimento de Botox: Sala e Equipamento sugeridos.', { icon: '💉', duration: 3000 });
+        }
+      }
+    }
+  }, [watchedProcedureId, watchedStartTime, procedures, resources, setValue]);
+
+  // Carregar dados se for edição ou nova data
+  useEffect(() => {
+    if (isOpen) {
+      if (appointment) {
+        const fmtStart = new Date(appointment.startTime);
+        const fmtEnd = new Date(appointment.endTime);
+        const tzOffset = fmtStart.getTimezoneOffset() * 60000;
+        
+        reset({
+          ...appointment,
+          startTime: new Date(fmtStart.getTime() - tzOffset).toISOString().slice(0, 16),
+          endTime: new Date(fmtEnd.getTime() - tzOffset).toISOString().slice(0, 16),
+          procedureId: appointment.procedureId || '',
+          roomId: appointment.roomId || '',
+          equipmentId: appointment.equipmentId || '',
+        });
+      } else if (selectedDate) {
+        const start = new Date(selectedDate);
+        const end = new Date(start.getTime() + 30 * 60000);
+        const tzOffset = start.getTimezoneOffset() * 60000;
+        
+        reset({
+          startTime: new Date(start.getTime() - tzOffset).toISOString().slice(0, 16),
+          endTime: new Date(end.getTime() - tzOffset).toISOString().slice(0, 16),
+          status: 'AGUARDANDO',
+          isOverbook: false,
+          isReturn: false,
+        });
+      }
+    }
+  }, [appointment, selectedDate, isOpen, reset]);
+
+  const onSubmit = async (data: any) => {
+    try {
+      setIsSubmitting(true);
+      if (appointment?.id) {
+        await appointmentsApi.updateAppointment(appointment.id, data);
+        toast.success('Agendamento atualizado!');
+      } else {
+        await appointmentsApi.createAppointment(data);
+        toast.success('Agendamento criado com sucesso!');
+      }
+      onSuccess();
+      onClose();
+    } catch (error: any) {
+      if (error.response?.status === 409) {
+        toast.error(error.response.data.message || 'Conflito de recursos!');
+      } else {
+        toast.error('Erro ao salvar agendamento.');
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60]" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl z-[70] overflow-hidden border border-white/20"
+          >
+            {/* Header */}
+            <div className="bg-[#697D58] p-8 text-white relative">
+                <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-xl">
+                        <Calendar size={28} />
+                    </div>
+                    <div>
+                        <h3 className="text-2xl font-black">{appointment ? 'Detalhes do Agendamento' : 'Novo Agendamento'}</h3>
+                        <p className="text-white/70 text-sm font-medium">Preencha os dados do paciente e aloque os recursos.</p>
+                    </div>
+                </div>
+                <button onClick={onClose} className="absolute top-8 right-8 text-white/60 hover:text-white transition-colors">
+                    <X size={24} />
+                </button>
+            </div>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-8 max-h-[70vh] overflow-y-auto">
+                {/* Paciente e Profissional */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormGroup label="Paciente" icon={<User size={14} />} error={errors.patientId?.message}>
+                        <select {...register('patientId')} className="form-input">
+                            <option value="">Selecione o paciente</option>
+                            {patients?.map((p: any) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                        </select>
+                    </FormGroup>
+
+                    <FormGroup label="Profissional" icon={<Stethoscope size={14} />} error={errors.professionalId?.message}>
+                        <select {...register('professionalId')} className="form-input">
+                            <option value="">Selecione o médico</option>
+                            {resources?.professionals?.map((d: any) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        </select>
+                    </FormGroup>
+                </div>
+
+                {/* Procedimento (Coração da automação) */}
+                <FormGroup label="Procedimento" icon={<CheckCircle2 size={14} />}>
+                    <select {...register('procedureId')} className="form-input bg-[#8A9A5B]/5 border-[#8A9A5B]/20">
+                        <option value="">Apenas consulta / Outro</option>
+                        {procedures?.map((p: any) => <option key={p.id} value={p.id}>{p.name} ({p.durationMinutes}min)</option>)}
+                    </select>
+                </FormGroup>
+
+                {/* Horários */}
+                <div className="grid grid-cols-2 gap-6 bg-slate-50 p-6 rounded-3xl border border-slate-100">
+                    <FormGroup label="Início" icon={<Clock size={14} />} error={errors.startTime?.message}>
+                        <input type="datetime-local" {...register('startTime')} className="form-input bg-white" />
+                    </FormGroup>
+                    <FormGroup label="Fim (Automático)" icon={<Clock size={14} />} error={errors.endTime?.message}>
+                        <input type="datetime-local" {...register('endTime')} className="form-input bg-white" />
+                    </FormGroup>
+                </div>
+
+                {/* Recursos Físicos */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormGroup label="Sala (Opcional)" icon={<MapPin size={14} />}>
+                        <select {...register('roomId')} className="form-input">
+                            <option value="">Nenhuma sala</option>
+                            {resources?.rooms?.map((r: any) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                        </select>
+                    </FormGroup>
+                    <FormGroup label="Equipamento (Opcional)" icon={<Cpu size={14} />}>
+                        <select {...register('equipmentId')} className="form-input">
+                            <option value="">Nenhum equipamento</option>
+                            {resources?.equipments?.map((e: any) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                        </select>
+                    </FormGroup>
+                </div>
+
+                {/* Flags e Status */}
+                <div className="flex flex-wrap items-center gap-6 p-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" {...register('isOverbook')} className="w-5 h-5 rounded-lg border-slate-300 text-[#697D58] focus:ring-[#697D58]" />
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-[#697D58] transition-colors">📦 Encaixe</span>
+                    </label>
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                        <input type="checkbox" {...register('isReturn')} className="w-5 h-5 rounded-lg border-slate-300 text-[#697D58] focus:ring-[#697D58]" />
+                        <span className="text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-[#697D58] transition-colors">🔄 Retorno</span>
+                    </label>
+
+                    <div className="ml-auto min-w-[150px]">
+                        <select {...register('status')} className="form-input py-2 text-xs uppercase bg-[#697D58]/10 border-none text-[#697D58]">
+                            <option value="AGUARDANDO">Aguardando</option>
+                            <option value="CONFIRMADO">Confirmado</option>
+                            <option value="CHECK_IN">Check-in</option>
+                            <option value="EXECUTADO">Executado</option>
+                            <option value="FALTA">No-show</option>
+                            <option value="CANCELADO">Cancelado</option>
+                        </select>
+                    </div>
+                </div>
+
+                {/* Notas */}
+                <FormGroup label="Observações Internas (Opcional)">
+                    <textarea {...register('notes')} rows={2} className="form-input resize-none" placeholder="Ex: Paciente com medo de agulha..." />
+                </FormGroup>
+            </form>
+
+            {/* Footer */}
+            <div className="p-8 bg-slate-50 border-t border-slate-100 flex gap-4">
+                <button type="button" onClick={onClose} className="flex-1 py-4 text-slate-500 font-bold hover:text-slate-700 transition-colors">
+                    Descartar
+                </button>
+                <button
+                    onClick={handleSubmit(onSubmit)}
+                    disabled={isSubmitting}
+                    className="flex-[2] bg-[#697D58] hover:bg-[#556B2F] text-white py-4 rounded-2xl font-black shadow-xl shadow-[#697D58]/30 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-70"
+                >
+                    {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
+                    {appointment ? 'Salvar Alterações' : 'Confirmar Agendamento'}
+                </button>
+            </div>
+          </motion.div>
+
+          <style>{`
+            .form-input {
+                width: 100%;
+                background: white;
+                border: 1px solid #e2e8f0;
+                border-radius: 1rem;
+                padding: 0.75rem 1rem;
+                font-size: 0.875rem;
+                font-weight: 600;
+                color: #1e293b;
+                transition: all 0.2s;
+                outline: none;
+            }
+            .form-input:focus {
+                border-color: #8A9A5B;
+                box-shadow: 0 0 0 4px rgba(138, 154, 91, 0.1);
+            }
+          `}</style>
+        </>
+      )}
+    </AnimatePresence>
+  );
+};
+
+const FormGroup = ({ label, icon, children, error }: any) => (
+  <div className="space-y-1.5 flex-1 w-full">
+    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
+      {icon}
+      {label}
+    </label>
+    {children}
+    {error && (
+        <p className="text-[10px] text-red-500 font-bold flex items-center gap-1 mt-1 ml-1">
+            <AlertCircle size={10} /> {error}
+        </p>
+    )}
+  </div>
+);
+
+export default AppointmentModal;

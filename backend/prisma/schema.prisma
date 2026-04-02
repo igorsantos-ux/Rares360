@@ -66,6 +66,9 @@ model Clinic {
   tasks                 Task[]
   transactions          Transaction[]
   users                 User[]
+  appointments          Appointment[]
+  rooms                 Room[]
+  equipments            Equipment[]
 }
 
 model User {
@@ -121,6 +124,7 @@ model Doctor {
   clinicId     String
   clinic       Clinic        @relation(fields: [clinicId], references: [id])
   transactions Transaction[]
+  appointments Appointment[]
 
   @@index([clinicId])
 }
@@ -157,6 +161,7 @@ model Patient {
   procedureExecutions ProcedureExecution[]
   tasks               Task[]
   transactions        Transaction[]
+  appointments        Appointment[]
 
   @@index([clinicId, fullName])
 }
@@ -324,6 +329,7 @@ model ProcedurePricing {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   supplies        PricingSupply[]
+  appointments    Appointment[]
   clinic          Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 }
 
@@ -412,4 +418,63 @@ enum GlobalLeadStatus {
   EM_CONTATO
   CONVERTIDO
   ARQUIVADO
+}
+
+model Room {
+  id           String        @id @default(uuid())
+  name         String
+  clinicId     String
+  clinic       Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([clinicId])
+}
+
+model Equipment {
+  id           String        @id @default(uuid())
+  name         String
+  clinicId     String
+  clinic       Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@index([clinicId])
+}
+
+model Appointment {
+  id             String            @id @default(uuid())
+  startTime      DateTime
+  endTime        DateTime
+  status         AppointmentStatus @default(AGUARDANDO)
+  isOverbook     Boolean           @default(false)
+  isReturn       Boolean           @default(false)
+  notes          String?
+  
+  patientId      String
+  professionalId String
+  roomId         String?
+  equipmentId    String?
+  clinicId       String
+  procedureId    String?           // Vinculado ao ProcedurePricing para obter tempo e insumos
+
+  clinic       Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient      Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professional Doctor            @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  room         Room?             @relation(fields: [roomId], references: [id])
+  equipment    Equipment?        @relation(fields: [equipmentId], references: [id])
+  procedure    ProcedurePricing? @relation(fields: [procedureId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clinicId, startTime])
+  @@index([clinicId, status])
+}
+
+enum AppointmentStatus {
+  AGUARDANDO
+  CONFIRMADO
+  CHECK_IN
+  FALTA
+  EXECUTADO
+  CANCELADO
 }

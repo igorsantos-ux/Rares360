@@ -13,7 +13,8 @@ import {
     Activity,
     FileText,
     Lock as LockIcon,
-    CheckSquare
+    CheckSquare,
+    Calendar
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -47,6 +48,7 @@ const Sidebar = () => {
         { label: "Principal", items: [
             { icon: <LayoutDashboard size={20} />, label: "Painel Financeiro", path: "/dashboard" },
             { icon: <CheckSquare size={20} />, label: "Tarefas", path: "/tasks", id: "tarefas-dia" },
+            { icon: <Calendar size={20} />, label: "Agenda", path: "/agenda", id: "agenda-inteligente" },
             { icon: <LockIcon size={20} />, label: "Caixa", path: "/fechamento-caixa", id: "fechamento-caixa" },
             { icon: <FileText size={20} />, label: "DRE", path: "/dre" },
             { icon: <Activity size={20} />, label: "DFC", path: "/dfc" },

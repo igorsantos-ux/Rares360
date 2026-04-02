@@ -178,4 +178,12 @@ export const leadsApi = {
     updateStatus: (id: string, status: string) => api.patch(`leads/${id}/status`, { status }),
 };
 
+export const appointmentsApi = {
+    getAppointments: (params?: any) => api.get('appointments', { params }),
+    createAppointment: (data: any) => api.post('appointments', data),
+    updateAppointment: (id: string, data: any) => api.put(`appointments/${id}`, data),
+    deleteAppointment: (id: string) => api.delete(`appointments/${id}`),
+    getResources: () => api.get('appointments/resources'),
+};
+
 export default api;

@@ -21,6 +21,7 @@ import DocumentsPage from './pages/Documents';
 import Pricing from './pages/Pricing';
 import Contact from './pages/Contact';
 import TasksPage from './pages/Tarefas';
+import Agenda from './pages/Agenda';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -96,6 +97,7 @@ function App() {
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/inventory" element={<Inventory />} />
+                <Route path="/agenda" element={<Agenda />} />
                 <Route path="/documents" element={<DocumentsPage />} />
                 <Route path="/automations" element={<Automations />} />
               </Route>
