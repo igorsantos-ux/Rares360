@@ -1,5 +1,5 @@
 # Build Version: 11.3
-FROM node:18-slim
+FROM node:20-slim
 
 # Instalar dependências necessárias
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
