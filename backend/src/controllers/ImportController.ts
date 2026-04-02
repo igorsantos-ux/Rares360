@@ -73,8 +73,35 @@ export class ImportController {
                 };
             });
 
-            // Filtrar apenas linhas com valor maior que 0 para evitar importar linhas vazias  
-            const validTransactions = transactionsToCreate.filter(t => t.amount > 0);
+            // Buscar transações existentes para evitar duplicatas
+            const existingTransactions = await prisma.transaction.findMany({
+                where: { clinicId, type: 'INCOME' },
+                select: { description: true, amount: true, date: true, category: true }
+            });
+
+            const existingSet = new Set(existingTransactions.map(t => 
+                `${t.description.trim()}|${t.amount}|${t.date.toISOString().split('T')[0]}|${t.category}`
+            ));
+
+            // Filtrar apenas linhas com valor maior que 0 e que não existam na base
+            const validTransactions = transactionsToCreate.filter(t => {
+                if (t.amount <= 0) return false;
+                const hash = `${t.description.trim()}|${t.amount}|${t.date.toISOString().split('T')[0]}|${t.category}`;
+                
+                if (existingSet.has(hash)) {
+                    return false;
+                }
+                
+                existingSet.add(hash); // Prevenir linhas duplicadas dentro da mesma planilha
+                return true;
+            });
+
+            if (validTransactions.length === 0) {
+                return res.json({
+                    message: 'Nenhuma nova transação encontrada. Todos os dados da planilha já constam no painel!',
+                    count: 0
+                });
+            }
 
             // Criar em lote
             const result = await prisma.transaction.createMany({
@@ -82,7 +109,7 @@ export class ImportController {
             });
 
             return res.json({
-                message: `${result.count} transações importadas com sucesso!`,
+                message: `${result.count} novas transações importadas com sucesso!`,
                 count: result.count
             });
 
