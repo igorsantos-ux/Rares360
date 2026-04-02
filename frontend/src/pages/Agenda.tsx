@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -8,8 +8,6 @@ import {
     Plus, 
     Filter, 
     Calendar as CalendarIcon,
-    ChevronLeft,
-    ChevronRight,
     Users,
     MapPin,
     Cpu,
@@ -18,7 +16,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import AppointmentModal from '../components/modals/AppointmentModal';
+import AppointmentModal from '../components/Agenda/AppointmentModal';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
@@ -169,21 +167,21 @@ const Agenda = () => {
                                 label="Profissional" 
                                 icon={<Users size={16} />}
                                 value={filters.professionalId}
-                                onChange={(val) => setFilters(f => ({ ...f, professionalId: val }))}
+                                onChange={(val: string) => setFilters(f => ({ ...f, professionalId: val }))}
                                 options={resources?.professionals || []}
                             />
                             <FilterGroup 
                                 label="Sala" 
                                 icon={<MapPin size={16} />}
                                 value={filters.roomId}
-                                onChange={(val) => setFilters(f => ({ ...f, roomId: val }))}
+                                onChange={(val: string) => setFilters(f => ({ ...f, roomId: val }))}
                                 options={resources?.rooms || []}
                             />
                             <FilterGroup 
                                 label="Equipamento" 
                                 icon={<Cpu size={16} />}
                                 value={filters.equipmentId}
-                                onChange={(val) => setFilters(f => ({ ...f, equipmentId: val }))}
+                                onChange={(val: string) => setFilters(f => ({ ...f, equipmentId: val }))}
                                 options={resources?.equipments || []}
                             />
                         </div>
@@ -292,7 +290,6 @@ const Agenda = () => {
 };
 
 const renderEventContent = (eventInfo: any) => {
-    const { status } = eventInfo.event.extendedProps;
     return (
         <div className="flex flex-col h-full overflow-hidden">
             <div className="flex justify-between items-start">
