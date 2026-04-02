@@ -162,8 +162,34 @@ export class BillingService {
         }
 
         // --- CÁLCULO DA TIMELINE (BarChart) ---
-        // Agrupar por data (dia, semana, mês)
+        // Pre-preencher mapa para garantir os "zeros" no gráfico (dias sem vendas)
         const timelineMap: Record<string, { total: number, count: number }> = {};
+        
+        const iterDate = new Date(start);
+        iterDate.setHours(0, 0, 0, 0);
+        const loopEnd = new Date(end);
+        loopEnd.setHours(23, 59, 59, 999);
+
+        let iterations = 0;
+        while (iterDate <= loopEnd && iterations < 400) {
+            let key = '';
+            if (groupBy === 'day') {
+                key = `${String(iterDate.getDate()).padStart(2, '0')}/${String(iterDate.getMonth() + 1).padStart(2, '0')}`;
+                iterDate.setDate(iterDate.getDate() + 1);
+            } else if (groupBy === 'month') {
+                key = iterDate.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+                iterDate.setMonth(iterDate.getMonth() + 1);
+            } else {
+                const weekNumber = Math.ceil(iterDate.getDate() / 7);
+                key = `Sem ${weekNumber} - ${iterDate.toLocaleDateString('pt-BR', { month: 'short' })}`;
+                iterDate.setDate(iterDate.getDate() + 7);
+            }
+            if (!timelineMap[key]) {
+                timelineMap[key] = { total: 0, count: 0 };
+            }
+            iterations++;
+        }
+
         currentTransactions.forEach(t => {
             let key = '';
             const d = new Date(t.date);
@@ -172,14 +198,16 @@ export class BillingService {
             } else if (groupBy === 'month') {
                 key = d.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
             } else {
-                // week fallback
                 const weekNumber = Math.ceil(d.getDate() / 7);
                 key = `Sem ${weekNumber} - ${d.toLocaleDateString('pt-BR', { month: 'short' })}`;
             }
 
-            if (!timelineMap[key]) timelineMap[key] = { total: 0, count: 0 };
-            timelineMap[key].total += t.amount;
-            timelineMap[key].count += 1;
+            if (timelineMap[key]) {
+                timelineMap[key].total += t.amount;
+                timelineMap[key].count += 1;
+            } else {
+                timelineMap[key] = { total: t.amount, count: 1 };
+            }
         });
 
         const timeline = Object.entries(timelineMap).map(([label, data]) => ({
