@@ -9,7 +9,8 @@ import {
     AlertCircle,
     User,
     Clock,
-    FileText
+    FileText,
+    Loader2
 } from 'lucide-react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
