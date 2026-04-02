@@ -154,12 +154,19 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
     <AnimatePresence>
       {isOpen && (
         <>
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[60]" />
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 md:p-10">
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            exit={{ opacity: 0 }} 
+            onClick={onClose} 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" 
+          />
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl z-[70] overflow-hidden border border-white/20"
+            className="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-white/20 flex flex-col max-h-full"
           >
             {/* Header */}
             <div className="bg-[#697D58] p-8 text-white relative">
@@ -273,6 +280,7 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                 </button>
             </div>
           </motion.div>
+        </div>
 
           <style>{`
             .form-input {
