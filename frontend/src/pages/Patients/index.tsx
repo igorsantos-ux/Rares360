@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { coreApi } from '../../services/api';
 import { PatientSheet } from '../../components/Patients/PatientSheet';
@@ -38,6 +39,7 @@ const getClassificationConfig = (classification: string) => {
 
 const PatientsPage = () => {
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
@@ -60,9 +62,8 @@ const PatientsPage = () => {
         p.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleEditPatient = (patient: any) => {
-        setSelectedPatient(patient);
-        setIsSheetOpen(true);
+    const handleViewPEP = (patient: any) => {
+        navigate(`/patients/${patient.id}`);
     };
 
     const handleNewPatient = () => {
@@ -157,6 +158,7 @@ const PatientsPage = () => {
                                 <tr className="bg-slate-50/50">
                                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Paciente & Classificação</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Contato</th>
+                                    <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Rentabilidade</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Visitas / Ticket Médio</th>
                                     <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Faturamento (LTV)</th>
                                     <th className="px-8 py-5 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Ações</th>
@@ -167,7 +169,7 @@ const PatientsPage = () => {
                                     const config = getClassificationConfig(patient.classification);
                                     return (
                                         <tr key={patient.id} 
-                                            onClick={() => handleEditPatient(patient)}
+                                            onClick={() => handleViewPEP(patient)}
                                             className="hover:bg-[#8A9A5B]/5 transition-colors group cursor-pointer"
                                         >
                                             <td className="px-8 py-6">
@@ -202,6 +204,14 @@ const PatientsPage = () => {
                                                         <Mail size={12} />
                                                         <span className="text-[10px] font-medium">{patient.email || 'sem@email.com'}</span>
                                                     </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-6 text-center">
+                                                <div className="flex flex-col items-center gap-1">
+                                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-black border ${patient.profitabilityMargin > 70 ? 'bg-green-50 text-green-600 border-green-200' : 'bg-slate-50 text-slate-400 border-slate-200'}`}>
+                                                        {patient.profitabilityMargin?.toFixed(1) || 0}%
+                                                    </span>
+                                                    <span className="text-[8px] font-bold text-slate-300 uppercase tracking-tighter">Margem</span>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6">

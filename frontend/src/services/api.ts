@@ -101,6 +101,7 @@ export const receivablesApi = {
 
 export const coreApi = {
     getPatients: () => api.get('core/patients'),
+    getPatientById: (id: string) => api.get(`core/patients/${id}`),
     createPatient: (data: any) => api.post('core/patients', data),
     updatePatient: (id: string, data: any) => api.patch(`core/patients/${id}`, data),
     deletePatient: (id: string) => api.delete(`core/patients/${id}`),
@@ -111,6 +112,28 @@ export const coreApi = {
     createStockItem: (data: any) => api.post('core/stock', data),
     registerStockMovement: (data: any) => api.post('core/stock/movement', data),
     getStockHistory: () => api.get('core/stock/history'),
+};
+
+export const pepApi = {
+    // Evoluções
+    getEvolutions: (patientId: string) => api.get(`pep/evolutions?patientId=${patientId}`),
+    createEvolution: (data: any) => api.post('pep/evolutions', data),
+    updateEvolution: (id: string, data: any) => api.patch(`pep/evolutions/${id}`, data),
+    lockEvolution: (id: string) => api.post(`pep/evolutions/${id}/lock`),
+
+    // Prescrições
+    getPrescriptions: (patientId: string) => api.get(`pep/prescriptions?patientId=${patientId}`),
+    createPrescription: (data: any) => api.post('pep/prescriptions', data),
+    markPrescriptionPrinted: (id: string) => api.patch(`pep/prescriptions/${id}/print`),
+
+    // Uso de Insumos
+    getInventoryUsage: (patientId: string) => api.get(`pep/inventory-usage?patientId=${patientId}`),
+    registerInventoryUsage: (data: any) => api.post('pep/inventory-usage', data),
+
+    // Propostas
+    getProposals: (patientId: string) => api.get(`pep/proposals?patientId=${patientId}`),
+    createProposal: (data: any) => api.post('pep/proposals', data),
+    updateProposalStatus: (id: string, status: string) => api.patch(`pep/proposals/${id}/status`, { status }),
 };
 
 export const reportingApi = {

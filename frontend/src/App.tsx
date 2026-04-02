@@ -7,6 +7,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import BillingPage from './pages/Billing';
 import PatientsPage from './pages/Patients';
+import PatientPEP from './pages/Patients/PatientPEP';
 import ExpensesBilling from './pages/Analytics/ExpensesBilling';
 import PayablesPage from './pages/Financial/Payables';
 import PendenciaisPage from './pages/Financial/Pendenciais';
@@ -85,6 +86,7 @@ function App() {
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
+                <Route path="/patients/:id" element={<PatientPEP />} />
                 <Route path="/despesas-faturamento" element={<ExpensesBilling />} />
                 <Route path="/cash-flow" element={<CashFlow />} />
                 <Route path="/pendenciais" element={<PendenciaisPage />} />

@@ -18,7 +18,14 @@ const TENANT_MODELS = [
   'ProcedurePricing',
   'DailyClosure',
   'ProcedureExecution',
-  'Task'
+  'Task',
+  'Appointment',
+  'Room',
+  'Equipment',
+  'ClinicalEvolution',
+  'Prescription',
+  'InventoryUsage',
+  'Proposal'
 ];
 
 export const extendPrisma = (prisma: PrismaClient) => {

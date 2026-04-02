@@ -25,6 +25,7 @@ import procedureRoutes from './routes/procedureRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import leadRoutes from './routes/leadRoutes.js';
 import appointmentRoutes from './routes/appointmentRoutes.js';
+import pepRoutes from './routes/pepRoutes.js';
 import { SeedService } from './services/SeedService.js';
 import { MigrationService } from './services/MigrationService.js';
 
@@ -74,6 +75,7 @@ app.use('/api/upload', authMiddleware, tenantMiddleware, uploadRoutes);
 app.use('/api/pricing', authMiddleware, tenantMiddleware, pricingRoutes);
 app.use('/api/compliance', authMiddleware, tenantMiddleware, complianceRoutes);
 app.use('/api/appointments', authMiddleware, tenantMiddleware, appointmentRoutes);
+app.use('/api/pep', authMiddleware, tenantMiddleware, pepRoutes);
 app.use('/api/leads', leadRoutes);
 
 app.use('/api/import', authMiddleware, tenantMiddleware, importRoutes);

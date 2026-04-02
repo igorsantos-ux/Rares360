@@ -69,6 +69,10 @@ model Clinic {
   appointments          Appointment[]
   rooms                 Room[]
   equipments            Equipment[]
+  evolutions            ClinicalEvolution[]
+  prescriptions         Prescription[]
+  inventoryUsages       InventoryUsage[]
+  proposals             Proposal[]
 }
 
 model User {
@@ -125,45 +129,124 @@ model Doctor {
   clinic       Clinic        @relation(fields: [clinicId], references: [id])
   transactions Transaction[]
   appointments Appointment[]
+  evolutions   ClinicalEvolution[]
 
   @@index([clinicId])
 }
 
 model Patient {
-  id                  String               @id @default(uuid())
-  fullName            String
-  socialName          String?
-  cpf                 String?              @unique
-  rg                  String?
-  birthDate           DateTime?
-  gender              String?
-  color               String?
-  maritalStatus       String?
-  profession          String?
-  education           String?
-  religion            String?
-  phone               String?
-  email               String?
-  address             String?
-  origin              String?
-  weight              Float?
-  height              Float?
-  disability          String?
-  allergies           String?
-  smoker              Boolean              @default(false)
-  priority            String?
-  insurance           String?
-  insurancePlan       String?
-  photoUrl            String?
-  createdAt           DateTime             @default(now())
-  clinicId            String
-  clinic              Clinic               @relation(fields: [clinicId], references: [id])
-  procedureExecutions ProcedureExecution[]
-  tasks               Task[]
-  transactions        Transaction[]
-  appointments        Appointment[]
+  id                        String               @id @default(uuid())
+  fullName                  String
+  socialName                String?
+  cpf                       String?              @unique
+  rg                        String?
+  birthDate                 DateTime?
+  gender                    String?
+  color                     String?
+  maritalStatus             String?
+  profession                String?
+  education                 String?
+  religion                  String?
+  phone                     String?
+  email                     String?
+  address                   String?
+  origin                    String?
+  weight                    Float?
+  height                    Float?
+  disability                String?
+  allergies                 String?
+  historyOfAllergies        String?
+  financialResponsibleName  String?
+  financialResponsibleCpf   String?
+  tags                      String[]             @default([])
+  smoker                    Boolean              @default(false)
+  priority                  String?
+  insurance                 String?
+  insurancePlan             String?
+  photoUrl                  String?
+  createdAt                 DateTime             @default(now())
+  clinicId                  String
+  clinic                    Clinic               @relation(fields: [clinicId], references: [id])
+  procedureExecutions       ProcedureExecution[]
+  tasks                     Task[]
+  transactions              Transaction[]
+  appointments              Appointment[]
+  evolutions                ClinicalEvolution[]
+  prescriptions             Prescription[]
+  inventoryUsages           InventoryUsage[]
+  proposals                 Proposal[]
 
   @@index([clinicId, fullName])
+}
+
+model ClinicalEvolution {
+  id             String   @id @default(uuid())
+  text           String
+  date           DateTime @default(now())
+  locked         Boolean  @default(false)
+  professionalId String
+  patientId      String
+  clinicId       String
+  
+  clinic       Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient      Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professional Doctor  @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, patientId])
+}
+
+model Prescription {
+  id          String   @id @default(uuid())
+  content     Json?
+  medications Json
+  printedAt   DateTime?
+  createdAt   DateTime @default(now())
+  patientId   String
+  clinicId    String
+
+  clinic  Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, patientId])
+}
+
+model InventoryUsage {
+  id              String   @id @default(uuid())
+  quantity        Float
+  inventoryItemId String
+  appointmentId   String?
+  patientId       String
+  clinicId        String
+  createdAt       DateTime @default(now())
+
+  clinic        Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient       Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id])
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+
+  @@index([clinicId, patientId])
+}
+
+model Proposal {
+  id          String         @id @default(uuid())
+  items       Json
+  totalValue  Float
+  status      ProposalStatus @default(PENDENTE)
+  contractUrl String?
+  createdAt   DateTime       @default(now())
+  patientId   String
+  clinicId    String
+
+  clinic  Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, patientId])
+}
+
+enum ProposalStatus {
+  PENDENTE
+  APROVADO
+  EXECUTADO
 }
 
 model Lead {
@@ -179,20 +262,21 @@ model Lead {
 }
 
 model InventoryItem {
-  id             String          @id @default(uuid())
-  name           String
-  category       String
-  unit           String          @default("Unidade")
-  quantity       Float           @default(0)
-  minQuantity    Float           @default(0)
-  unitCost       Float           @default(0)
-  supplier       String?
-  expirationDate DateTime?
-  batch          String?
-  lastRestock    DateTime        @default(now())
-  clinicId       String
-  clinic         Clinic          @relation(fields: [clinicId], references: [id])
-  movements      StockMovement[]
+  id              String           @id @default(uuid())
+  name            String
+  category        String
+  unit            String           @default("Unidade")
+  quantity        Float            @default(0)
+  minQuantity     Float            @default(0)
+  unitCost        Float            @default(0)
+  supplier        String?
+  expirationDate  DateTime?
+  batch           String?
+  lastRestock     DateTime         @default(now())
+  clinicId        String
+  clinic          Clinic           @relation(fields: [clinicId], references: [id])
+  movements       StockMovement[]
+  inventoryUsages InventoryUsage[]
 
   @@index([clinicId, name])
 }
@@ -456,12 +540,13 @@ model Appointment {
   clinicId       String
   procedureId    String?           // Vinculado ao ProcedurePricing para obter tempo e insumos
 
-  clinic       Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  patient      Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  professional Doctor            @relation(fields: [professionalId], references: [id], onDelete: Cascade)
-  room         Room?             @relation(fields: [roomId], references: [id])
-  equipment    Equipment?        @relation(fields: [equipmentId], references: [id])
-  procedure    ProcedurePricing? @relation(fields: [procedureId], references: [id])
+  clinic          Clinic            @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient         Patient           @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professional    Doctor            @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  room            Room?             @relation(fields: [roomId], references: [id])
+  equipment       Equipment?        @relation(fields: [equipmentId], references: [id])
+  procedure       ProcedurePricing? @relation(fields: [procedureId], references: [id])
+  inventoryUsages InventoryUsage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -478,3 +563,4 @@ enum AppointmentStatus {
   EXECUTADO
   CANCELADO
 }
+
