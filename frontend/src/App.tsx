@@ -63,8 +63,8 @@ function App() {
       <div className="flex-1 flex flex-col min-w-0">
         {showHeader && <Header />}
         
-        <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'p-0' : (showHeader ? 'p-8 lg:p-12' : 'p-0')}`}>
-          <div className={isPublicPage ? '' : (showHeader ? (location.pathname === '/agenda' ? 'max-w-[98%] mx-auto' : 'max-w-7xl mx-auto') : '')}>
+        <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'p-0' : (showHeader ? (location.pathname.startsWith('/patients/') ? 'p-4 lg:p-6' : 'p-8 lg:p-12') : 'p-0')}`}>
+          <div className={isPublicPage ? '' : (showHeader ? (location.pathname === '/agenda' || location.pathname.startsWith('/patients/') ? 'max-w-[98%] mx-auto' : 'max-w-7xl mx-auto') : '')}>
             <Routes>
               {/* Public Routes - Auto-redirect if logged in */}
               <Route path="/" element={

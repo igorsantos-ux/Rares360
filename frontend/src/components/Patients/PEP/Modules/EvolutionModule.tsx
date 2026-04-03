@@ -62,7 +62,7 @@ const EvolutionModule = ({ patient }: { patient: any }) => {
     return (
         <div className="flex flex-col h-full bg-[#F5F5DC]/10">
             {/* Top Bar do Módulo */}
-            <div className="p-8 pb-4 border-b border-[#8A9A5B]/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="p-6 pb-4 border-b border-[#8A9A5B]/10 flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-2xl font-black text-[#697D58]">Evolução Clínica</h2>
                     <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-1">Histórico chronológico de atendimentos e anotações</p>
@@ -80,7 +80,7 @@ const EvolutionModule = ({ patient }: { patient: any }) => {
 
             {/* Editor Area */}
             {isWriting && (
-                <div className="p-8 border-b border-[#8A9A5B]/10 bg-white/80 animate-in slide-in-from-top duration-300">
+                <div className="p-6 border-b border-[#8A9A5B]/10 bg-white/80 animate-in slide-in-from-top duration-300">
                     <div className="bg-white border-2 border-[#8A9A5B]/20 rounded-3xl overflow-hidden shadow-sm">
                         <div className="bg-[#F5F5DC]/30 px-6 py-3 border-b border-[#8A9A5B]/10 flex items-center justify-between">
                             <span className="text-[10px] font-black text-[#697D58] uppercase tracking-widest">Nova Anotação Clinica</span>
@@ -113,7 +113,7 @@ const EvolutionModule = ({ patient }: { patient: any }) => {
             )}
 
             {/* List Content */}
-            <div className="flex-1 overflow-y-auto p-8 pt-6 space-y-8">
+            <div className="flex-1 overflow-y-auto p-6 pt-6 space-y-8">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-20 opacity-50">
                         <Loader2 className="animate-spin text-[#8A9A5B]" size={32} />
@@ -139,7 +139,7 @@ const EvolutionModule = ({ patient }: { patient: any }) => {
                                     </div>
 
                                     {/* Card Content */}
-                                    <div className="bg-white rounded-[2rem] border border-[#8A9A5B]/10 shadow-sm p-8 transition-all hover:shadow-xl hover:shadow-[#8A9A5B]/5 group-hover:translate-x-2">
+                                    <div className="bg-white rounded-[2rem] border border-[#8A9A5B]/10 shadow-sm p-6 transition-all hover:shadow-xl hover:shadow-[#8A9A5B]/5 group-hover:translate-x-2">
                                         <div className="flex items-center justify-between mb-6">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400">

@@ -64,7 +64,7 @@ const PatientPEP = () => {
         <div className="min-h-screen bg-[#F5F5DC]/20 animate-in fade-in duration-500">
             {/* Header de Identificação */}
             <div className="bg-white border-b border-[#8A9A5B]/10 sticky top-0 z-30 shadow-sm">
-                <div className="max-w-[1600px] mx-auto px-6 py-4">
+                <div className="max-w-[1800px] mx-auto px-6 py-4">
                     <div className="flex items-center gap-4 mb-4">
                         <button 
                             onClick={() => navigate('/patients')}
@@ -79,9 +79,9 @@ const PatientPEP = () => {
             </div>
 
             {/* Main Content Area */}
-            <div className="max-w-[1600px] mx-auto flex gap-8 p-6">
+            <div className="max-w-[1800px] mx-auto flex gap-6 p-6">
                 {/* Lateral Navigation (PEP Sidebar) */}
-                <aside className="w-80 shrink-0">
+                <aside className="w-72 shrink-0">
                     <PatientSidebar activeModule={activeModule} onModuleChange={setActiveModule} />
                 </aside>
 
