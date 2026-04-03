@@ -209,4 +209,12 @@ export const appointmentsApi = {
     getResources: () => api.get('appointments/resources'),
 };
 
+export const clinicApi = {
+    getMe: () => api.get('clinic/me'),
+    updateMe: (data: any) => api.patch('clinic/me', data),
+    uploadLogo: (formData: FormData) => api.post('saas/clinics/upload-logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+};
+
 export default api;

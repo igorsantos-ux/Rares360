@@ -18,6 +18,7 @@ import receivableRoutes from './routes/receivableRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
+import clinicRoutes from './routes/clinicRoutes.js';
 
 import importRoutes from './routes/importRoutes.js';
 import cashRoutes from './routes/cashRoutes.js';
@@ -75,6 +76,7 @@ app.use('/api/upload', authMiddleware, tenantMiddleware, uploadRoutes);
 app.use('/api/pricing', authMiddleware, tenantMiddleware, pricingRoutes);
 app.use('/api/compliance', authMiddleware, tenantMiddleware, complianceRoutes);
 app.use('/api/appointments', authMiddleware, tenantMiddleware, appointmentRoutes);
+app.use('/api/clinic', authMiddleware, tenantMiddleware, clinicRoutes);
 app.use('/api/pep', authMiddleware, tenantMiddleware, pepRoutes);
 app.use('/api/leads', leadRoutes);
 

@@ -23,6 +23,7 @@ import Pricing from './pages/Pricing';
 import Contact from './pages/Contact';
 import TasksPage from './pages/Tarefas';
 import Agenda from './pages/Agenda';
+import MyClinic from './pages/MyClinic';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -102,6 +103,7 @@ function App() {
                 <Route path="/agenda" element={<Agenda />} />
                 <Route path="/documents" element={<DocumentsPage />} />
                 <Route path="/automations" element={<Automations />} />
+                <Route path="/my-clinic" element={<MyClinic />} />
               </Route>
 
               {/* Redirects */}
