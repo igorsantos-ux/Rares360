@@ -15,11 +15,12 @@ export class BillingService {
         setupRemaining: number,
         contractStartDate: Date,
         contractDuration: number,
+        status: string,
         total: number 
     }) {
         return new Promise<Buffer>((resolve, reject) => {
             const doc = new PDFDocument({ 
-                margin: 50,
+                margin: 0, // Margin zero for full-bleed header
                 size: 'A4',
                 info: {
                     Title: `Fatura - ${data.clinicName}`,
@@ -32,133 +33,156 @@ export class BillingService {
             doc.on('end', () => resolve(Buffer.concat(chunks)));
             doc.on('error', err => reject(err));
 
-            // Cores Premium
-            const OLIVE = '#556B2F';
-            const LIGHT_OLIVE = '#8A9A5B';
+            // Cores Corporativas
+            const OLIVE_DARK = '#556B2F';
+            const OLIVE_SOFT = '#8A9A5B';
             const BEIGE = '#FAF9F6';
             const SLATE_DARK = '#1a202c';
             const SLATE_LIGHT = '#718096';
+            const WHITE = '#FFFFFF';
 
-            // Watermark (Marca d'água Centralizada)
+            // --- 1. HEADER BANNER ---
+            doc.rect(0, 0, 595, 180).fill(OLIVE_DARK);
+
+            // Grafismo de Círculos (Abstrato)
             doc.save();
-            doc.fillColor(OLIVE);
-            doc.fillOpacity(0.05);
-            doc.fontSize(80);
-            doc.font('Helvetica-Bold');
-            doc.rotate(-45, { origin: [300, 400] });
-            doc.text('RARES360', 100, 400, { align: 'center' });
+            const circles = [
+                { x: 550, y: 40, r: 40, o: 0.1 },
+                { x: 500, y: 80, r: 60, o: 0.05 },
+                { x: 580, y: 120, r: 35, o: 0.15 },
+                { x: 450, y: 30, r: 25, o: 0.08 },
+                { x: 520, y: 150, r: 50, o: 0.05 }
+            ];
+            circles.forEach(c => {
+                doc.circle(c.x, c.y, c.r).fillOpacity(c.o).fill(WHITE);
+            });
             doc.restore();
 
-            // --- HEADER ---
-            // Logo Estilo Minimalista (Desenho vetorial sutil)
-            doc.rect(50, 45, 40, 40).fill(OLIVE);
-            doc.fillColor('#FFFFFF').fontSize(24).font('Helvetica-Bold').text('R', 60, 55);
-            
-            doc.fillColor(OLIVE).fontSize(20).font('Helvetica-Bold').text('RARES360', 100, 50);
-            doc.fillColor(SLATE_LIGHT).fontSize(8).font('Helvetica').text('GESTÃO ESTRATÉGICA SAAS', 100, 72, { characterSpacing: 2 });
-            
-            doc.fillColor(OLIVE).fontSize(14).font('Helvetica-Bold').text('FATURA DE SERVIÇOS', 350, 50, { align: 'right' });
-            doc.fillColor(SLATE_LIGHT).fontSize(10).font('Helvetica').text(`#${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`, 350, 68, { align: 'right' });
-            doc.text(`Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 350, 82, { align: 'right' });
+            // Texto "Fatura" no Banner
+            doc.fillColor(WHITE).fontSize(48).font('Helvetica-Bold').text('Fatura', 50, 100);
 
-            doc.moveDown(4);
+            // --- 2. METADADOS E LOGO ---
+            const contentX = 50;
+            const contentWidth = 495;
+            let currentY = 220;
 
-            // --- INFO BLOCKS (EMISSOR E CLIENTE) ---
-            const startY = 120;
-            
-            // Emissor
-            doc.fillColor(OLIVE).fontSize(8).font('Helvetica-Bold').text('EMISSOR', 50, startY);
-            doc.fillColor(SLATE_DARK).fontSize(10).font('Helvetica-Bold').text('RARES360 SOLUÇÕES DIGITAIS', 50, startY + 12);
+            doc.fillColor(SLATE_DARK).fontSize(18).font('Helvetica-Bold').text(`#${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`, contentX, currentY);
+            doc.fillColor(SLATE_LIGHT).fontSize(10).font('Helvetica').text(new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }), contentX, currentY + 22);
+
+            // Logo RARES sutil no topo direito do conteúdo
+            doc.fillColor(OLIVE_DARK).fontSize(16).font('Helvetica-Bold').text('RARES360', 450, currentY, { align: 'right' });
+
+            // Watermark Centralizada
+            doc.save();
+            doc.fillOpacity(0.03).fillColor(OLIVE_DARK).fontSize(100).font('Helvetica-Bold');
+            doc.rotate(-45, { origin: [300, 420] });
+            doc.text('RARES360', 100, 420, { align: 'center' });
+            doc.restore();
+
+            currentY += 60;
+
+            // --- 3. SEÇÃO PAGADOR E EMISSOR ---
+            doc.fillColor(OLIVE_DARK).fontSize(8).font('Helvetica-Bold').text('PAGADOR', contentX, currentY);
+            doc.text('PAGÁVEL PARA', 300, currentY);
+
+            doc.fillColor(SLATE_DARK).fontSize(11).font('Helvetica-Bold').text(data.razaoSocial.toUpperCase(), contentX, currentY + 14);
+            doc.text('RARES360 SOLUÇÕES DIGITAIS', 300, currentY + 14);
+
             doc.font('Helvetica').fontSize(9).fillColor(SLATE_LIGHT);
-            doc.text('CNPJ: 62.308.137/0001-65', 50, startY + 26);
-            doc.text('ti.rares@rares360.com.br', 50, startY + 38);
-            doc.text('Avenida das Admin, 1000 - Centro', 50, startY + 50);
+            doc.text(`CNPJ: ${data.cnpj}`, contentX, currentY + 28);
+            doc.text(data.address || 'Endereço não informado', contentX, currentY + 40, { width: 220 });
 
-            // Cliente
-            doc.fillColor(OLIVE).fontSize(8).font('Helvetica-Bold').text('CLIENTE (TOMADOR)', 300, startY);
-            doc.fillColor(SLATE_DARK).fontSize(10).font('Helvetica-Bold').text(data.razaoSocial.toUpperCase(), 300, startY + 12);
-            doc.font('Helvetica').fontSize(9).fillColor(SLATE_LIGHT);
-            doc.text(`CNPJ: ${data.cnpj}`, 300, startY + 26);
-            doc.text(data.address || 'Endereço não informado', 300, startY + 38, { width: 250 });
+            doc.text('CNPJ: 62.308.137/0001-65', 300, currentY + 28);
+            doc.text('ti.rares@rares360.com.br', 300, currentY + 40);
+            doc.text(`Vencimento: ${new Date(new Date().getTime() + 5*24*60*60*1000).toLocaleDateString('pt-BR')}`, 300, currentY + 52);
 
-            doc.moveDown(8);
+            currentY += 100;
 
-            // --- ITENS TABLE ---
-            const tableTop = 220;
+            // --- 4. SISTEMA DE TABELAS DUPLAS ---
             
-            // Table Header Background
-            doc.rect(50, tableTop, 500, 25).fill(OLIVE);
-            
-            // Header Text
-            doc.fillColor('#FFFFFF').fontSize(8).font('Helvetica-Bold');
-            doc.text('ITEM / DESCRIÇÃO', 60, tableTop + 8);
-            doc.text('QTD', 300, tableTop + 8);
-            doc.text('UNITÁRIO', 380, tableTop + 8);
-            doc.text('SUBTOTAL', 480, tableTop + 8);
+            // Tabela 1: SERVIÇOS
+            const drawTable = (title: string, items: any[], top: number) => {
+                doc.rect(contentX, top, contentWidth, 30).fill(OLIVE_DARK);
+                doc.fillColor(WHITE).fontSize(8).font('Helvetica-Bold');
+                doc.text(title, contentX + 15, top + 11);
+                doc.text('DESCRIÇÃO DETALHADA', contentX + 150, top + 11);
+                doc.text('PREÇO UN.', contentX + 350, top + 11, { width: 60, align: 'right' });
+                doc.text('TOTAL', contentX + 420, top + 11, { width: 60, align: 'right' });
 
-            let currentY = tableTop + 25;
+                let y = top + 30;
+                items.forEach((item, index) => {
+                    doc.rect(contentX, y, contentWidth, 40).fill(index % 2 === 0 ? WHITE : BEIGE);
+                    doc.fillColor(SLATE_DARK).fontSize(9).font('Helvetica-Bold').text(item.name, contentX + 15, y + 12);
+                    doc.fillColor(SLATE_LIGHT).fontSize(8).font('Helvetica').text(item.desc, contentX + 15, y + 24);
+                    
+                    doc.fillColor(SLATE_DARK).fontSize(9).text(`R$ ${item.unit.toFixed(2)}`, contentX + 350, y + 15, { width: 60, align: 'right' });
+                    doc.text(`R$ ${item.total.toFixed(2)}`, contentX + 420, y + 15, { width: 60, align: 'right' });
+                    y += 40;
+                });
+                return y;
+            };
 
-            // Row 1: SaaS Maintenance
-            doc.rect(50, currentY, 500, 40).fill(BEIGE);
-            doc.fillColor(SLATE_DARK).fontSize(9).font('Helvetica-Bold').text('Manutenção Mensal SaaS (Licenciamento)', 60, currentY + 10);
-            doc.fillColor(SLATE_LIGHT).fontSize(8).font('Helvetica').text(`Uso da plataforma Rares360 Core - Ciclo ${new Date().getMonth() + 1}/${new Date().getFullYear()}`, 60, currentY + 22);
-            
-            doc.fillColor(SLATE_DARK).fontSize(9).text(data.userCount.toString(), 300, currentY + 15);
-            doc.text(`R$ ${data.pricePerUser.toFixed(2)}`, 380, currentY + 15);
-            doc.text(`R$ ${data.monthlyFee.toFixed(2)}`, 480, currentY + 15);
+            const serviceItems = [
+                { 
+                    name: 'Manutenção SaaS', 
+                    desc: `Licenciamento por Usuário (${data.userCount} usuários ativos)`, 
+                    unit: data.pricePerUser, 
+                    total: data.monthlyFee || (data.userCount * data.pricePerUser) 
+                }
+            ];
 
-            currentY += 40;
+            currentY = drawTable('SERVIÇOS', serviceItems, currentY);
+            currentY += 20;
 
-            // Row 2: Setup (if applicable)
             if (data.setupValue > 0) {
                 const parcelaVl = data.setupValue / data.setupInstallments;
                 const residual = data.setupRemaining;
                 const atual = data.setupInstallments - residual + 1;
-
+                
                 if (atual <= data.setupInstallments) {
-                    doc.rect(50, currentY, 500, 40).fill('#FFFFFF');
-                    doc.fillColor(SLATE_DARK).fontSize(9).font('Helvetica-Bold').text('Taxa de Implementação (Setup)', 60, currentY + 10);
-                    doc.fillColor(SLATE_LIGHT).fontSize(8).font('Helvetica').text(`Parcela ${atual} de ${data.setupInstallments} do processo de Onboarding`, 60, currentY + 22);
-                    
-                    doc.fillColor(SLATE_DARK).fontSize(9).text('1', 300, currentY + 15);
-                    doc.text(`R$ ${parcelaVl.toFixed(2)}`, 380, currentY + 15);
-                    doc.text(`R$ ${parcelaVl.toFixed(2)}`, 480, currentY + 15);
-                    currentY += 40;
+                    const implItems = [
+                        { 
+                            name: 'Setup / Consultoria', 
+                            desc: `Implementação Estratégica (Parcela ${atual.toString().padStart(2, '0')}/${data.setupInstallments.toString().padStart(2, '0')})`, 
+                            unit: parcelaVl, 
+                            total: parcelaVl 
+                        }
+                    ];
+                    currentY = drawTable('IMPLEMENTAÇÃO', implItems, currentY);
                 }
             }
 
-            // --- TOTAL SUMMARY ---
-            doc.moveDown(4);
-            const summaryY = doc.y;
+            // --- 5. SUMÁRIO FINANCEIRO ---
+            currentY += 30;
+            doc.fillColor(SLATE_LIGHT).fontSize(10).font('Helvetica').text('Subtotal:', 350, currentY, { width: 100, align: 'right' });
+            doc.fillColor(SLATE_DARK).font('Helvetica-Bold').text(`R$ ${data.total.toFixed(2)}`, 460, currentY, { width: 85, align: 'right' });
             
-            doc.fillColor(SLATE_LIGHT).fontSize(9).text('Subtotal Serviços:', 380, summaryY);
-            doc.fillColor(SLATE_DARK).font('Helvetica-Bold').text(`R$ ${data.total.toFixed(2)}`, 480, summaryY);
-            
-            doc.moveDown(0.5);
-            const totalBoxY = doc.y + 5;
-            doc.rect(370, totalBoxY, 180, 40).fill(OLIVE);
-            doc.fillColor('#FFFFFF').fontSize(10).font('Helvetica-Bold').text('VALOR TOTAL', 380, totalBoxY + 15);
-            doc.fontSize(14).text(`R$ ${data.total.toFixed(2)}`, 480, totalBoxY + 12, { align: 'right' });
+            currentY += 18;
+            doc.fillColor(SLATE_LIGHT).font('Helvetica').text('Impostos (0%):', 350, currentY, { width: 100, align: 'right' });
+            doc.fillColor(SLATE_DARK).font('Helvetica-Bold').text('R$ 0,00', 460, currentY, { width: 85, align: 'right' });
 
-            // --- FOOTER & PAYMENT ---
-            const footerY = 700;
-            doc.fillColor(SLATE_DARK).fontSize(10).font('Helvetica-Bold').text('DADOS PARA PAGAMENTO:', 50, footerY);
-            doc.fillColor(SLATE_LIGHT).fontSize(9).font('Helvetica').text('Pagamento via PIX (Cópia e Cola ou Chave):', 50, footerY + 15);
-            doc.fillColor(OLIVE).font('Helvetica-Bold').text('Chave PIX: ti.rares@rares360.com.br', 50, footerY + 28);
-            
-            // Contract Progress
-            const startDate = new Date(data.contractStartDate);
-            const now = new Date();
-            const monthsProgress = (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth()) + 1;
-            
-            doc.fillColor(SLATE_LIGHT).fontSize(8).font('Helvetica-Oblique').text(
-                `Fidelidade Contratual: Mês ${monthsProgress} de ${data.contractDuration} do contrato vigente.`,
-                50, footerY + 55
-            );
+            currentY += 25;
+            doc.fontSize(22).fillColor(SLATE_DARK).text('TOTAL', 350, currentY, { width: 100, align: 'right' });
+            doc.text(`R$ ${data.total.toFixed(2)}`, 460, currentY, { width: 100, align: 'right' });
 
-            doc.fontSize(8).font('Helvetica').text(
-                'Agradecemos a confiança na gestão estratégica da sua clínica.',
-                50, 780, { align: 'center', width: 500 }
+            // --- 6. DYNAMIC PIX AREA ---
+            if (data.status === 'PENDENTE') {
+                const pixY = 650;
+                doc.rect(480, pixY, 70, 70).fill('#F0F0F0');
+                doc.fillColor(SLATE_LIGHT).fontSize(6).text('QR CODE PIX', 480, pixY + 30, { width: 70, align: 'center' });
+                doc.fillColor(OLIVE_DARK).fontSize(8).font('Helvetica-Bold').text('AGUARDANDO PAGAMENTO', 410, pixY + 75, { width: 140, align: 'right' });
+            }
+
+            // --- 7. FOOTER SÓLIDO ---
+            doc.rect(0, 760, 595, 82).fill(OLIVE_DARK);
+            doc.fillColor(WHITE).fontSize(10).font('Helvetica-Bold').text('RARES360 CO.', 50, 780);
+            doc.font('Helvetica').fontSize(8).fillOpacity(0.8);
+            doc.text('ti.rares@rares360.com.br', 50, 795);
+            doc.text('www.rares360.com.br', 50, 805);
+
+            doc.fillOpacity(1).fontSize(8).text(
+                'Obrigado por escolher nossos serviços! Caso tenha dúvidas sobre cobranças, entre em contato pelo e-mail acima.',
+                300, 785, { width: 250, align: 'right' }
             );
 
             doc.end();

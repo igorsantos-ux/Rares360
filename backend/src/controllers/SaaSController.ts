@@ -620,9 +620,10 @@ export class SaaSController {
                 setupRemaining: clinic.setupRemainingInstallments || 0,
                 contractStartDate: clinic.contractStartDate || clinic.createdAt,
                 contractDuration: clinic.contractDurationMonths || 12,
+                status: 'PENDENTE', // Valor padrão para fatura draft/on-the-fly
                 total: (clinic.monthlyFee || (clinic._count.users * clinic.pricePerUser)) + 
-                       (clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE' && clinic.setupRemainingInstallments > 0 
-                        ? (clinic.setupValue / clinic.setupInstallments) : 0)
+                       (clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE' && (clinic.setupRemainingInstallments || 0) > 0 
+                        ? ((clinic.setupValue || 0) / (clinic.setupInstallments || 1)) : 0)
             });
 
             res.setHeader('Content-Type', 'application/pdf');
