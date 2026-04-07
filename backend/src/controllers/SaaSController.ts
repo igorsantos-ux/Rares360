@@ -609,9 +609,20 @@ export class SaaSController {
 
             const pdfBuffer = await BillingService.generatePDF({
                 clinicName: clinic.name,
+                razaoSocial: clinic.razaoSocial || clinic.name,
+                cnpj: clinic.cnpj || '00.000.000/0000-00',
+                address: `${clinic.logradouro || ''}, ${clinic.numero || ''} ${clinic.complemento || ''} - ${clinic.bairro || ''}, ${clinic.cidade || ''}/${clinic.estado || ''}`.trim(),
                 userCount: clinic._count.users,
                 pricePerUser: clinic.pricePerUser,
-                total: clinic._count.users * clinic.pricePerUser
+                monthlyFee: clinic.monthlyFee || 0,
+                setupValue: clinic.setupValue || 0,
+                setupInstallments: clinic.setupInstallments || 1,
+                setupRemaining: clinic.setupRemainingInstallments || 0,
+                contractStartDate: clinic.contractStartDate || clinic.createdAt,
+                contractDuration: clinic.contractDurationMonths || 12,
+                total: (clinic.monthlyFee || (clinic._count.users * clinic.pricePerUser)) + 
+                       (clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE' && clinic.setupRemainingInstallments > 0 
+                        ? (clinic.setupValue / clinic.setupInstallments) : 0)
             });
 
             res.setHeader('Content-Type', 'application/pdf');
