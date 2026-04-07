@@ -16,7 +16,8 @@ import {
     Upload,
     MessageSquare,
     Star,
-    Phone
+    Phone,
+    Cpu
 } from 'lucide-react';
 import { saasApi, leadsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -63,6 +64,9 @@ const SaaSManagement = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+
+    const [isGenerateBillingModalOpen, setIsGenerateBillingModalOpen] = useState(false);
+    const [billingGenerationStatus, setBillingGenerationStatus] = useState<'idle' | 'processing'>('idle');
 
     // Faturamento e Accordion States
     const [expandedClinics, setExpandedClinics] = useState<Record<string, boolean>>({});
@@ -343,17 +347,21 @@ const SaaSManagement = () => {
         }
     };
 
-    const handleGenerateBilling = async () => {
-        if (!confirm('Deseja processar e gerar faturas do mês atual para todas as clínicas ativas?')) return;
-        setIsSubmitting(true);
+    const handleGenerateBilling = () => {
+        setIsGenerateBillingModalOpen(true);
+    };
+
+    const confirmGenerateBilling = async () => {
+        setBillingGenerationStatus('processing');
         try {
             await saasApi.generateMonthlyInvoices();
-            toast.success('Faturamentos gerados com sucesso!');
+            toast.success('Faturas processadas com sucesso para as clínicas.');
             fetchData();
+            setIsGenerateBillingModalOpen(false);
         } catch (error) {
             toast.error('Erro ao processar faturamento.');
         } finally {
-            setIsSubmitting(false);
+            setBillingGenerationStatus('idle');
         }
     };
 
@@ -1843,6 +1851,57 @@ const SaaSManagement = () => {
                                     className="flex-[2] py-4 bg-[#697D58] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-[#697D58]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                                 >
                                     {isSubmitting ? 'Salvando...' : 'Salvar e Atualizar Motor'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal de Confirmação de Motor de Faturamento */}
+            <AnimatePresence>
+                {isGenerateBillingModalOpen && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-md"
+                        // Não permite fechar clicando fora para segurança financeira
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-[#FAFAF9] rounded-3xl shadow-2xl w-full max-w-md relative z-10 overflow-hidden flex flex-col items-center p-8 text-center"
+                        >
+                            <div className="w-20 h-20 bg-[#697D58]/10 rounded-full flex items-center justify-center mb-6">
+                                {billingGenerationStatus === 'processing' ? (
+                                    <div className="w-10 h-10 border-4 border-[#8A9A5B]/20 border-t-[#697D58] rounded-full animate-spin"></div>
+                                ) : (
+                                    <Cpu className="text-[#697D58]" size={40} />
+                                )}
+                            </div>
+                            
+                            <h2 className="text-2xl font-black text-[#1A202C] mb-3">Executar Motor de Faturamento</h2>
+                            <p className="text-sm font-bold text-slate-500 mb-8 leading-relaxed">
+                                Você está prestes a processar e gerar as faturas do mês atual para todas as clínicas ativas. Esta ação disparará os cálculos de mensalidade e parcelas de setup conforme configurado nos contratos.
+                            </p>
+
+                            <div className="flex w-full gap-4">
+                                <button
+                                    onClick={() => !billingGenerationStatus && setIsGenerateBillingModalOpen(false)}
+                                    disabled={billingGenerationStatus === 'processing'}
+                                    className="flex-1 py-4 bg-transparent border-2 border-slate-200 text-slate-500 rounded-2xl font-black uppercase text-xs tracking-widest hover:border-slate-300 transition-all disabled:opacity-50"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={confirmGenerateBilling}
+                                    disabled={billingGenerationStatus === 'processing'}
+                                    className="flex-[2] py-4 bg-[#697D58] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-[#697D58]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                >
+                                    {billingGenerationStatus === 'processing' ? 'Processando...' : 'Sim, Processar Agora'}
                                 </button>
                             </div>
                         </motion.div>
