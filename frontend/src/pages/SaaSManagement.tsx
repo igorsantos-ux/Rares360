@@ -447,6 +447,25 @@ const SaaSManagement = () => {
         }
     };
 
+    const handleDownloadInvoice = async (clinicId: string, clinicName: string) => {
+        try {
+            toast.loading('Gerando PDF...', { id: 'download-pdf' });
+            const response = await saasApi.downloadInvoicePDF(clinicId);
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `fatura-${clinicName.replace(/\s+/g, '_')}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('PDF baixado com sucesso!', { id: 'download-pdf' });
+        } catch (error) {
+            console.error('Erro ao baixar PDF:', error);
+            toast.error('Erro ao gerar PDF da fatura.', { id: 'download-pdf' });
+        }
+    };
+
     const getStatusStyles = (status: string) => {
         switch (status) {
             case 'NOVO': return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -701,14 +720,15 @@ const SaaSManagement = () => {
                                                                 )}
                                                             </div>
                                                             <div className="flex gap-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <a
-                                                                    href={saasApi.getInvoicePDFUrl(item.id)}
-                                                                    download
-                                                                    onClick={(e) => e.stopPropagation()}
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleDownloadInvoice(item.id, item.name);
+                                                                    }}
                                                                     className="p-2 bg-[#697D58] hover:scale-105 rounded-xl transition-all flex items-center gap-1 text-[10px] font-bold shadow-md shadow-[#697D58]/20"
                                                                 >
                                                                     <FileDown size={14} /> Fatura OnTheFly
-                                                                </a>
+                                                                </button>
                                                             </div>
                                                         </div>
                                                     ) : activeTab === 'leads' ? (

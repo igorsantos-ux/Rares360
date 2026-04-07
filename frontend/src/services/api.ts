@@ -68,6 +68,7 @@ export const saasApi = {
     uploadLogo: (formData: FormData) => api.post('saas/clinics/upload-logo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),
+    downloadInvoicePDF: (clinicId: string) => api.get(`saas/billing/${clinicId}/pdf`, { responseType: 'blob' }),
     getInvoicePDFUrl: (clinicId: string) => `${api.defaults.baseURL}/saas/billing/${clinicId}/pdf`,
     getInvoiceXMLUrl: (clinicId: string) => `${api.defaults.baseURL}/saas/billing/${clinicId}/xml`,
 };
