@@ -510,9 +510,9 @@ const SaaSManagement = () => {
 
 
     return (
-        <div className="flex h-screen bg-[#F0EAD6] text-[#1A202C] overflow-hidden animate-in fade-in duration-700">
+        <div className="flex h-screen bg-gray-50 text-[#1A202C] overflow-hidden animate-in fade-in duration-700">
             {/* Sidebar Fixa (Esquerda) */}
-            <div className={`${isSidebarOpen ? 'w-72' : 'w-24'} bg-white/40 backdrop-blur-md border-r border-[#8A9A5B]/20 flex-shrink-0 flex flex-col justify-between z-10 transition-all duration-300 ease-in-out relative relative`}>
+            <div className={`${isSidebarOpen ? 'w-72' : 'w-24'} bg-white border-r border-gray-200 flex-shrink-0 flex flex-col justify-between z-10 transition-all duration-300 ease-in-out relative relative`}>
                 
                 {/* Toggle Seta */}
                 <button 
@@ -573,15 +573,15 @@ const SaaSManagement = () => {
                 </div>
 
                 <div className="p-4">
-                    <div className={`bg-[#697D58] text-white shadow-xl relative overflow-hidden transition-all duration-300 flex items-center ${isSidebarOpen ? 'p-6 rounded-[2.5rem] gap-4' : 'p-4 rounded-3xl justify-center flex-col gap-2'}`}>
+                    <div className={`bg-[#697D58] text-white shadow-xl relative overflow-hidden transition-all duration-300 flex items-center ${isSidebarOpen ? 'p-4 rounded-xl gap-3' : 'p-3 rounded-xl justify-center flex-col gap-1'}`}>
                         <div className={`absolute top-0 right-0 p-4 opacity-10 transition-opacity ${!isSidebarOpen && 'hidden'}`}>
-                            <LayoutDashboard size={80} />
+                            <LayoutDashboard size={40} />
                         </div>
                         
-                        <div className={isSidebarOpen ? '' : 'hidden'}>
-                            <p className="text-[#F0EAD6]/60 text-xs font-black uppercase tracking-[0.2em] mb-2">Total Ativo</p>
+                        <div className={isSidebarOpen ? 'relative z-10' : 'hidden'}>
+                            <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-0.5">Total Ativo</p>
                             <div className="flex items-end gap-2">
-                                <span className="text-4xl font-black leading-none">
+                                <span className="text-2xl font-black leading-none">
                                     {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : leads.length}
                                 </span>
                             </div>
@@ -589,8 +589,8 @@ const SaaSManagement = () => {
                         
                         {!isSidebarOpen && (
                              <>
-                                 <span className="text-[9px] uppercase tracking-widest font-black text-[#F0EAD6]/60">Total</span>
-                                 <span className="text-2xl font-black leading-none">
+                                 <span className="text-[8px] uppercase tracking-widest font-black text-white/70">Total</span>
+                                 <span className="text-xl font-black leading-none relative z-10">
                                      {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : leads.length}
                                  </span>
                              </>
@@ -599,10 +599,10 @@ const SaaSManagement = () => {
                 </div>
             </div>
 
-            {/* Main Content Area (Direita) */}
+        {/* Main Content Area (Direita) */}
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 {/* Header Topo */}
-                <header className="h-24 bg-white/30 backdrop-blur-sm border-b border-[#8A9A5B]/10 px-8 flex items-center justify-between shrink-0 z-10 shadow-sm">
+                <header className="h-20 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0 z-10 shadow-sm">
                     <h2 className="text-3xl font-extrabold text-[#697D58] tracking-tight">
                         {activeTab === 'clinics' ? 'Gestão de Clínicas' : activeTab === 'users' ? 'Usuários Globais' : activeTab === 'billing' ? 'Faturamento SaaS' : 'Pipeline de Leads'}
                     </h2>
@@ -682,7 +682,7 @@ const SaaSManagement = () => {
                     </div>
 
                     {activeTab === 'leads' && viewMode === 'kanban' ? (
-                        <div className="flex overflow-x-auto pb-4 gap-6 min-h-[600px] h-[calc(100vh-250px)] no-scrollbar items-start">
+                        <div className="flex pb-4 gap-6 min-h-[600px] h-[calc(100vh-250px)] overflow-x-auto items-start w-full">
                             {[
                                 { id: 'NOVO', title: 'Novo', color: 'bg-blue-100 text-blue-700 border-blue-200' },
                                 { id: 'EM_CONTATO', title: 'Em Contato', color: 'bg-amber-100 text-amber-700 border-amber-200' },
@@ -701,7 +701,7 @@ const SaaSManagement = () => {
                                 return (
                                     <div 
                                         key={col.id} 
-                                        className="flex-none w-[320px] bg-slate-100/50 rounded-3xl p-4 flex flex-col h-full overflow-hidden border border-[#8A9A5B]/10"
+                                        className="flex-1 min-w-[280px] bg-gray-200 rounded-lg p-4 flex flex-col h-full overflow-hidden border border-gray-300/50 shadow-sm"
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, col.id)}
                                     >
