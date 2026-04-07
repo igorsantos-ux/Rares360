@@ -4,7 +4,6 @@ import {
     Users,
     Plus,
     Settings,
-    LogOut,
     Search,
     LayoutDashboard,
     FileDown,
@@ -18,7 +17,9 @@ import {
     Star,
     Phone,
     Cpu,
-    Mail
+    Mail,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react';
 import { saasApi, leadsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -63,6 +64,7 @@ const SaaSManagement = () => {
     const [billingData, setBillingData] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'clinics' | 'users' | 'billing' | 'leads'>('clinics');
     const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -508,77 +510,120 @@ const SaaSManagement = () => {
 
 
     return (
-        <div className="min-h-screen bg-[#F0EAD6] text-[#1A202C] p-6 md:p-10 animate-in fade-in duration-700">
-            {/* Header */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 pb-8 border-b border-[#8A9A5B]/10">
+        <div className="flex h-screen bg-[#F0EAD6] text-[#1A202C] overflow-hidden animate-in fade-in duration-700">
+            {/* Sidebar Fixa (Esquerda) */}
+            <div className={`${isSidebarOpen ? 'w-72' : 'w-24'} bg-white/40 backdrop-blur-md border-r border-[#8A9A5B]/20 flex-shrink-0 flex flex-col justify-between z-10 transition-all duration-300 ease-in-out relative relative`}>
+                
+                {/* Toggle Seta */}
+                <button 
+                    onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                    className="absolute -right-3 top-8 bg-white border border-[#8A9A5B]/30 rounded-full p-1.5 text-[#697D58] hover:bg-[#8A9A5B] hover:text-white transition-all shadow-md z-20"
+                >
+                    {isSidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                </button>
+
                 <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-[#697D58]">
-                        Painel <span className="text-[#8A9A5B]">Global Admin</span>
-                    </h1>
-                    <p className="text-slate-500 font-medium mt-1">Bem-vindo, {user?.name}. Gerencie todas as instâncias do Rares360.</p>
-                </div>
-                <div className="flex gap-4 w-full md:w-auto">
-                    <button
-                        onClick={logout}
-                        className="flex-1 md:flex-none flex items-center justify-center gap-2 py-3 px-6 bg-white border border-[#DEB587]/30 rounded-2xl hover:bg-[#DEB587]/5 transition-all font-bold text-[#697D58] shadow-sm"
-                    >
-                        <LogOut size={18} className="text-[#DEB587]" /> Sair
-                    </button>
-                </div>
-            </header>
+                    <div className={`p-6 border-b border-[#8A9A5B]/10 transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden py-0 border-0'}`}>
+                        <h1 className="text-xl font-extrabold tracking-tight text-[#697D58]">
+                            Painel <span className="text-[#8A9A5B]">Global</span>
+                        </h1>
+                        <p className="text-[#8A9A5B] font-bold text-[10px] mt-1 tracking-widest uppercase opacity-80">Rares360 Admin</p>
+                    </div>
+                    {/* Logo ícone qdo fechado */}
+                    {!isSidebarOpen && (
+                        <div className="p-6 flex justify-center border-b border-[#8A9A5B]/10">
+                           <LayoutDashboard size={24} className="text-[#697D58]" /> 
+                        </div>
+                    )}
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Navigation Sidebar (Inner) */}
-                <div className="lg:col-span-1 space-y-4">
-                    <button
-                        onClick={() => setActiveTab('clinics')}
-                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 border ${activeTab === 'clinics' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 border-transparent' : 'bg-white/50 text-[#697D58] border-[#8A9A5B]/10 hover:bg-white'}`}
-                    >
-                        <Building2 size={24} />
-                        <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Clínicas</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('users')}
-                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 border ${activeTab === 'users' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 border-transparent' : 'bg-white/50 text-[#697D58] border-[#8A9A5B]/10 hover:bg-white'}`}
-                    >
-                        <Users size={24} />
-                        <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Usuários</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('billing')}
-                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 border ${activeTab === 'billing' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 border-transparent' : 'bg-white/50 text-[#697D58] border-[#8A9A5B]/10 hover:bg-white'}`}
-                    >
-                        <CreditCard size={24} />
-                        <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Faturamento</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('leads')}
-                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 border ${activeTab === 'leads' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 border-transparent' : 'bg-white/50 text-[#697D58] border-[#8A9A5B]/10 hover:bg-white'}`}
-                    >
-                        <MessageSquare size={24} />
-                        <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Leads</span>
-                    </button>
+                    <nav className="p-4 space-y-2 mt-2">
+                        <button
+                            onClick={() => setActiveTab('clinics')}
+                            className={`w-full flex items-center ${isSidebarOpen ? 'justify-start gap-4 px-4' : 'justify-center px-0'} py-3.5 rounded-2xl transition-all duration-300 ${activeTab === 'clinics' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 font-bold' : 'text-[#697D58] opacity-80 hover:bg-white hover:opacity-100 font-medium'}`}
+                            title={!isSidebarOpen ? 'Clínicas' : ''}
+                        >
+                            <Building2 size={isSidebarOpen ? 20 : 22} />
+                            {isSidebarOpen && <span className="text-sm tracking-wide font-bold">Clínicas</span>}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`w-full flex items-center ${isSidebarOpen ? 'justify-start gap-4 px-4' : 'justify-center px-0'} py-3.5 rounded-2xl transition-all duration-300 ${activeTab === 'users' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 font-bold' : 'text-[#697D58] opacity-80 hover:bg-white hover:opacity-100 font-medium'}`}
+                            title={!isSidebarOpen ? 'Usuários' : ''}
+                        >
+                            <Users size={isSidebarOpen ? 20 : 22} />
+                            {isSidebarOpen && <span className="text-sm tracking-wide font-bold">Usuários</span>}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('billing')}
+                            className={`w-full flex items-center ${isSidebarOpen ? 'justify-start gap-4 px-4' : 'justify-center px-0'} py-3.5 rounded-2xl transition-all duration-300 ${activeTab === 'billing' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 font-bold' : 'text-[#697D58] opacity-80 hover:bg-white hover:opacity-100 font-medium'}`}
+                            title={!isSidebarOpen ? 'Faturamento' : ''}
+                        >
+                            <CreditCard size={isSidebarOpen ? 20 : 22} />
+                            {isSidebarOpen && <span className="text-sm tracking-wide font-bold">Faturamento</span>}
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('leads')}
+                            className={`w-full flex items-center ${isSidebarOpen ? 'justify-start gap-4 px-4' : 'justify-center px-0'} py-3.5 rounded-2xl transition-all duration-300 ${activeTab === 'leads' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 font-bold' : 'text-[#697D58] opacity-80 hover:bg-white hover:opacity-100 font-medium'}`}
+                            title={!isSidebarOpen ? 'Leads' : ''}
+                        >
+                            <MessageSquare size={isSidebarOpen ? 20 : 22} />
+                            {isSidebarOpen && <span className="text-sm tracking-wide font-bold">Leads</span>}
+                        </button>
+                    </nav>
+                </div>
 
-                    {/* Stats Card */}
-                    <div className="p-8 rounded-[2.5rem] bg-[#697D58] text-white shadow-2xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                <div className="p-4">
+                    <div className={`bg-[#697D58] text-white shadow-xl relative overflow-hidden transition-all duration-300 flex items-center ${isSidebarOpen ? 'p-6 rounded-[2.5rem] gap-4' : 'p-4 rounded-3xl justify-center flex-col gap-2'}`}>
+                        <div className={`absolute top-0 right-0 p-4 opacity-10 transition-opacity ${!isSidebarOpen && 'hidden'}`}>
                             <LayoutDashboard size={80} />
                         </div>
-                        <p className="text-[#F0EAD6]/60 text-xs font-black uppercase tracking-[0.2em] mb-4">Total Ativo</p>
-                        <div className="flex items-end gap-2">
-                            <span className="text-5xl font-black">
-                                {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : leads.length}
-                            </span>
+                        
+                        <div className={isSidebarOpen ? '' : 'hidden'}>
+                            <p className="text-[#F0EAD6]/60 text-xs font-black uppercase tracking-[0.2em] mb-2">Total Ativo</p>
+                            <div className="flex items-end gap-2">
+                                <span className="text-4xl font-black leading-none">
+                                    {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : leads.length}
+                                </span>
+                            </div>
                         </div>
+                        
+                        {!isSidebarOpen && (
+                             <>
+                                 <span className="text-[9px] uppercase tracking-widest font-black text-[#F0EAD6]/60">Total</span>
+                                 <span className="text-2xl font-black leading-none">
+                                     {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : leads.length}
+                                 </span>
+                             </>
+                        )}
                     </div>
                 </div>
+            </div>
 
-                {/* Main Content Area */}
-                <div className="lg:col-span-3 space-y-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex gap-4">
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            {/* Main Content Area (Direita) */}
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                {/* Header Topo */}
+                <header className="h-24 bg-white/30 backdrop-blur-sm border-b border-[#8A9A5B]/10 px-8 flex items-center justify-between shrink-0 z-10 shadow-sm">
+                    <h2 className="text-3xl font-extrabold text-[#697D58] tracking-tight">
+                        {activeTab === 'clinics' ? 'Gestão de Clínicas' : activeTab === 'users' ? 'Usuários Globais' : activeTab === 'billing' ? 'Faturamento SaaS' : 'Pipeline de Leads'}
+                    </h2>
+
+                    <div className="flex items-center gap-4 hover:bg-white/60 p-2 pr-5 rounded-[2rem] transition-all cursor-pointer border border-transparent hover:border-[#8A9A5B]/20 shadow-sm" onClick={logout}>
+                        <div className="w-10 h-10 rounded-full bg-white flex flex-col justify-center items-center text-[#DEB587] font-black shadow-sm border border-[#DEB587]/30">
+                            {user?.name?.substring(0, 2).toUpperCase() || 'AD'}
+                        </div>
+                        <div className="hidden md:block text-left">
+                            <p className="text-sm font-extrabold text-[#1A202C] leading-tight">{user?.name}</p>
+                            <p className="text-[10px] uppercase tracking-widest text-[#8A9A5B] font-bold">Sair da Conta</p>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Sub-Header / Scrollable Area */}
+                <div className="flex-1 overflow-auto p-6 md:p-10 relative space-y-6">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div className="flex gap-4 w-full md:w-auto">
+                            <div className="relative flex-1 md:flex-none">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8A9A5B]" size={18} />
                                 <input
                                     type="text"
                                     placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : activeTab === 'users' ? 'usuário' : activeTab === 'leads' ? 'lead' : 'fatura'}...`}
