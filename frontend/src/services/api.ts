@@ -59,6 +59,7 @@ export const saasApi = {
     getUsers: () => api.get('saas/users'),
     createUser: (data: any) => api.post('saas/users', data),
     getBilling: () => api.get('saas/billing'),
+    generateMonthlyInvoices: () => api.post('saas/billing/generate'),
     updateClinic: (id: string, data: any) => api.patch(`saas/clinics/${id}`, data),
     deleteClinic: (id: string) => api.delete(`saas/clinics/${id}`),
     updateUser: (id: string, data: any) => api.patch(`saas/users/${id}`, data),

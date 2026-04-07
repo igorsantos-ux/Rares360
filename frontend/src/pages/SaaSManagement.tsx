@@ -10,7 +10,6 @@ import {
     FileDown,
     CreditCard,
     Edit3,
-    Check,
     X as XIcon,
     Trash2,
     Image as ImageIcon,
@@ -63,8 +62,6 @@ const SaaSManagement = () => {
     const [activeTab, setActiveTab] = useState<'clinics' | 'users' | 'billing' | 'leads'>('clinics');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingPrice, setEditingPrice] = useState<string | null>(null);
-    const [tempPrice, setTempPrice] = useState<string>('');
     const [searchTerm, setSearchTerm] = useState('');
 
     // Form States
@@ -139,15 +136,6 @@ const SaaSManagement = () => {
         }
     };
 
-    const handleUpdatePrice = async (clinicId: string) => {
-        try {
-            await saasApi.updateClinic(clinicId, { pricePerUser: parseFloat(tempPrice) });
-            setEditingPrice(null);
-            fetchData();
-        } catch (error) {
-            alert('Erro ao atualizar preço');
-        }
-    };
 
     const handleCreateClinic = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -290,6 +278,20 @@ const SaaSManagement = () => {
             alert(error.response?.data?.error || 'Erro ao excluir clínica');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleGenerateBilling = async () => {
+        if (!confirm('Deseja processar e gerar faturas do mês atual para todas as clínicas ativas?')) return;
+        setIsSubmitting(true);
+        try {
+            await saasApi.generateMonthlyInvoices();
+            toast.success('Faturamentos gerados com sucesso!');
+            fetchData();
+        } catch (error) {
+            toast.error('Erro ao processar faturamento.');
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -480,6 +482,15 @@ const SaaSManagement = () => {
                                 </motion.div>
                             </button>
                         </div>
+                        {activeTab === 'billing' && (
+                            <button
+                                onClick={handleGenerateBilling}
+                                disabled={isSubmitting}
+                                className="bg-[#697D58] hover:scale-[1.02] active:scale-95 text-white p-4 rounded-2xl shadow-xl shadow-[#697D58]/20 transition-all flex items-center gap-2 font-black uppercase text-xs tracking-widest disabled:opacity-50"
+                            >
+                                <Settings size={20} /> Processar Motor Faturas
+                            </button>
+                        )}
                         {activeTab !== 'leads' && activeTab !== 'billing' && (
                             <button
                                 onClick={() => setIsModalOpen(true)}
@@ -501,13 +512,13 @@ const SaaSManagement = () => {
                                     <tr className="border-b border-[#8A9A5B]/10 bg-[#8A9A5B]/5">
                                         <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Nome</th>
                                         <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
-                                            {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : activeTab === 'leads' ? 'Contato' : 'Usuários Reg.'}
+                                            {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : activeTab === 'leads' ? 'Contato' : 'Status / Setup'}
                                         </th>
                                         <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
-                                            {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : 'Vl. por Usuário'}
+                                            {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : 'Mensalidade Vl.'}
                                         </th>
                                         <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest text-right">
-                                            {activeTab === 'billing' ? 'Total Fatura' : activeTab === 'leads' ? 'Status e Ações' : 'Ações'}
+                                            {activeTab === 'billing' ? 'Total & Detalhamento' : activeTab === 'leads' ? 'Status e Ações' : 'Ações'}
                                         </th>
                                     </tr>
                                 </thead>
@@ -521,12 +532,23 @@ const SaaSManagement = () => {
                                                 item.cnpj?.includes(searchTerm) ||
                                                 item.whatsapp?.includes(searchTerm)
                                             )
-                                            .map((item) => (
+                                            .map((item) => {
+                                            
+                                            // Renovation Alert Logic
+                                            let isExpiring = false;
+                                            if (activeTab === 'billing' && item.contractStartDate && item.contractDurationMonths) {
+                                                const start = new Date(item.contractStartDate).getTime();
+                                                const now = new Date().getTime();
+                                                const diffMonths = (now - start) / (1000 * 60 * 60 * 24 * 30);
+                                                isExpiring = diffMonths >= (item.contractDurationMonths - 1);
+                                            }
+
+                                            return (
                                             <motion.tr
                                                 key={item.id}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="border-b border-[#8A9A5B]/5 hover:bg-white transition-colors group"
+                                                className={`border-b border-[#8A9A5B]/5 hover:bg-white transition-colors group ${isExpiring ? 'bg-yellow-50 hover:bg-yellow-100' : ''}`}
                                             >
                                                 <td className="p-6">
                                                     <div className="font-extrabold flex items-center gap-3 text-[#1A202C]">
@@ -554,34 +576,17 @@ const SaaSManagement = () => {
                                                             <p className="text-slate-800 font-bold">{item.email}</p>
                                                             <p className="text-[10px]">{item.whatsapp}</p>
                                                         </div>
-                                                    ) : `${item.userCount} usuários`}
+                                                    ) : (
+                                                        <div className="space-y-1 text-xs">
+                                                            <p className="font-bold text-slate-700">{item.userCount} usuários ativos</p>
+                                                            {isExpiring && <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 rounded font-black uppercase text-[9px] tracking-widest">Atenção: Renovação &lt; 30d</span>}
+                                                        </div>
+                                                    )}
                                                 </td>
                                                 <td className="p-6">
                                                     {activeTab === 'billing' ? (
-                                                        <div className="flex items-center gap-2">
-                                                            {editingPrice === item.id ? (
-                                                                <>
-                                                                    <input
-                                                                        type="number"
-                                                                        className="w-20 bg-white border border-[#8A9A5B]/30 rounded-lg px-2 py-1 text-sm outline-none font-bold"
-                                                                        value={tempPrice}
-                                                                        onChange={e => setTempPrice(e.target.value)}
-                                                                        autoFocus
-                                                                    />
-                                                                    <button onClick={() => handleUpdatePrice(item.id)} className="text-[#8A9A5B] p-1 hover:bg-[#8A9A5B]/10 rounded"><Check size={14} /></button>
-                                                                    <button onClick={() => setEditingPrice(null)} className="text-[#DEB587] p-1 hover:bg-[#DEB587]/10 rounded"><XIcon size={14} /></button>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <span className="text-[#1A202C] font-bold">R$ {item.pricePerUser?.toFixed(2)}</span>
-                                                                    <button
-                                                                        onClick={() => { setEditingPrice(item.id); setTempPrice(item.pricePerUser.toString()); }}
-                                                                        className="p-1 hover:bg-[#8A9A5B]/10 rounded text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                    >
-                                                                        <Edit3 size={12} />
-                                                                    </button>
-                                                                </>
-                                                            )}
+                                                        <div className="flex flex-col gap-1">
+                                                            <span className="text-[#1A202C] font-bold">R$ {item.pricePerUser?.toFixed(2)} / mês</span>
                                                         </div>
                                                     ) : activeTab === 'leads' ? (
                                                         <div className="flex items-center gap-2">
@@ -598,22 +603,28 @@ const SaaSManagement = () => {
                                                 </td>
                                                 <td className="p-6">
                                                     {activeTab === 'billing' ? (
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="font-extrabold text-[#697D58]">R$ {item.total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                                            <div className="flex gap-2 text-white">
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <div className="flex flex-col">
+                                                                <span className="font-extrabold text-[#697D58]">R$ {item.total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                                {item.invoices && item.invoices.length > 0 ? (
+                                                                    <div className="flex flex-col mt-1 gap-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                                                                        {item.invoices.map((inv: any) => (
+                                                                            <span key={inv.id} className="text-[#8A9A5B]">
+                                                                                [{inv.type}] {inv.description}: R$ {inv.totalAmount.toFixed(2)}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">S/ Faturas Pendentes</span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex gap-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
                                                                 <a
                                                                     href={saasApi.getInvoicePDFUrl(item.id)}
                                                                     download
                                                                     className="p-2 bg-[#697D58] hover:scale-105 rounded-xl transition-all flex items-center gap-1 text-[10px] font-bold shadow-md shadow-[#697D58]/20"
                                                                 >
-                                                                    <FileDown size={14} /> PDF
-                                                                </a>
-                                                                <a
-                                                                    href={saasApi.getInvoiceXMLUrl(item.id)}
-                                                                    download
-                                                                    className="p-2 bg-[#8A9A5B] hover:scale-105 rounded-xl transition-all flex items-center gap-1 text-[10px] font-bold shadow-md shadow-[#8A9A5B]/20"
-                                                                >
-                                                                    <FileDown size={14} /> XML
+                                                                    <FileDown size={14} /> Fatura
                                                                 </a>
                                                             </div>
                                                         </div>
@@ -686,7 +697,8 @@ const SaaSManagement = () => {
                                                     )}
                                                 </td>
                                             </motion.tr>
-                                        ))}
+                                            );
+                                        })}
                                     </AnimatePresence>
                                 </tbody>
                             </table>
@@ -1097,15 +1109,79 @@ const SaaSManagement = () => {
                                 {managementTab === 'precificacao' && (
                                     <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                                         <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Configurações de Preço</h4>
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Configurações de Mensalidade</h4>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                <InputField label="Valor de Implementação" type="number" value={selectedClinic.implementationFee ?? 0} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, implementationFee: v })} />
-                                                <InputField label="Valor da Mensalidade" type="number" value={selectedClinic.monthlyFee ?? 0} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, monthlyFee: v })} />
+                                                <InputField label="Valor da Mensalidade (R$)" type="number" value={selectedClinic.monthlyFee ?? 0} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, monthlyFee: parseFloat(v) })} />
+                                                <InputField label="Valor Padrão P/ Usuário Extra (R$)" type="number" value={selectedClinic.pricePerUser ?? 0} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, pricePerUser: parseFloat(v) })} />
                                             </div>
                                         </div>
 
                                         <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Proposta Comercial</h4>
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Vigência de Contrato</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <InputField label="Data Inicial do Contrato" type="date" value={selectedClinic.contractStartDate ? new Date(selectedClinic.contractStartDate).toISOString().split('T')[0] : ''} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, contractStartDate: v })} />
+                                                <InputField label="Duração (Meses)" type="number" value={selectedClinic.contractDurationMonths ?? 12} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, contractDurationMonths: parseInt(v) })} />
+                                                <SelectField
+                                                    label="Status do Contrato"
+                                                    value={selectedClinic.contractStatus || 'ATIVO'}
+                                                    onChange={(v: any) => setSelectedClinic({ ...selectedClinic, contractStatus: v })}
+                                                    options={[
+                                                        { label: 'Ativo', value: 'ATIVO' },
+                                                        { label: 'Em Renovação / Alerta', value: 'RENOVAÇÃO' },
+                                                        { label: 'Encerrado', value: 'ENCERRADO' }
+                                                    ]}
+                                                />
+                                            </div>
+                                            {/* Progress Bar Visual de Contrato */}
+                                            {selectedClinic.contractStartDate && selectedClinic.contractDurationMonths && (
+                                                <div className="mt-4 p-4 bg-slate-50 border border-[#8A9A5B]/10 rounded-2xl flex flex-col gap-2 relative overflow-hidden">
+                                                    {(() => {
+                                                        const start = new Date(selectedClinic.contractStartDate).getTime();
+                                                        const now = new Date().getTime();
+                                                        const monthsPassed = Math.floor((now - start) / (1000 * 60 * 60 * 24 * 30));
+                                                        const pct = Math.min(100, Math.max(0, (monthsPassed / selectedClinic.contractDurationMonths) * 100));
+                                                        return (
+                                                            <>
+                                                                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-[#697D58]">
+                                                                    <span>Mês {Math.min(monthsPassed, selectedClinic.contractDurationMonths)}</span>
+                                                                    <span>Mês {selectedClinic.contractDurationMonths}</span>
+                                                                </div>
+                                                                <div className="w-full h-2 rounded-full bg-slate-200">
+                                                                    <div className={`h-full rounded-full ${pct > 90 ? 'bg-yellow-400' : 'bg-[#697D58]'}`} style={{ width: `${pct}%` }}></div>
+                                                                </div>
+                                                                {pct > 90 && <p className="text-[9px] text-yellow-600 font-bold mt-1 text-center uppercase tracking-widest">Contrato próximo do vencimento</p>}
+                                                            </>
+                                                        )
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Taxa de Implementação (Setup)</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <InputField label="Valor Total de Setup (R$)" type="number" value={selectedClinic.setupValue ?? (selectedClinic.implementationFee ?? 0)} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, setupValue: parseFloat(v), implementationFee: parseFloat(v) })} />
+                                                <SelectField
+                                                    label="Tipo de Pagamento"
+                                                    value={selectedClinic.setupPaymentType || 'DILUIDO_NA_MENSALIDADE'}
+                                                    onChange={(v: any) => setSelectedClinic({ ...selectedClinic, setupPaymentType: v })}
+                                                    options={[
+                                                        { label: 'Diluído na Mensalidade (Fatura Única)', value: 'DILUIDO_NA_MENSALIDADE' },
+                                                        { label: 'Parcelado Separado (2 Faturas)', value: 'PARCELADO_SEPARADO' }
+                                                    ]}
+                                                />
+                                                <InputField label="Nº de Parcelas Setup" type="number" value={selectedClinic.setupInstallments ?? 1} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, setupInstallments: parseInt(v) })} />
+                                                <InputField label="Parcelas Restantes a Cobrar" type="number" value={selectedClinic.setupRemainingInstallments ?? 0} onChange={(v: any) => setSelectedClinic({ ...selectedClinic, setupRemainingInstallments: parseInt(v) })} />
+                                            </div>
+                                            {(selectedClinic.setupRemainingInstallments || 0) > 0 && selectedClinic.setupValue && selectedClinic.setupInstallments && (
+                                                <p className="text-xs text-slate-500 font-bold bg-slate-100 p-3 rounded-lg border border-slate-200">
+                                                    Restam <span className="text-[#8A9A5B] font-black">{selectedClinic.setupRemainingInstallments}x</span> parcelas de <span className="text-[#8A9A5B] font-black">R$ {(selectedClinic.setupValue / selectedClinic.setupInstallments).toFixed(2)}</span> para faturar como Setup.
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Proposta Comercial Anexada</h4>
                                             <div className="p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                                                 {selectedClinic.proposalUrl ? (
                                                     <div className="flex items-center gap-4 p-4 bg-white rounded-2xl border border-[#8A9A5B]/20">
@@ -1205,14 +1281,14 @@ const SaaSManagement = () => {
                                 )}
                             </div>
 
-                            {managementTab === 'perfil' && (
-                                <div className="p-6 border-t border-[#8A9A5B]/10 flex-shrink-0 bg-slate-50">
+                            {(managementTab === 'perfil' || managementTab === 'precificacao') && (
+                                <div className="p-6 border-t border-[#8A9A5B]/10 flex-shrink-0 bg-slate-50 mt-4 rounded-b-[32px]">
                                     <button
                                         onClick={handleSaveClinicProfile}
                                         disabled={isSubmitting}
                                         className="w-full py-4 bg-[#697D58] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-[#697D58]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
                                     >
-                                        {isSubmitting ? 'Salvando...' : 'Salvar Todas as Alterações'}
+                                        {isSubmitting ? 'Salvando...' : 'Salvar Todas as Configurações'}
                                     </button>
                                 </div>
                             )}

@@ -49,6 +49,18 @@ model Clinic {
   monthlyFee            Float?               @default(0)
   proposalUrl           String?
   isActive              Boolean              @default(true)
+  
+  // Campos de Contrato
+  contractStartDate       DateTime?
+  contractDurationMonths  Int?                 @default(12)
+  contractStatus          String?              @default("ATIVO") // ATIVO, RENOVACAO, ENCERRADO
+
+  // Campos de Setup / Implementação
+  setupValue              Float?               @default(0)
+  setupPaymentType        String?              @default("DILUIDO_NA_MENSALIDADE") // DILUIDO_NA_MENSALIDADE, PARCELADO_SEPARADO
+  setupInstallments       Int?                 @default(1)
+  setupRemainingInstallments Int?              @default(0)
+
   createdAt             DateTime             @default(now())
   updatedAt             DateTime             @default(now()) @updatedAt
   lastUpdatedBy         String?
@@ -75,6 +87,7 @@ model Clinic {
   prescriptions         Prescription[]
   inventoryUsages       InventoryUsage[]
   proposals             Proposal[]
+  invoices              Invoice[]
 }
 
 model User {
@@ -580,5 +593,26 @@ enum AppointmentStatus {
   FALTA
   EXECUTADO
   CANCELADO
+}
+
+model Invoice {
+  id                String   @id @default(uuid())
+  clinicId          String
+  month             Int
+  year              Int
+  description       String
+  saasAmount        Float    @default(0)
+  setupAmount       Float    @default(0)
+  totalAmount       Float    @default(0)
+  status            String   @default("PENDENTE") // PENDENTE, PAGO, CANCELADO
+  type              String   @default("MENSALIDADE") // MENSALIDADE, SETUP, MENSALIDADE_E_SETUP
+  installmentNumber Int?
+  createdAt         DateTime @default(now())
+  dueDate           DateTime
+
+  clinic            Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, status])
+  @@index([clinicId, month, year])
 }
 

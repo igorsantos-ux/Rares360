@@ -19,6 +19,7 @@ router.patch('/users/:id', SaaSController.updateUser);
 router.delete('/users/:id', SaaSController.deleteUser);
 
 router.get('/billing', SaaSController.getBillingSummary);
+router.post('/billing/generate', SaaSController.generateMonthlyInvoices);
 router.get('/billing/:clinicId/pdf', SaaSController.generateInvoicePDF);
 router.get('/billing/:clinicId/xml', SaaSController.generateInvoiceXML);
 

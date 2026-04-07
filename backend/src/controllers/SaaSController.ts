@@ -416,6 +416,13 @@ export class SaaSController {
     
     static async getBillingSummary(req: any, res: Response) {
         try {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+
+            const invoices = await basePrisma.invoice.findMany({
+                where: { month: currentMonth, year: currentYear }
+            });
+
             const clinics = await basePrisma.clinic.findMany({
                 include: {
                     _count: {
@@ -424,18 +431,151 @@ export class SaaSController {
                 }
             });
 
-            const summary = clinics.map(c => ({
-                id: c.id,
-                name: c.name,
-                cnpj: c.cnpj,
-                userCount: c._count.users,
-                pricePerUser: c.pricePerUser,
-                total: c._count.users * c.pricePerUser
-            }));
+            const summary = clinics.map((c: any) => {
+                const clinicInvoices = invoices.filter(inv => inv.clinicId === c.id);
+                const hasInvoices = clinicInvoices.length > 0;
+                
+                const data = {
+                    id: c.id,
+                    name: c.name,
+                    cnpj: c.cnpj,
+                    userCount: c._count.users,
+                    pricePerUser: c.monthlyFee > 0 ? c.monthlyFee : c.pricePerUser,
+                    total: 0,
+                    invoices: clinicInvoices,
+                    contractStartDate: c.contractStartDate,
+                    contractDurationMonths: c.contractDurationMonths,
+                    contractStatus: c.contractStatus
+                };
+
+                if (hasInvoices) {
+                    data.total = clinicInvoices.reduce((acc, inv) => acc + inv.totalAmount, 0);
+                } else {
+                    data.total = c.monthlyFee > 0 ? c.monthlyFee : (c._count.users * c.pricePerUser);
+                }
+                return data;
+            });
 
             res.json(summary);
         } catch (error) {
+            console.error(error);
             res.status(500).json({ error: 'Erro ao gerar relatório de faturamento' });
+        }
+    }
+
+    static async generateMonthlyInvoices(req: any, res: Response) {
+        try {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+
+            const clinics = await basePrisma.clinic.findMany({
+                where: { isActive: true },
+                include: { _count: { select: { users: true } } }
+            });
+
+            let generatedCount = 0;
+
+            for (const clinic of clinics) {
+                // Verificar se já existe fatura deste mês
+                const existing = await basePrisma.invoice.findFirst({
+                    where: { clinicId: clinic.id, month: currentMonth, year: currentYear }
+                });
+                if (existing) continue;
+
+                const mensalidade = clinic.monthlyFee && clinic.monthlyFee > 0 
+                                      ? clinic.monthlyFee 
+                                      : (clinic._count.users * clinic.pricePerUser);
+                
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + 5);
+
+                const setupRemaining = clinic.setupRemainingInstallments || 0;
+                const hasSetupPending = setupRemaining > 0;
+                let setupPortion = 0;
+
+                if (hasSetupPending && clinic.setupValue && clinic.setupInstallments) {
+                    setupPortion = clinic.setupValue / clinic.setupInstallments;
+                }
+
+                if (hasSetupPending && clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE') {
+                    await basePrisma.invoice.create({
+                        data: {
+                            clinicId: clinic.id,
+                            month: currentMonth,
+                            year: currentYear,
+                            description: `Mensalidade + Setup (Parc. ${clinic.setupInstallments! - setupRemaining + 1}/${clinic.setupInstallments})`,
+                            saasAmount: mensalidade,
+                            setupAmount: setupPortion,
+                            totalAmount: mensalidade + setupPortion,
+                            type: 'MENSALIDADE_E_SETUP',
+                            dueDate
+                        }
+                    });
+
+                    await basePrisma.clinic.update({
+                        where: { id: clinic.id },
+                        data: { setupRemainingInstallments: setupRemaining - 1 }
+                    });
+                    generatedCount++;
+
+                } else if (hasSetupPending && clinic.setupPaymentType === 'PARCELADO_SEPARADO') {
+                    await basePrisma.invoice.create({
+                        data: {
+                            clinicId: clinic.id,
+                            month: currentMonth,
+                            year: currentYear,
+                            description: 'Mensalidade SaaS',
+                            saasAmount: mensalidade,
+                            setupAmount: 0,
+                            totalAmount: mensalidade,
+                            type: 'MENSALIDADE',
+                            dueDate
+                        }
+                    });
+
+                    await basePrisma.invoice.create({
+                        data: {
+                            clinicId: clinic.id,
+                            month: currentMonth,
+                            year: currentYear,
+                            description: `Taxa de Implementação (Parc. ${clinic.setupInstallments! - setupRemaining + 1}/${clinic.setupInstallments})`,
+                            saasAmount: 0,
+                            setupAmount: setupPortion,
+                            totalAmount: setupPortion,
+                            type: 'SETUP',
+                            dueDate
+                        }
+                    });
+
+                    await basePrisma.clinic.update({
+                        where: { id: clinic.id },
+                        data: { setupRemainingInstallments: setupRemaining - 1 }
+                    });
+                    generatedCount += 2;
+
+                } else {
+                    await basePrisma.invoice.create({
+                        data: {
+                            clinicId: clinic.id,
+                            month: currentMonth,
+                            year: currentYear,
+                            description: 'Mensalidade SaaS',
+                            saasAmount: mensalidade,
+                            setupAmount: 0,
+                            totalAmount: mensalidade,
+                            type: 'MENSALIDADE',
+                            dueDate
+                        }
+                    });
+                    generatedCount++;
+                }
+            }
+
+            res.json({ message: `Faturamento processado. ${generatedCount} faturas criadas.` });
+
+        } catch (error: any) {
+            console.error('Error generating invoices:', error);
+            res.status(500).json({ error: 'Erro ao gerar faturas' });
         }
     }
 
