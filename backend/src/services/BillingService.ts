@@ -72,11 +72,22 @@ export class BillingService {
             // Logo RARES sutil no topo direito do conteúdo
             doc.fillColor(OLIVE_DARK).fontSize(16).font('Helvetica-Bold').text('RARES360', 450, currentY, { align: 'right' });
 
-            // Watermark Centralizada
+            // Watermark Centralizada (Logo RARES)
             doc.save();
-            doc.fillOpacity(0.03).fillColor(OLIVE_DARK).fontSize(100).font('Helvetica-Bold');
-            doc.rotate(-45, { origin: [300, 420] });
-            doc.text('RARES360', 100, 420, { align: 'center' });
+            const logoPath = './src/assets/logo_rares.png'; 
+            try {
+                doc.fillOpacity(0.05);
+                doc.image(logoPath, 50, 250, { 
+                    width: 500,
+                    align: 'center',
+                    valign: 'center'
+                });
+            } catch (e) {
+                // Fallback para texto caso a imagem falhe
+                doc.fillOpacity(0.03).fillColor(OLIVE_DARK).fontSize(100).font('Helvetica-Bold');
+                doc.rotate(-45, { origin: [300, 420] });
+                doc.text('RARES360', 100, 420, { align: 'center' });
+            }
             doc.restore();
 
             currentY += 60;
