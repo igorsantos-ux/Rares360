@@ -4,7 +4,6 @@ import {
     Users,
     Plus,
     Settings,
-    LogOut,
     Search,
     LayoutDashboard,
     FileDown,
@@ -508,141 +507,155 @@ const SaaSManagement = () => {
 
 
     return (
-        <div className="min-h-screen bg-[#F0EAD6] text-[#1A202C] p-6 md:p-10 animate-in fade-in duration-700">
-            {/* Header */}
-            <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-10 pb-8 border-b border-[#8A9A5B]/10">
+        <div className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden font-sans animate-in fade-in duration-700">
+            {/* Sidebar Fixa (Esquerda) */}
+            <div className="w-64 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col justify-between z-10 shadow-sm relative">
                 <div>
-                    <h1 className="text-4xl font-extrabold tracking-tight text-[#697D58]">
-                        Painel <span className="text-[#8A9A5B]">Global Admin</span>
-                    </h1>
-                    <p className="text-slate-500 font-medium mt-1">Bem-vindo, {user?.name}. Gerencie todas as instâncias do Rares360.</p>
-                </div>
-                <div className="flex gap-4 w-full md:w-auto">
-                    <button
-                        onClick={logout}
-                        className="flex-1 md:flex-none flex items-center justify-center gap-2 py-3 px-6 bg-white border border-[#DEB587]/30 rounded-2xl hover:bg-[#DEB587]/5 transition-all font-bold text-[#697D58] shadow-sm"
-                    >
-                        <LogOut size={18} className="text-[#DEB587]" /> Sair
-                    </button>
-                </div>
-            </header>
+                    <div className="p-6 border-b border-gray-100">
+                        <h1 className="text-xl font-extrabold tracking-tight text-gray-800">
+                            Painel <span className="text-[#697D58]">Global</span>
+                        </h1>
+                        <p className="text-gray-400 font-medium text-[10px] mt-1 tracking-widest uppercase">Rares360 Admin</p>
+                    </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                {/* Navigation Sidebar (Inner) */}
-                <div className="lg:col-span-1 space-y-4">
-                    <button
-                        onClick={() => setActiveTab('clinics')}
-                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 border ${activeTab === 'clinics' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 border-transparent' : 'bg-white/50 text-[#697D58] border-[#8A9A5B]/10 hover:bg-white'}`}
-                    >
-                        <Building2 size={24} />
-                        <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Clínicas</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('users')}
-                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 border ${activeTab === 'users' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 border-transparent' : 'bg-white/50 text-[#697D58] border-[#8A9A5B]/10 hover:bg-white'}`}
-                    >
-                        <Users size={24} />
-                        <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Usuários</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('billing')}
-                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 border ${activeTab === 'billing' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 border-transparent' : 'bg-white/50 text-[#697D58] border-[#8A9A5B]/10 hover:bg-white'}`}
-                    >
-                        <CreditCard size={24} />
-                        <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Faturamento</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('leads')}
-                        className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all duration-300 border ${activeTab === 'leads' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 border-transparent' : 'bg-white/50 text-[#697D58] border-[#8A9A5B]/10 hover:bg-white'}`}
-                    >
-                        <MessageSquare size={24} />
-                        <span className="font-black border-l border-current/10 pl-4 uppercase tracking-widest text-xs">Leads</span>
-                    </button>
+                    <nav className="p-4 space-y-1.5">
+                        <button
+                            onClick={() => setActiveTab('clinics')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${activeTab === 'clinics' ? 'bg-[#697D58]/10 text-[#697D58] font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'}`}
+                        >
+                            <Building2 size={18} />
+                            <span className="text-sm">Clínicas</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('users')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${activeTab === 'users' ? 'bg-[#697D58]/10 text-[#697D58] font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'}`}
+                        >
+                            <Users size={18} />
+                            <span className="text-sm">Usuários</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('billing')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${activeTab === 'billing' ? 'bg-[#697D58]/10 text-[#697D58] font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'}`}
+                        >
+                            <CreditCard size={18} />
+                            <span className="text-sm">Faturamento</span>
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('leads')}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${activeTab === 'leads' ? 'bg-[#697D58]/10 text-[#697D58] font-bold' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'}`}
+                        >
+                            <MessageSquare size={18} />
+                            <span className="text-sm">Leads</span>
+                        </button>
+                    </nav>
+                </div>
 
-                    {/* Stats Card */}
-                    <div className="p-8 rounded-[2.5rem] bg-[#697D58] text-white shadow-2xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                            <LayoutDashboard size={80} />
+                <div className="p-6">
+                    <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-[#697D58]/10 flex items-center justify-center shrink-0">
+                            <LayoutDashboard size={14} className="text-[#697D58]"/>
                         </div>
-                        <p className="text-[#F0EAD6]/60 text-xs font-black uppercase tracking-[0.2em] mb-4">Total Ativo</p>
-                        <div className="flex items-end gap-2">
-                            <span className="text-5xl font-black">
+                        <div>
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-tight">Total Ativo</p>
+                            <p className="text-lg font-black text-gray-800 leading-tight">
                                 {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : leads.length}
-                            </span>
+                            </p>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                {/* Main Content Area */}
-                <div className="lg:col-span-3 space-y-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <div className="flex gap-4">
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            {/* Main Content Area (Direita) */}
+            <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#F9FAFB]">
+                {/* Header Topo */}
+                <header className="h-20 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0 shadow-sm z-10">
+                    <h2 className="text-2xl font-semibold text-gray-800 capitalize tracking-tight">
+                        {activeTab === 'clinics' ? 'Gestão de Clínicas' : activeTab === 'users' ? 'Usuários Globais' : activeTab === 'billing' ? 'Faturamento SaaS' : 'Pipeline de Leads'}
+                    </h2>
+
+                    <div className="flex items-center gap-4 hover:bg-gray-50 p-1.5 pr-4 rounded-full transition-all cursor-pointer border border-transparent hover:border-gray-200" onClick={logout}>
+                        <div className="w-9 h-9 rounded-full bg-[#697D58]/10 flex flex-col justify-center items-center text-[#697D58] font-bold shadow-sm">
+                            {user?.name?.substring(0, 2).toUpperCase() || 'AD'}
+                        </div>
+                        <div className="hidden md:block text-left">
+                            <p className="text-sm font-semibold text-gray-700 leading-tight">{user?.name}</p>
+                            <p className="text-[10px] uppercase tracking-widest text-gray-400 font-bold hover:text-red-500 transition-colors">Sair da Conta</p>
+                        </div>
+                    </div>
+                </header>
+
+                {/* Sub-Header / Scrollable Area */}
+                <div className="flex-1 overflow-auto p-4 md:p-8 relative">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            <div className="relative flex-1 md:flex-none">
+                                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                                 <input
                                     type="text"
                                     placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : activeTab === 'users' ? 'usuário' : activeTab === 'leads' ? 'lead' : 'fatura'}...`}
-                                    className="bg-white border border-[#8A9A5B]/10 rounded-2xl py-3 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/50 w-64 text-sm font-medium shadow-sm transition-all"
+                                    className="w-full md:w-72 bg-white border border-gray-300 rounded-lg py-2 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-[#697D58]/50 focus:border-[#697D58] text-sm text-gray-700 shadow-sm transition-all"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
                             </div>
+                            
+                            {activeTab === 'leads' && (
+                                <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200 shrink-0">
+                                    <button
+                                        onClick={() => setViewMode('kanban')}
+                                        className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all ${viewMode === 'kanban' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        Kanban
+                                    </button>
+                                    <button
+                                        onClick={() => setViewMode('list')}
+                                        className={`px-4 py-1.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-gray-800' : 'text-gray-500 hover:text-gray-700'}`}
+                                    >
+                                        Lista
+                                    </button>
+                                </div>
+                            )}
+
                             <button
                                 onClick={fetchData}
                                 disabled={isLoading}
-                                className="p-3 bg-white border border-[#8A9A5B]/10 rounded-2xl text-[#8A9A5B] hover:bg-[#8A9A5B]/5 hover:scale-105 active:scale-95 transition-all shadow-sm"
+                                className="p-2 bg-white border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-all shadow-sm shrink-0"
                                 title="Atualizar dados"
                             >
-                                <motion.div
-                                    animate={isLoading ? { rotate: 360 } : {}}
-                                    transition={isLoading ? { repeat: Infinity, duration: 2, ease: "linear" } : {}}
-                                >
-                                    <Plus className={`transform ${isLoading ? '' : 'rotate-45'}`} size={20} />
+                                <motion.div animate={isLoading ? { rotate: 360 } : {}} transition={isLoading ? { repeat: Infinity, duration: 2, ease: "linear" } : {}}>
+                                    <LayoutDashboard size={18} />
                                 </motion.div>
                             </button>
                         </div>
-                        {activeTab === 'leads' && (
-                            <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                        
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            {activeTab === 'billing' && (
                                 <button
-                                    onClick={() => setViewMode('kanban')}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'kanban' ? 'bg-white shadow-sm text-[#697D58]' : 'text-slate-400 hover:text-slate-600'}`}
+                                    onClick={handleGenerateBilling}
+                                    disabled={isSubmitting}
+                                    className="w-full md:w-auto bg-white border border-gray-300 hover:bg-gray-50 text-gray-800 px-4 py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold text-sm shadow-sm disabled:opacity-50"
                                 >
-                                    Kanban
+                                    <Settings size={16} /> Processar Faturas
                                 </button>
+                            )}
+                            {activeTab !== 'billing' && (
                                 <button
-                                    onClick={() => setViewMode('list')}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-[#697D58]' : 'text-slate-400 hover:text-slate-600'}`}
+                                    onClick={() => setIsModalOpen(true)}
+                                    className="w-full md:w-auto bg-[#697D58] hover:bg-[#5b6e4c] text-white px-5 py-2.5 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold text-sm shadow-sm"
                                 >
-                                    Lista
+                                    <Plus size={18} /> Novo {activeTab === 'clinics' ? 'Clínica' : activeTab === 'users' ? 'Usuário' : 'Lead'}
                                 </button>
-                            </div>
-                        )}
-                        {activeTab === 'billing' && (
-                            <button
-                                onClick={handleGenerateBilling}
-                                disabled={isSubmitting}
-                                className="bg-[#697D58] hover:scale-[1.02] active:scale-95 text-white p-4 rounded-2xl shadow-xl shadow-[#697D58]/20 transition-all flex items-center gap-2 font-black uppercase text-xs tracking-widest disabled:opacity-50"
-                            >
-                                <Settings size={20} /> Processar Motor Faturas
-                            </button>
-                        )}
-                        {activeTab !== 'billing' && (
-                            <button
-                                onClick={() => setIsModalOpen(true)}
-                                className="bg-[#8A9A5B] hover:scale-[1.02] active:scale-95 text-white p-4 rounded-2xl shadow-xl shadow-[#8A9A5B]/20 transition-all flex items-center gap-2 font-black uppercase text-xs tracking-widest"
-                            >
-                                <Plus size={20} /> Novo {activeTab === 'clinics' ? 'Clínica' : activeTab === 'users' ? 'Usuário' : 'Lead'}
-                            </button>
-                        )}
+                            )}
+                        </div>
                     </div>
 
                     {activeTab === 'leads' && viewMode === 'kanban' ? (
-                        <div className="flex overflow-x-auto pb-4 gap-6 min-h-[600px] h-[calc(100vh-250px)] no-scrollbar items-start">
+                        <div className="flex overflow-x-auto pb-6 gap-6 min-h-[600px] h-[calc(100vh-250px)] no-scrollbar items-start">
                             {[
-                                { id: 'NOVO', title: 'Novo', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-                                { id: 'EM_CONTATO', title: 'Em Contato', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-                                { id: 'DEMONSTRACAO', title: 'Diagnóstico Realizado', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-                                { id: 'FECHADO', title: 'Fechado', color: 'bg-green-100 text-green-700 border-green-200' }
+                                { id: 'NOVO', title: 'Novo', color: 'bg-white text-gray-700 border-gray-200' },
+                                { id: 'EM_CONTATO', title: 'Em Contato', color: 'bg-white text-gray-700 border-gray-200' },
+                                { id: 'DEMONSTRACAO', title: 'Diagnóstico Realizado', color: 'bg-white text-gray-700 border-gray-200' },
+                                { id: 'FECHADO', title: 'Fechado', color: 'bg-white text-gray-700 border-gray-200' }
                             ].map(col => {
                                 const colLeads = leads
                                     .filter(l => l.status === col.id)
@@ -656,77 +669,83 @@ const SaaSManagement = () => {
                                 return (
                                     <div 
                                         key={col.id} 
-                                        className="flex-none w-[320px] bg-slate-100/50 rounded-3xl p-4 flex flex-col h-full overflow-hidden border border-[#8A9A5B]/10"
+                                        className="flex-none w-[320px] bg-gray-100/80 rounded-lg p-3 flex flex-col h-full overflow-hidden border border-gray-200/60 shadow-sm"
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, col.id)}
                                     >
-                                        <div className="flex justify-between items-center mb-4 px-2">
+                                        <div className="flex justify-between items-center mb-4 px-2 pt-2">
                                             <div className="flex items-center gap-2">
-                                                <h3 className="font-extrabold text-slate-700 uppercase tracking-widest text-sm">{col.title}</h3>
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${col.color}`}>
+                                                <h3 className="font-semibold text-gray-800 uppercase tracking-widest text-[11px]">{col.title}</h3>
+                                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shadow-sm ${col.color}`}>
                                                     {colLeads.length}
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide pb-10">
+                                        <div className="flex-1 overflow-y-auto space-y-3 pr-1 scrollbar-hide pb-10">
                                             {colLeads.map(lead => (
                                                 <div 
                                                     key={lead.id}
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, lead.id)}
-                                                    className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-slate-100 cursor-grab active:cursor-grabbing group"
+                                                    className="bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200 cursor-grab active:cursor-grabbing group"
                                                     onClick={(e) => {
-                                                        // avoid opening drawer if clicked on specific buttons
                                                         if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('a')) return;
                                                         setSelectedLead(lead);
                                                         setIsDiagnosticModalOpen(true);
                                                     }}
                                                 >
-                                                    <div className="flex justify-between items-start mb-3">
+                                                    <div className="flex justify-between items-start mb-4">
                                                         <div className="flex gap-3 items-center">
-                                                            <div className="w-10 h-10 rounded-full bg-slate-100 border border-[#8A9A5B]/20 flex items-center justify-center text-[#697D58] font-black text-xs">
-                                                                {lead.name.substring(0, 2).toUpperCase()}
+                                                            <div className="w-9 h-9 rounded-full bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-600 font-bold text-xs uppercase shadow-sm">
+                                                                {lead.name.substring(0, 2)}
                                                             </div>
                                                             <div>
-                                                                <h4 className="font-extrabold text-[#1A202C] leading-tight">{lead.name}</h4>
-                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{lead.diagnostic?.clinicType || lead.subject || 'Lead Rares360'}</p>
+                                                                <h4 className="font-semibold text-gray-900 leading-tight text-sm">{lead.name}</h4>
+                                                                <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider mt-0.5">{lead.diagnostic?.clinicType || lead.subject || 'Lead Rares360'}</p>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-y-3 gap-x-2 mt-4 mb-4 text-xs">
-                                                        <div className="space-y-0.5">
-                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Contato</span>
-                                                            <span className="font-bold text-slate-700 break-all">{lead.email}</span>
+                                                    <div className="grid grid-cols-2 gap-y-3 gap-x-2 mb-4 text-xs">
+                                                        <div className="space-y-1">
+                                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest block">Contato</span>
+                                                            <span className="font-medium text-gray-600 break-all">{lead.email}</span>
                                                         </div>
-                                                        <div className="space-y-0.5">
-                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Interação</span>
-                                                            <span className="font-bold text-slate-700">{new Date(lead.createdAt).toLocaleDateString()}</span>
+                                                        <div className="space-y-1">
+                                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest block">Interação</span>
+                                                            <span className="font-medium text-gray-600">{new Date(lead.createdAt).toLocaleDateString()}</span>
                                                         </div>
-                                                        <div className="space-y-0.5 col-span-2">
-                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Score</span>
-                                                            <div className={`px-2 py-0.5 rounded-full inline-flex items-center gap-1 border ${lead.score >= 80 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                                                                <Star size={10} className={lead.score >= 80 ? 'fill-orange-500' : ''} />
-                                                                <span className="text-[10px] font-black">{lead.score} / 100</span>
+                                                        <div className="space-y-1 col-span-2">
+                                                            <span className="text-[9px] text-gray-400 font-bold uppercase tracking-widest block">Score</span>
+                                                            <div className={`px-2 py-1 rounded inline-flex items-center gap-1.5 border shadow-sm ${lead.score >= 80 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}>
+                                                                <Star size={12} className={lead.score >= 80 ? 'fill-orange-500' : ''} />
+                                                                <span className="text-[10px] font-bold">{lead.score} / 100</span>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
+                                                    <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
                                                         <a 
                                                             href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}?text=Olá ${lead.name}, tudo bem? Sou consultor da Rares360.`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366] text-white rounded-lg hover:scale-105 transition-all shadow-md shadow-[#25D366]/20 font-black text-[10px] uppercase tracking-widest"
+                                                            className="flex items-center gap-1.5 text-[#25D366] hover:text-[#1da851] transition-colors font-semibold text-xs py-1"
+                                                            onClick={(e) => e.stopPropagation()}
                                                         >
-                                                            <Phone size={12} /> WhatsApp
+                                                            <Phone size={14} /> Falar no WhatsApp
                                                         </a>
+                                                        <button 
+                                                            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+                                                            onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); setIsDiagnosticModalOpen(true); }}
+                                                        >
+                                                            ...
+                                                        </button>
                                                     </div>
                                                 </div>
                                             ))}
                                             {colLeads.length === 0 && (
-                                                <div className="py-8 text-center text-slate-400 font-medium text-xs border-2 border-dashed border-slate-200 rounded-2xl">
-                                                    Arraste leads para cá
+                                                <div className="py-10 text-center text-gray-400 font-medium text-xs rounded-lg">
+                                                    Arraste e solte leads
                                                 </div>
                                             )}
                                         </div>
@@ -735,23 +754,23 @@ const SaaSManagement = () => {
                             })}
                         </div>
                     ) : (
-                        <div className="bg-white/70 border border-[#8A9A5B]/10 rounded-[2.5rem] overflow-hidden backdrop-blur-md shadow-xl">
+                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
                             {isLoading ? (
                                 <div className="p-20 flex justify-center">
-                                    <div className="w-12 h-12 border-4 border-[#8A9A5B]/20 border-t-[#8A9A5B] rounded-full animate-spin"></div>
+                                    <div className="w-10 h-10 border-4 border-gray-200 border-t-[#697D58] rounded-full animate-spin"></div>
                                 </div>
                             ) : (
                                 <table className="w-full text-left border-collapse">
                                 <thead>
-                                    <tr className="border-b border-[#8A9A5B]/10 bg-[#8A9A5B]/5">
-                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Nome</th>
-                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
+                                    <tr className="border-b border-gray-200 bg-gray-50/80">
+                                        <th className="p-5 text-[11px] font-bold text-gray-600 uppercase tracking-wider">Nome</th>
+                                        <th className="p-5 text-[11px] font-bold text-gray-600 uppercase tracking-wider">
                                             {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : activeTab === 'leads' ? 'Contato' : 'Status / Setup'}
                                         </th>
-                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
+                                        <th className="p-5 text-[11px] font-bold text-gray-600 uppercase tracking-wider">
                                             {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : 'Mensalidade Vl.'}
                                         </th>
-                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest text-right">
+                                        <th className="p-5 text-[11px] font-bold text-gray-600 uppercase tracking-wider text-right">
                                             {activeTab === 'billing' ? 'Total & Detalhamento' : activeTab === 'leads' ? 'Status e Ações' : 'Ações'}
                                         </th>
                                     </tr>
