@@ -12,7 +12,7 @@ export class BillingService {
             doc.on('error', err => reject(err));
 
             // Header
-            doc.fontSize(20).text('FATURA MENSAL - HEATH FINANCE', { align: 'center' });
+            doc.fontSize(20).text('FATURA MENSAL - RARES360', { align: 'center' });
             doc.moveDown();
             doc.fontSize(12).text(`Data: ${new Date().toLocaleDateString('pt-BR')}`);
             doc.text(`Clínica: ${data.clinicName}`);
@@ -43,7 +43,7 @@ export class BillingService {
         const obj = {
             invoice: {
                 header: {
-                    emitter: "HEATH FINANCE SAAS",
+                    emitter: "RARES360 SAAS",
                     receiver: data.clinicName,
                     receiver_cnpj: data.cnpj || '00.000.000/0000-00',
                     date: new Date().toISOString()

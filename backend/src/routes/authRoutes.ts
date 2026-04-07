@@ -8,4 +8,7 @@ router.post('/login', AuthController.login);
 router.get('/me', authMiddleware, AuthController.me);
 router.patch('/onboarding', authMiddleware, AuthController.completeOnboarding);
 
+// Nova rota de segurança RARES
+router.post('/update-password', authMiddleware, AuthController.updatePassword);
+
 export default router;

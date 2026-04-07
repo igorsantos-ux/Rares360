@@ -110,7 +110,7 @@ const Automations = () => {
                         Automatizações
                     </h1>
                     <p className="text-slate-500 mt-1 font-medium">
-                        Conecte o Heath Finance com seus sistemas favoritos e automatize seu fluxo de trabalho.
+                        Conecte o Rares360 com seus sistemas favoritos e automatize seu fluxo de trabalho.
                     </p>
                 </div>
             </div>

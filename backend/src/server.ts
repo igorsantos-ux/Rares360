@@ -55,7 +55,7 @@ app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 
 app.get('/', (req, res) => {
-    res.json({ message: 'Heath Finance API is online' });
+    res.json({ message: 'Rares360 API is online' });
 });
 
 import { authMiddleware, tenantMiddleware } from './middlewares/authMiddleware.js';
@@ -92,7 +92,7 @@ process.on('uncaughtException', (err) => {
 });
 
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Heath Finance API is running' });
+    res.json({ status: 'ok', message: 'Rares360 API is running' });
 });
 
 const port = 3001;

@@ -50,7 +50,7 @@ model Clinic {
   proposalUrl           String?
   isActive              Boolean              @default(true)
   createdAt             DateTime             @default(now())
-  updatedAt             DateTime             @updatedAt
+  updatedAt             DateTime             @default(now()) @updatedAt
   lastUpdatedBy         String?
   accountPayables       AccountPayable[]
   clinicDocuments       ClinicDocument[]
@@ -78,19 +78,35 @@ model Clinic {
 }
 
 model User {
-  id                String         @id @default(uuid())
-  email             String         @unique
+  id                String            @id @default(uuid())
+  email             String            @unique
   password          String
   name              String
   role              String
   clinicId          String?
-  createdAt         DateTime       @default(now())
-  isActive          Boolean        @default(true)
-  hasSeenOnboarding Boolean        @default(false)
-  closedChapters    DailyClosure[] @relation("ClosedBy")
-  clinic            Clinic?        @relation(fields: [clinicId], references: [id])
+  createdAt         DateTime          @default(now())
+  isActive          Boolean           @default(true)
+  hasSeenOnboarding Boolean           @default(false)
+  
+  // Novos campos de segurança
+  passwordUpdatedAt DateTime          @default(now())
+  mustChangePassword Boolean          @default(true)
+  passwordHistory   PasswordHistory[]
+
+  closedChapters    DailyClosure[]    @relation("ClosedBy")
+  clinic            Clinic?           @relation(fields: [clinicId], references: [id])
 
   @@index([clinicId])
+}
+
+model PasswordHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  hash      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Transaction {

@@ -2,9 +2,11 @@ import { Request, Response } from 'express';
 import prisma, { basePrisma } from '../lib/prisma.js';
 import { AuthService } from '../services/AuthService.js';
 import { BillingService } from '../services/BillingService.js';
+import { MailService } from '../services/MailService.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 
 const storage = multer.diskStorage({
     destination: (req: any, file: any, cb: any) => {
@@ -286,30 +288,55 @@ export class SaaSController {
 
     static async createUser(req: any, res: Response) {
         try {
-            const { name, email, password, role, clinicId } = req.body;
+            const { name, email, role, clinicId } = req.body;
+            let { password } = req.body;
 
             const existingUser = await basePrisma.user.findUnique({ where: { email } });
             if (existingUser) {
                 return res.status(400).json({ error: 'Email já cadastrado' });
             }
 
+            // Gerar senha temporária caso não seja fornecida
+            if (!password) {
+                password = crypto.randomBytes(4).toString('hex'); // ex: 8f2g3h1j
+            }
+
             const hashedPassword = await AuthService.hashPassword(password);
+            
             const user = await basePrisma.user.create({
                 data: {
                     name,
                     email,
                     password: hashedPassword,
                     role,
-                    clinicId
+                    clinicId,
+                    mustChangePassword: true, // Sempre obrigatório mudar no primeiro acesso
+                    passwordUpdatedAt: new Date()
                 }
             });
+
+            // Registrar no histórico inicial
+            await basePrisma.passwordHistory.create({
+                data: {
+                    userId: user.id,
+                    hash: hashedPassword
+                }
+            });
+
+            // Disparar e-mail de Onboarding
+            try {
+                await MailService.sendOnboardingEmail(email, name, password);
+            } catch (mailError) {
+                console.error('[SaaS] Alerta: Usuário criado, mas falha ao enviar e-mail:', mailError);
+            }
 
             res.status(201).json({
                 id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                clinicId: user.clinicId
+                clinicId: user.clinicId,
+                tempPassword: password // Retorna para o Admin também
             });
         } catch (error) {
             console.error('Error creating user:', error);
@@ -332,6 +359,7 @@ export class SaaSController {
 
             if (password && password.trim() !== '') {
                 data.password = await AuthService.hashPassword(password);
+                data.passwordUpdatedAt = new Date();
             }
 
             const user = await basePrisma.user.update({
