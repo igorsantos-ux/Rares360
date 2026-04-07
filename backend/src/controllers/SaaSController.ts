@@ -579,6 +579,24 @@ export class SaaSController {
         }
     }
 
+    static async getClinicInvoices(req: any, res: Response) {
+        try {
+            const { clinicId } = req.params;
+            const invoices = await basePrisma.invoice.findMany({
+                where: { clinicId },
+                orderBy: [
+                    { year: 'desc' },
+                    { month: 'desc' },
+                    { createdAt: 'desc' }
+                ]
+            });
+            res.json(invoices);
+        } catch (error) {
+            console.error('Error fetching invoices:', error);
+            res.status(500).json({ error: 'Erro ao buscar faturas da clínica' });
+        }
+    }
+
     static async generateInvoicePDF(req: any, res: Response) {
         try {
             const { clinicId } = req.params;

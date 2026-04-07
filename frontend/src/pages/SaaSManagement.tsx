@@ -64,6 +64,13 @@ const SaaSManagement = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Faturamento e Accordion States
+    const [expandedClinics, setExpandedClinics] = useState<Record<string, boolean>>({});
+    const [expandedClinicInvoices, setExpandedClinicInvoices] = useState<Record<string, any[]>>({});
+    const [loadingInvoices, setLoadingInvoices] = useState<Record<string, boolean>>({});
+    const [isContractModalOpen, setIsContractModalOpen] = useState(false);
+    const [contractConfig, setContractConfig] = useState<any>(null);
+
     // Form States
     const [newClinic, setNewClinic] = useState({
         name: '', razaoSocial: '', cnpj: '', inscricaoEstadual: '', inscricaoMunicipal: '', cnae: '', regimeTributario: '', dataAbertura: '',
@@ -136,6 +143,61 @@ const SaaSManagement = () => {
         }
     };
 
+
+    const handleToggleInvoices = async (clinicId: string) => {
+        if (expandedClinics[clinicId]) {
+            setExpandedClinics(prev => ({ ...prev, [clinicId]: false }));
+            return;
+        }
+        
+        setExpandedClinics(prev => ({ ...prev, [clinicId]: true }));
+        if (!expandedClinicInvoices[clinicId]) {
+            setLoadingInvoices(prev => ({ ...prev, [clinicId]: true }));
+            try {
+                const res = await saasApi.getClinicInvoices(clinicId);
+                setExpandedClinicInvoices(prev => ({ ...prev, [clinicId]: res.data }));
+            } catch (error) {
+                toast.error('Erro ao buscar faturas.');
+            } finally {
+                setLoadingInvoices(prev => ({ ...prev, [clinicId]: false }));
+            }
+        }
+    };
+
+    const handleOpenContractModal = (clinic: any) => {
+        setContractConfig({
+            id: clinic.id,
+            name: clinic.name,
+            contractDurationMonths: clinic.contractDurationMonths || 12,
+            monthlyFee: clinic.pricePerUser, // em billing mapped
+            setupValue: clinic.setupValue || 0,
+            setupPaymentType: clinic.setupPaymentType || 'DILUIDO_NA_MENSALIDADE',
+            setupInstallments: clinic.setupInstallments || 1
+        });
+        setIsContractModalOpen(true);
+    };
+
+    const handleSaveContractConfig = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        try {
+            await saasApi.updateClinic(contractConfig.id, {
+                monthlyFee: contractConfig.monthlyFee,
+                setupValue: contractConfig.setupValue,
+                setupPaymentType: contractConfig.setupPaymentType,
+                setupInstallments: contractConfig.setupInstallments,
+                contractDurationMonths: contractConfig.contractDurationMonths,
+                setupRemainingInstallments: contractConfig.setupInstallments // Reset setup parcels when config changes on this fast screen
+            });
+            toast.success('Contrato atualizado com sucesso!');
+            setIsContractModalOpen(false);
+            fetchData();
+        } catch (error) {
+            toast.error('Erro ao salvar contrato');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const handleCreateClinic = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -544,11 +606,12 @@ const SaaSManagement = () => {
                                             }
 
                                             return (
+                                            <React.Fragment key={item.id}>
                                             <motion.tr
-                                                key={item.id}
+                                                onClick={() => activeTab === 'billing' && handleToggleInvoices(item.id)}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className={`border-b border-[#8A9A5B]/5 hover:bg-white transition-colors group ${isExpiring ? 'bg-yellow-50 hover:bg-yellow-100' : ''}`}
+                                                className={`border-b border-[#8A9A5B]/5 transition-colors group ${isExpiring ? 'bg-yellow-50 hover:bg-yellow-100' : ''} ${activeTab === 'billing' ? 'cursor-pointer hover:bg-slate-50' : 'hover:bg-white'}`}
                                             >
                                                 <td className="p-6">
                                                     <div className="font-extrabold flex items-center gap-3 text-[#1A202C]">
@@ -560,7 +623,18 @@ const SaaSManagement = () => {
                                                             <div className={`w-2 h-2 rounded-full ${activeTab === 'clinics' ? (item.isActive ? 'bg-[#8A9A5B]' : 'bg-[#DEB587]') : activeTab === 'users' ? 'bg-[#697D58]' : 'bg-[#DEB587]'}`}></div>
                                                         )}
                                                         <div>
-                                                            <p className="font-extrabold">{item.name}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="font-extrabold flex items-center gap-2">{item.name}</p>
+                                                                {activeTab === 'billing' && (
+                                                                    <button 
+                                                                        onClick={(e) => { e.stopPropagation(); handleOpenContractModal(item); }}
+                                                                        className="p-1 rounded bg-[#8A9A5B]/10 text-[#697D58] hover:bg-[#8A9A5B] hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                                        title="Configurar Contrato e Valores"
+                                                                    >
+                                                                        <Edit3 size={12} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                             {activeTab === 'leads' && (
                                                                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
                                                                     {new Date(item.createdAt).toLocaleDateString()} às {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -622,9 +696,10 @@ const SaaSManagement = () => {
                                                                 <a
                                                                     href={saasApi.getInvoicePDFUrl(item.id)}
                                                                     download
+                                                                    onClick={(e) => e.stopPropagation()}
                                                                     className="p-2 bg-[#697D58] hover:scale-105 rounded-xl transition-all flex items-center gap-1 text-[10px] font-bold shadow-md shadow-[#697D58]/20"
                                                                 >
-                                                                    <FileDown size={14} /> Fatura
+                                                                    <FileDown size={14} /> Fatura OnTheFly
                                                                 </a>
                                                             </div>
                                                         </div>
@@ -697,6 +772,59 @@ const SaaSManagement = () => {
                                                     )}
                                                 </td>
                                             </motion.tr>
+                                            {activeTab === 'billing' && expandedClinics[item.id] && (
+                                                <tr className="bg-slate-50/50 border-b border-[#8A9A5B]/10">
+                                                    <td colSpan={4} className="p-0">
+                                                        <motion.div
+                                                            initial={{ opacity: 0, height: 0 }}
+                                                            animate={{ opacity: 1, height: 'auto' }}
+                                                            exit={{ opacity: 0, height: 0 }}
+                                                            className="p-6 border-l-4 border-l-[#8A9A5B]"
+                                                        >
+                                                            <div className="flex items-center justify-between mb-4">
+                                                                <h5 className="text-[10px] font-black uppercase tracking-widest text-[#697D58]">Histórico de Faturas</h5>
+                                                            </div>
+                                                            {loadingInvoices[item.id] ? (
+                                                                <div className="flex justify-center p-4">
+                                                                    <div className="w-6 h-6 border-2 border-[#8A9A5B]/20 border-t-[#8A9A5B] rounded-full animate-spin"></div>
+                                                                </div>
+                                                            ) : expandedClinicInvoices[item.id]?.length > 0 ? (
+                                                                <div className="space-y-2">
+                                                                    {expandedClinicInvoices[item.id].map(inv => (
+                                                                        <div key={inv.id} className="flex items-center justify-between p-3 bg-white border border-[#8A9A5B]/10 rounded-xl relative group/inv">
+                                                                            <div className="flex-1">
+                                                                                <p className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                                                                                    {inv.month.toString().padStart(2, '0')}/{inv.year} - {inv.description}
+                                                                                    {inv.type.includes('SETUP') && <span className="px-1.5 py-0.5 bg-[#8A9A5B]/10 text-[#697D58] rounded text-[8px] uppercase font-black">Inc. Setup</span>}
+                                                                                </p>
+                                                                                <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">
+                                                                                    Criada em: {new Date(inv.createdAt).toLocaleDateString()} | Vencimento: {new Date(inv.dueDate).toLocaleDateString()}
+                                                                                </p>
+                                                                                {/* Tooltip Split Details */}
+                                                                                <div className="absolute top-10 w-64 p-3 bg-[#1A202C] text-white rounded-xl shadow-xl z-10 opacity-0 group-hover/inv:opacity-100 transition-opacity pointer-events-none text-xs font-bold space-y-1">
+                                                                                    <div className="flex justify-between"><span>Mensalidade:</span><span>R$ {inv.saasAmount.toFixed(2)}</span></div>
+                                                                                    <div className="flex justify-between"><span>Setup:</span><span>R$ {inv.setupAmount.toFixed(2)}</span></div>
+                                                                                    <div className="border-t border-slate-700 my-1"></div>
+                                                                                    <div className="flex justify-between text-[#A0B071]"><span>Total:</span><span>R$ {inv.totalAmount.toFixed(2)}</span></div>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div className="flex items-center gap-6">
+                                                                                <span className="font-black text-[#697D58]">R$ {inv.totalAmount.toFixed(2)}</span>
+                                                                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${inv.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                                                    {inv.status}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <p className="text-xs font-bold text-slate-400 text-center py-4 bg-white rounded-xl border border-dashed border-[#8A9A5B]/20">Nenhuma fatura encontrada no histórico.</p>
+                                                            )}
+                                                        </motion.div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                            </React.Fragment>
                                             );
                                         })}
                                     </AnimatePresence>
@@ -1613,6 +1741,109 @@ const SaaSManagement = () => {
                                 >
                                     Iniciar Consultoria no WhatsApp <Phone size={16} />
                                 </a>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            {/* Modal "Configurar Contrato" específico para aba Faturamento */}
+            <AnimatePresence>
+                {isContractModalOpen && contractConfig && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setIsContractModalOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="bg-white rounded-[2rem] shadow-2xl w-full max-w-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]"
+                        >
+                            <div className="bg-[#697D58] p-8 text-white flex justify-between items-center shrink-0">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                                        <Edit3 className="text-white" size={28} />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black">Configurar Contrato</h2>
+                                        <p className="text-[#F0EAD6]/80 text-sm font-medium mt-0.5">{contractConfig.name}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setIsContractModalOpen(false)}
+                                    className="p-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors backdrop-blur-md"
+                                >
+                                    <XIcon size={24} />
+                                </button>
+                            </div>
+
+                            <div className="p-8 overflow-y-auto space-y-6 bg-slate-50 flex-1">
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Mensalidade (SaaS)</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <InputField 
+                                            label="Valor da Mensalidade (R$)" 
+                                            type="number" 
+                                            value={contractConfig.monthlyFee} 
+                                            onChange={(v: any) => setContractConfig({ ...contractConfig, monthlyFee: parseFloat(v) })} 
+                                        />
+                                        <InputField 
+                                            label="Duração do Contrato (Meses)" 
+                                            type="number" 
+                                            value={contractConfig.contractDurationMonths} 
+                                            onChange={(v: any) => setContractConfig({ ...contractConfig, contractDurationMonths: parseInt(v) })} 
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Valor de Implementação (Setup)</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <InputField 
+                                            label="Valor Total de Setup (R$)" 
+                                            type="number" 
+                                            value={contractConfig.setupValue} 
+                                            onChange={(v: any) => setContractConfig({ ...contractConfig, setupValue: parseFloat(v) })} 
+                                        />
+                                        <SelectField
+                                            label="Parcelamento do Setup"
+                                            value={contractConfig.setupPaymentType}
+                                            onChange={(v: any) => setContractConfig({ ...contractConfig, setupPaymentType: v })}
+                                            options={[
+                                                { label: 'Diluído na Mensalidade (Fatura Única)', value: 'DILUIDO_NA_MENSALIDADE' },
+                                                { label: 'Parcelado Separado (2 Faturas)', value: 'PARCELADO_SEPARADO' }
+                                            ]}
+                                        />
+                                        <InputField 
+                                            label="Nº de Parcelas" 
+                                            type="number" 
+                                            value={contractConfig.setupInstallments} 
+                                            onChange={(v: any) => setContractConfig({ ...contractConfig, setupInstallments: parseInt(v) })} 
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-6 border-t border-[#8A9A5B]/10 bg-white shrink-0 flex gap-4">
+                                <button
+                                    onClick={() => setIsContractModalOpen(false)}
+                                    className="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-200 transition-all"
+                                    type="button"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleSaveContractConfig}
+                                    disabled={isSubmitting}
+                                    className="flex-[2] py-4 bg-[#697D58] text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-[#697D58]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50"
+                                >
+                                    {isSubmitting ? 'Salvando...' : 'Salvar e Atualizar Motor'}
+                                </button>
                             </div>
                         </motion.div>
                     </div>
