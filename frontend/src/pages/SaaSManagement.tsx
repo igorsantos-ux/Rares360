@@ -62,6 +62,7 @@ const SaaSManagement = () => {
     const [leads, setLeads] = useState<any[]>([]);
     const [billingData, setBillingData] = useState<any[]>([]);
     const [activeTab, setActiveTab] = useState<'clinics' | 'users' | 'billing' | 'leads'>('clinics');
+    const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -448,6 +449,24 @@ const SaaSManagement = () => {
         }
     };
 
+    const handleDragStart = (e: React.DragEvent, leadId: string) => {
+        e.dataTransfer.setData('leadId', leadId);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+
+    const handleDrop = async (e: React.DragEvent, targetStatus: string) => {
+        e.preventDefault();
+        const leadId = e.dataTransfer.getData('leadId');
+        if (leadId) {
+            // Atualização otimista
+            setLeads(prevLeads => prevLeads.map(l => l.id === leadId ? { ...l, status: targetStatus } : l));
+            await handleUpdateLeadStatus(leadId, targetStatus);
+        }
+    };
+
     const handleUpdateLeadNotes = async (leadId: string, notes: string) => {
         try {
             await leadsApi.updateNotes(leadId, notes);
@@ -582,6 +601,22 @@ const SaaSManagement = () => {
                                 </motion.div>
                             </button>
                         </div>
+                        {activeTab === 'leads' && (
+                            <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                                <button
+                                    onClick={() => setViewMode('kanban')}
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'kanban' ? 'bg-white shadow-sm text-[#697D58]' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    Kanban
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('list')}
+                                    className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-[#697D58]' : 'text-slate-400 hover:text-slate-600'}`}
+                                >
+                                    Lista
+                                </button>
+                            </div>
+                        )}
                         {activeTab === 'billing' && (
                             <button
                                 onClick={handleGenerateBilling}
@@ -591,23 +626,122 @@ const SaaSManagement = () => {
                                 <Settings size={20} /> Processar Motor Faturas
                             </button>
                         )}
-                        {activeTab !== 'leads' && activeTab !== 'billing' && (
+                        {activeTab !== 'billing' && (
                             <button
                                 onClick={() => setIsModalOpen(true)}
                                 className="bg-[#8A9A5B] hover:scale-[1.02] active:scale-95 text-white p-4 rounded-2xl shadow-xl shadow-[#8A9A5B]/20 transition-all flex items-center gap-2 font-black uppercase text-xs tracking-widest"
                             >
-                                <Plus size={20} /> Novo {activeTab === 'clinics' ? 'Clínica' : 'Usuário'}
+                                <Plus size={20} /> Novo {activeTab === 'clinics' ? 'Clínica' : activeTab === 'users' ? 'Usuário' : 'Lead'}
                             </button>
                         )}
                     </div>
 
-                    <div className="bg-white/70 border border-[#8A9A5B]/10 rounded-[2.5rem] overflow-hidden backdrop-blur-md shadow-xl">
-                        {isLoading ? (
-                            <div className="p-20 flex justify-center">
-                                <div className="w-12 h-12 border-4 border-[#8A9A5B]/20 border-t-[#8A9A5B] rounded-full animate-spin"></div>
-                            </div>
-                        ) : (
-                            <table className="w-full text-left border-collapse">
+                    {activeTab === 'leads' && viewMode === 'kanban' ? (
+                        <div className="flex overflow-x-auto pb-4 gap-6 min-h-[600px] h-[calc(100vh-250px)] no-scrollbar items-start">
+                            {[
+                                { id: 'NOVO', title: 'Novo', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+                                { id: 'EM_CONTATO', title: 'Em Contato', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+                                { id: 'DEMONSTRACAO', title: 'Diagnóstico Realizado', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+                                { id: 'FECHADO', title: 'Fechado', color: 'bg-green-100 text-green-700 border-green-200' }
+                            ].map(col => {
+                                const colLeads = leads
+                                    .filter(l => l.status === col.id)
+                                    .filter(item => 
+                                        !searchTerm || 
+                                        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                        item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                        item.whatsapp?.includes(searchTerm)
+                                    );
+
+                                return (
+                                    <div 
+                                        key={col.id} 
+                                        className="flex-none w-[320px] bg-slate-100/50 rounded-3xl p-4 flex flex-col h-full overflow-hidden border border-[#8A9A5B]/10"
+                                        onDragOver={handleDragOver}
+                                        onDrop={(e) => handleDrop(e, col.id)}
+                                    >
+                                        <div className="flex justify-between items-center mb-4 px-2">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="font-extrabold text-slate-700 uppercase tracking-widest text-sm">{col.title}</h3>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${col.color}`}>
+                                                    {colLeads.length}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide pb-10">
+                                            {colLeads.map(lead => (
+                                                <div 
+                                                    key={lead.id}
+                                                    draggable
+                                                    onDragStart={(e) => handleDragStart(e, lead.id)}
+                                                    className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-slate-100 cursor-grab active:cursor-grabbing group"
+                                                    onClick={(e) => {
+                                                        // avoid opening drawer if clicked on specific buttons
+                                                        if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('a')) return;
+                                                        setSelectedLead(lead);
+                                                        setIsDiagnosticModalOpen(true);
+                                                    }}
+                                                >
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="flex gap-3 items-center">
+                                                            <div className="w-10 h-10 rounded-full bg-slate-100 border border-[#8A9A5B]/20 flex items-center justify-center text-[#697D58] font-black text-xs">
+                                                                {lead.name.substring(0, 2).toUpperCase()}
+                                                            </div>
+                                                            <div>
+                                                                <h4 className="font-extrabold text-[#1A202C] leading-tight">{lead.name}</h4>
+                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{lead.diagnostic?.clinicType || lead.subject || 'Lead Rares360'}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-y-3 gap-x-2 mt-4 mb-4 text-xs">
+                                                        <div className="space-y-0.5">
+                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Contato</span>
+                                                            <span className="font-bold text-slate-700 break-all">{lead.email}</span>
+                                                        </div>
+                                                        <div className="space-y-0.5">
+                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Interação</span>
+                                                            <span className="font-bold text-slate-700">{new Date(lead.createdAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                        <div className="space-y-0.5 col-span-2">
+                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Score</span>
+                                                            <div className={`px-2 py-0.5 rounded-full inline-flex items-center gap-1 border ${lead.score >= 80 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                                                                <Star size={10} className={lead.score >= 80 ? 'fill-orange-500' : ''} />
+                                                                <span className="text-[10px] font-black">{lead.score} / 100</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
+                                                        <a 
+                                                            href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}?text=Olá ${lead.name}, tudo bem? Sou consultor da Rares360.`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366] text-white rounded-lg hover:scale-105 transition-all shadow-md shadow-[#25D366]/20 font-black text-[10px] uppercase tracking-widest"
+                                                        >
+                                                            <Phone size={12} /> WhatsApp
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {colLeads.length === 0 && (
+                                                <div className="py-8 text-center text-slate-400 font-medium text-xs border-2 border-dashed border-slate-200 rounded-2xl">
+                                                    Arraste leads para cá
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <div className="bg-white/70 border border-[#8A9A5B]/10 rounded-[2.5rem] overflow-hidden backdrop-blur-md shadow-xl">
+                            {isLoading ? (
+                                <div className="p-20 flex justify-center">
+                                    <div className="w-12 h-12 border-4 border-[#8A9A5B]/20 border-t-[#8A9A5B] rounded-full animate-spin"></div>
+                                </div>
+                            ) : (
+                                <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-[#8A9A5B]/10 bg-[#8A9A5B]/5">
                                         <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Nome</th>
@@ -872,6 +1006,7 @@ const SaaSManagement = () => {
                             </table>
                         )}
                     </div>
+                    )}
                 </div>
             </div>
 
