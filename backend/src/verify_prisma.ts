@@ -14,7 +14,7 @@ async function main() {
         } else {
             console.log('❌ Campo costCenter NÃO está presente no cliente.');
         }
-    } catch (e) {
+    } catch (e: any) {
         console.log('Erro ao inspecionar campos:', e.message);
     }
 }

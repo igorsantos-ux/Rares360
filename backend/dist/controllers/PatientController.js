@@ -3,11 +3,10 @@ export class PatientController {
     static async list(req, res) {
         try {
             let clinicId = req.clinicId || req.user?.clinicId;
-            // Suporte para ADMIN_GLOBAL
             if (!clinicId) {
                 const firstClinic = await prisma.clinic.findFirst();
                 if (!firstClinic)
-                    return res.status(401).json({ message: 'Clínica nãos identificada' });
+                    return res.status(401).json({ message: 'Clínica não identificada' });
                 clinicId = firstClinic.id;
             }
             const patients = await prisma.patient.findMany({
@@ -15,6 +14,9 @@ export class PatientController {
                 include: {
                     transactions: {
                         where: { type: 'INCOME' }
+                    },
+                    inventoryUsages: {
+                        include: { inventoryItem: true }
                     }
                 },
                 orderBy: { fullName: 'asc' }
@@ -23,20 +25,22 @@ export class PatientController {
                 // Cálculo de LTV (Pagos)
                 const paidTransactions = p.transactions.filter(t => t.status === 'PAID' || t.status === 'RECEBIDO');
                 const totalSpent = paidTransactions.reduce((acc, t) => acc + t.amount, 0);
-                // Contagem total de atendimentos (Independente de pagamento para histórico)
+                // Cálculo de Custos de Insumos
+                const totalInventoryCost = p.inventoryUsages.reduce((acc, usage) => {
+                    return acc + (usage.quantity * (usage.inventoryItem?.unitCost || 0));
+                }, 0);
+                // Margem de Rentabilidade
+                const marginValue = totalSpent - totalInventoryCost;
+                const marginPercentage = totalSpent > 0 ? (marginValue / totalSpent) * 100 : 0;
                 const visitCount = p.transactions.length;
-                // Última Visita
                 const sortedTrans = [...p.transactions].sort((a, b) => {
                     const dateA = a.date ? new Date(a.date).getTime() : 0;
                     const dateB = b.date ? new Date(b.date).getTime() : 0;
                     return dateB - dateA;
                 });
                 const lastVisit = sortedTrans[0]?.date || null;
-                // Ticket Médio (LTV / Atendimentos)
                 const averageTicket = visitCount > 0 ? totalSpent / visitCount : 0;
-                // Extrair procedimentos únicos
                 const procedures = Array.from(new Set(p.transactions.map(t => t.procedureName).filter(Boolean)));
-                // Classificação (Baseada no LTV total)
                 let classification = 'BRONZE';
                 if (totalSpent >= 10000)
                     classification = 'DIAMANTE';
@@ -47,6 +51,9 @@ export class PatientController {
                 return {
                     ...p,
                     totalSpent,
+                    totalInventoryCost,
+                    profitabilityMargin: marginPercentage,
+                    isHighProfitability: marginPercentage > 70,
                     visitCount,
                     lastVisit,
                     averageTicket,
@@ -54,7 +61,6 @@ export class PatientController {
                     classification
                 };
             });
-            // Summary data para os Cards
             const now = new Date();
             const thisMonth = now.getMonth();
             const birthdaysMonth = patients.filter(p => {
@@ -80,11 +86,58 @@ export class PatientController {
             res.status(500).json({ error: 'Erro ao listar pacientes' });
         }
     }
+    static async getById(req, res) {
+        try {
+            const { id } = req.params;
+            const clinicId = req.clinicId || req.user?.clinicId;
+            const patient = await prisma.patient.findUnique({
+                where: { id },
+                include: {
+                    transactions: { orderBy: { date: 'desc' } },
+                    appointments: {
+                        include: { professional: true, room: true, procedure: true },
+                        orderBy: { startTime: 'desc' }
+                    },
+                    evolutions: {
+                        include: { professional: { select: { name: true } } },
+                        orderBy: { date: 'desc' }
+                    },
+                    prescriptions: { orderBy: { createdAt: 'desc' } },
+                    inventoryUsages: { include: { inventoryItem: true } },
+                    proposals: { orderBy: { createdAt: 'desc' } }
+                }
+            });
+            if (!patient || patient.clinicId !== clinicId) {
+                return res.status(404).json({ error: 'Paciente não encontrado' });
+            }
+            // Recalcular rentabilidade para o detalhe
+            const totalSpent = patient.transactions
+                .filter(t => t.type === 'INCOME' && (t.status === 'PAID' || t.status === 'RECEBIDO'))
+                .reduce((acc, t) => acc + t.amount, 0);
+            const totalInventoryCost = patient.inventoryUsages.reduce((acc, usage) => {
+                return acc + (usage.quantity * (usage.inventoryItem?.unitCost || 0));
+            }, 0);
+            const marginValue = totalSpent - totalInventoryCost;
+            const marginPercentage = totalSpent > 0 ? (marginValue / totalSpent) * 100 : 0;
+            res.json({
+                ...patient,
+                analytics: {
+                    totalSpent,
+                    totalInventoryCost,
+                    profitabilityMargin: marginPercentage,
+                    isHighProfitability: marginPercentage > 70
+                }
+            });
+        }
+        catch (error) {
+            console.error('Error getting patient:', error);
+            res.status(500).json({ error: 'Erro ao buscar detalhes do paciente' });
+        }
+    }
     static async create(req, res) {
         try {
             const clinicId = req.clinicId || req.user?.clinicId;
             const data = req.body;
-            // Limpa campos vazios para não dar erro no Prisma (Int/Float)
             const cleanData = { ...data };
             if (cleanData.weight === '')
                 delete cleanData.weight;
@@ -97,7 +150,8 @@ export class PatientController {
                     birthDate: data.birthDate ? new Date(data.birthDate) : null,
                     weight: cleanData.weight ? parseFloat(cleanData.weight) : null,
                     height: cleanData.height ? parseFloat(cleanData.height) : null,
-                    smoker: data.smoker === true || data.smoker === 'true'
+                    smoker: data.smoker === true || data.smoker === 'true',
+                    tags: Array.isArray(data.tags) ? data.tags : []
                 }
             });
             res.status(201).json(patient);
@@ -111,23 +165,21 @@ export class PatientController {
         try {
             const { id } = req.params;
             const data = req.body;
-            console.log(`📝 Iniciando update do paciente ${id}. Dados recebidos:`, data.fullName);
             const cleanData = { ...data };
-            // Campos proibidos ou calculados que devem ser removidos do payload de atualização
             const forbiddenFields = [
                 'id', 'clinicId', 'transactions', 'createdAt', 'updatedAt',
                 'totalSpent', 'visitCount', 'lastVisit', 'averageTicket',
-                'procedures', 'classification'
+                'procedures', 'classification', 'analytics', 'appointments',
+                'evolutions', 'prescriptions', 'inventoryUsages', 'proposals'
             ];
             forbiddenFields.forEach(field => delete cleanData[field]);
-            // Tratamento especial para booleanos e números vindo como string do form
             const updatePayload = {
                 ...cleanData,
                 smoker: data.smoker === true || data.smoker === 'true',
                 weight: (data.weight !== undefined && data.weight !== '') ? parseFloat(data.weight) : null,
                 height: (data.height !== undefined && data.height !== '') ? parseFloat(data.height) : null,
+                tags: Array.isArray(data.tags) ? data.tags : undefined
             };
-            // Tratamento de data para o Prisma (DateTime)
             if (data.birthDate) {
                 updatePayload.birthDate = new Date(data.birthDate);
             }
@@ -138,12 +190,10 @@ export class PatientController {
                 where: { id },
                 data: updatePayload
             });
-            console.log(`✅ Paciente ${id} atualizado com sucesso.`);
             res.json(patient);
         }
         catch (error) {
             console.error('❌ Erro no update do paciente:', error);
-            // Mensagem de erro amigável se for violação de unique (CPF)
             if (error.code === 'P2002') {
                 return res.status(400).json({ error: 'Este CPF já está cadastrado para outro paciente.' });
             }

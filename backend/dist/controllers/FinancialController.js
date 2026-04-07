@@ -15,7 +15,12 @@ export class FinancialController {
             res.json(summary);
         }
         catch (error) {
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({
+                error: 'Internal server error',
+                message: error.message,
+                code: error.code
+            });
         }
     }
     static async getBreakEven(req, res) {
@@ -27,25 +32,46 @@ export class FinancialController {
             res.json(breakEven);
         }
         catch (error) {
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({
+                error: 'Internal server error',
+                message: error.message,
+                code: error.code
+            });
         }
     }
     static async getEvolution(req, res) {
         try {
-            const evolution = await FinancialService.getEvolution(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate) : undefined;
+            const end = endDate ? new Date(endDate) : undefined;
+            const evolution = await FinancialService.getEvolution(req.clinicId, start, end);
             res.json(evolution);
         }
         catch (error) {
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({
+                error: 'Internal server error',
+                message: error.message,
+                code: error.code
+            });
         }
     }
     static async getDailyEvolution(req, res) {
         try {
-            const daily = await FinancialService.getDailyEvolution(req.clinicId);
+            const { startDate, endDate } = req.query;
+            const start = startDate ? new Date(startDate) : undefined;
+            const end = endDate ? new Date(endDate) : undefined;
+            const daily = await FinancialService.getDailyEvolution(req.clinicId, start, end);
             res.json(daily);
         }
         catch (error) {
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({
+                error: 'Internal server error',
+                message: error.message,
+                code: error.code
+            });
         }
     }
     static async createTransaction(req, res) {
@@ -62,7 +88,12 @@ export class FinancialController {
             res.status(201).json(data);
         }
         catch (error) {
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({
+                error: 'Internal server error',
+                message: error.message,
+                code: error.code
+            });
         }
     }
     static async getTransactions(req, res) {
@@ -74,7 +105,12 @@ export class FinancialController {
             res.json(transactions);
         }
         catch (error) {
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('[FinancialController] Error:', error);
+            res.status(500).json({
+                error: 'Internal server error',
+                message: error.message,
+                code: error.code
+            });
         }
     }
 }

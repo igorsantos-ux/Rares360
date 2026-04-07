@@ -1,9 +1,11 @@
-import prisma from '../lib/prisma.js';
+import { basePrisma } from '../lib/prisma.js';
 import { AuthService } from '../services/AuthService.js';
 import { BillingService } from '../services/BillingService.js';
+import { MailService } from '../services/MailService.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import crypto from 'crypto';
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         const dir = 'uploads/logos';
@@ -34,7 +36,7 @@ export class SaaSController {
     // Gestão de Clínicas
     static async listClinics(req, res) {
         try {
-            const clinics = await prisma.clinic.findMany({
+            const clinics = await basePrisma.clinic.findMany({
                 include: {
                     _count: {
                         select: { users: true }
@@ -62,7 +64,7 @@ export class SaaSController {
                 const f = parseFloat(val);
                 return isNaN(f) ? null : f;
             };
-            const clinic = await prisma.clinic.create({
+            const clinic = await basePrisma.clinic.create({
                 data: {
                     name,
                     razaoSocial,
@@ -98,7 +100,10 @@ export class SaaSController {
                     crmResponsavel,
                     registroVigilancia,
                     cnes,
-                    pricePerUser: parseFloatSafe(pricePerUser) || 50.0
+                    pricePerUser: parseFloatSafe(pricePerUser) || 50.0,
+                    implementationFee: parseFloatSafe(req.body.implementationFee) || 0,
+                    monthlyFee: parseFloatSafe(req.body.monthlyFee) || 0,
+                    proposalUrl: req.body.proposalUrl || null
                 }
             });
             // Seed de Documentos Sugeridos (v15.0)
@@ -120,7 +125,7 @@ export class SaaSController {
                 { title: 'Contrato Prestação de Serviço ao Paciente', category: 'Templates' },
                 { title: 'Termo de Uso de Imagem', category: 'Templates' }
             ];
-            await prisma.clinicDocument.createMany({
+            await basePrisma.clinicDocument.createMany({
                 data: suggestedDocuments.map(doc => ({
                     ...doc,
                     clinicId: clinic.id,
@@ -160,7 +165,7 @@ export class SaaSController {
                 const f = parseFloat(val);
                 return isNaN(f) ? undefined : f;
             };
-            const clinic = await prisma.clinic.update({
+            const clinic = await basePrisma.clinic.update({
                 where: { id },
                 data: {
                     name,
@@ -198,6 +203,9 @@ export class SaaSController {
                     registroVigilancia,
                     cnes,
                     pricePerUser: parseFloatSafe(pricePerUser),
+                    implementationFee: parseFloatSafe(req.body.implementationFee),
+                    monthlyFee: parseFloatSafe(req.body.monthlyFee),
+                    proposalUrl: req.body.proposalUrl,
                     isActive
                 }
             });
@@ -212,15 +220,24 @@ export class SaaSController {
         try {
             const { id } = req.params;
             // Delete all related records first to avoid foreign key constraints
-            await prisma.$transaction([
-                prisma.transaction.deleteMany({ where: { clinicId: id } }),
-                prisma.doctor.deleteMany({ where: { clinicId: id } }),
-                prisma.patient.deleteMany({ where: { clinicId: id } }),
-                prisma.stockItem.deleteMany({ where: { clinicId: id } }),
-                prisma.financialGoal.deleteMany({ where: { clinicId: id } }),
-                prisma.document.deleteMany({ where: { clinicId: id } }),
-                prisma.user.deleteMany({ where: { clinicId: id } }),
-                prisma.clinic.delete({ where: { id } })
+            await basePrisma.$transaction([
+                basePrisma.transaction.deleteMany({ where: { clinicId: id } }),
+                basePrisma.accountPayable.deleteMany({ where: { clinicId: id } }),
+                basePrisma.dailyClosure.deleteMany({ where: { clinicId: id } }),
+                basePrisma.inventoryItem.deleteMany({ where: { clinicId: id } }),
+                basePrisma.stockMovement.deleteMany({ where: { clinicId: id } }),
+                basePrisma.financialGoal.deleteMany({ where: { clinicId: id } }),
+                basePrisma.lead.deleteMany({ where: { clinicId: id } }),
+                basePrisma.document.deleteMany({ where: { clinicId: id } }),
+                basePrisma.clinicDocument.deleteMany({ where: { clinicId: id } }),
+                basePrisma.pricingSimulation.deleteMany({ where: { clinicId: id } }),
+                basePrisma.procedurePricing.deleteMany({ where: { clinicId: id } }),
+                basePrisma.procedureExecution.deleteMany({ where: { clinicId: id } }),
+                basePrisma.task.deleteMany({ where: { clinicId: id } }),
+                basePrisma.doctor.deleteMany({ where: { clinicId: id } }),
+                basePrisma.patient.deleteMany({ where: { clinicId: id } }),
+                basePrisma.user.deleteMany({ where: { clinicId: id } }),
+                basePrisma.clinic.delete({ where: { id } })
             ]);
             res.json({ message: 'Clínica e todos os dados vinculados foram excluídos com sucesso' });
         }
@@ -232,7 +249,7 @@ export class SaaSController {
     // Gestão de Usuários
     static async listUsers(req, res) {
         try {
-            const users = await prisma.user.findMany({
+            const users = await basePrisma.user.findMany({
                 include: { clinic: { select: { name: true } } }
             });
             res.json(users);
@@ -243,27 +260,49 @@ export class SaaSController {
     }
     static async createUser(req, res) {
         try {
-            const { name, email, password, role, clinicId } = req.body;
-            const existingUser = await prisma.user.findUnique({ where: { email } });
+            const { name, email, role, clinicId } = req.body;
+            let { password } = req.body;
+            const existingUser = await basePrisma.user.findUnique({ where: { email } });
             if (existingUser) {
                 return res.status(400).json({ error: 'Email já cadastrado' });
             }
+            // Gerar senha temporária caso não seja fornecida
+            if (!password) {
+                password = crypto.randomBytes(4).toString('hex'); // ex: 8f2g3h1j
+            }
             const hashedPassword = await AuthService.hashPassword(password);
-            const user = await prisma.user.create({
+            const user = await basePrisma.user.create({
                 data: {
                     name,
                     email,
                     password: hashedPassword,
                     role,
-                    clinicId
+                    clinicId,
+                    mustChangePassword: true, // Sempre obrigatório mudar no primeiro acesso
+                    passwordUpdatedAt: new Date()
                 }
             });
+            // Registrar no histórico inicial
+            await basePrisma.passwordHistory.create({
+                data: {
+                    userId: user.id,
+                    hash: hashedPassword
+                }
+            });
+            // Disparar e-mail de Onboarding
+            try {
+                await MailService.sendOnboardingEmail(email, name, password);
+            }
+            catch (mailError) {
+                console.error('[SaaS] Alerta: Usuário criado, mas falha ao enviar e-mail:', mailError);
+            }
             res.status(201).json({
                 id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                clinicId: user.clinicId
+                clinicId: user.clinicId,
+                tempPassword: password // Retorna para o Admin também
             });
         }
         catch (error) {
@@ -284,8 +323,9 @@ export class SaaSController {
             };
             if (password && password.trim() !== '') {
                 data.password = await AuthService.hashPassword(password);
+                data.passwordUpdatedAt = new Date();
             }
-            const user = await prisma.user.update({
+            const user = await basePrisma.user.update({
                 where: { id },
                 data
             });
@@ -306,33 +346,201 @@ export class SaaSController {
             res.status(500).json({ error: 'Erro ao atualizar usuário' });
         }
     }
+    static async deleteUser(req, res) {
+        try {
+            const { id } = req.params;
+            console.log(`[SaaS] Tentando excluir usuário: ${id}`);
+            await basePrisma.user.delete({ where: { id } });
+            console.log(`[SaaS] Usuário ${id} excluído com sucesso.`);
+            res.json({ message: 'Usuário excluído com sucesso' });
+        }
+        catch (error) {
+            console.error('[SaaS Error] Falha ao excluir usuário:', error);
+            if (error.code === 'P2003') {
+                return res.status(400).json({
+                    error: 'Não é possível excluir este usuário pois ele possui registros financeiros (ex: fechamento de caixa) vinculados.'
+                });
+            }
+            if (error.code === 'P2025') {
+                return res.status(404).json({
+                    error: 'Usuário não encontrado.'
+                });
+            }
+            res.status(500).json({
+                error: 'Erro interno ao excluir usuário. Verifique se existem registros vinculados ou tente novamente.'
+            });
+        }
+    }
     static async getBillingSummary(req, res) {
         try {
-            const clinics = await prisma.clinic.findMany({
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            const invoices = await basePrisma.invoice.findMany({
+                where: { month: currentMonth, year: currentYear }
+            });
+            const clinics = await basePrisma.clinic.findMany({
                 include: {
                     _count: {
                         select: { users: true }
                     }
                 }
             });
-            const summary = clinics.map(c => ({
-                id: c.id,
-                name: c.name,
-                cnpj: c.cnpj,
-                userCount: c._count.users,
-                pricePerUser: c.pricePerUser,
-                total: c._count.users * c.pricePerUser
-            }));
+            const summary = clinics.map((c) => {
+                const clinicInvoices = invoices.filter(inv => inv.clinicId === c.id);
+                const hasInvoices = clinicInvoices.length > 0;
+                const data = {
+                    id: c.id,
+                    name: c.name,
+                    cnpj: c.cnpj,
+                    userCount: c._count.users,
+                    pricePerUser: c.monthlyFee > 0 ? c.monthlyFee : c.pricePerUser,
+                    total: 0,
+                    invoices: clinicInvoices,
+                    contractStartDate: c.contractStartDate,
+                    contractDurationMonths: c.contractDurationMonths,
+                    contractStatus: c.contractStatus
+                };
+                if (hasInvoices) {
+                    data.total = clinicInvoices.reduce((acc, inv) => acc + inv.totalAmount, 0);
+                }
+                else {
+                    data.total = c.monthlyFee > 0 ? c.monthlyFee : (c._count.users * c.pricePerUser);
+                }
+                return data;
+            });
             res.json(summary);
         }
         catch (error) {
+            console.error(error);
             res.status(500).json({ error: 'Erro ao gerar relatório de faturamento' });
+        }
+    }
+    static async generateMonthlyInvoices(req, res) {
+        try {
+            const currentMonth = new Date().getMonth() + 1;
+            const currentYear = new Date().getFullYear();
+            const clinics = await basePrisma.clinic.findMany({
+                where: { isActive: true },
+                include: { _count: { select: { users: true } } }
+            });
+            let generatedCount = 0;
+            for (const clinic of clinics) {
+                // Verificar se já existe fatura deste mês
+                const existing = await basePrisma.invoice.findFirst({
+                    where: { clinicId: clinic.id, month: currentMonth, year: currentYear }
+                });
+                if (existing)
+                    continue;
+                const mensalidade = clinic.monthlyFee && clinic.monthlyFee > 0
+                    ? clinic.monthlyFee
+                    : (clinic._count.users * clinic.pricePerUser);
+                const dueDate = new Date();
+                dueDate.setDate(dueDate.getDate() + 5);
+                const setupRemaining = clinic.setupRemainingInstallments || 0;
+                const hasSetupPending = setupRemaining > 0;
+                let setupPortion = 0;
+                if (hasSetupPending && clinic.setupValue && clinic.setupInstallments) {
+                    setupPortion = clinic.setupValue / clinic.setupInstallments;
+                }
+                if (hasSetupPending && clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE') {
+                    await basePrisma.invoice.create({
+                        data: {
+                            clinicId: clinic.id,
+                            month: currentMonth,
+                            year: currentYear,
+                            description: `Mensalidade + Setup (Parc. ${clinic.setupInstallments - setupRemaining + 1}/${clinic.setupInstallments})`,
+                            saasAmount: mensalidade,
+                            setupAmount: setupPortion,
+                            totalAmount: mensalidade + setupPortion,
+                            type: 'MENSALIDADE_E_SETUP',
+                            dueDate
+                        }
+                    });
+                    await basePrisma.clinic.update({
+                        where: { id: clinic.id },
+                        data: { setupRemainingInstallments: setupRemaining - 1 }
+                    });
+                    generatedCount++;
+                }
+                else if (hasSetupPending && clinic.setupPaymentType === 'PARCELADO_SEPARADO') {
+                    await basePrisma.invoice.create({
+                        data: {
+                            clinicId: clinic.id,
+                            month: currentMonth,
+                            year: currentYear,
+                            description: 'Mensalidade SaaS',
+                            saasAmount: mensalidade,
+                            setupAmount: 0,
+                            totalAmount: mensalidade,
+                            type: 'MENSALIDADE',
+                            dueDate
+                        }
+                    });
+                    await basePrisma.invoice.create({
+                        data: {
+                            clinicId: clinic.id,
+                            month: currentMonth,
+                            year: currentYear,
+                            description: `Taxa de Implementação (Parc. ${clinic.setupInstallments - setupRemaining + 1}/${clinic.setupInstallments})`,
+                            saasAmount: 0,
+                            setupAmount: setupPortion,
+                            totalAmount: setupPortion,
+                            type: 'SETUP',
+                            dueDate
+                        }
+                    });
+                    await basePrisma.clinic.update({
+                        where: { id: clinic.id },
+                        data: { setupRemainingInstallments: setupRemaining - 1 }
+                    });
+                    generatedCount += 2;
+                }
+                else {
+                    await basePrisma.invoice.create({
+                        data: {
+                            clinicId: clinic.id,
+                            month: currentMonth,
+                            year: currentYear,
+                            description: 'Mensalidade SaaS',
+                            saasAmount: mensalidade,
+                            setupAmount: 0,
+                            totalAmount: mensalidade,
+                            type: 'MENSALIDADE',
+                            dueDate
+                        }
+                    });
+                    generatedCount++;
+                }
+            }
+            res.json({ message: `Faturamento processado. ${generatedCount} faturas criadas.` });
+        }
+        catch (error) {
+            console.error('Error generating invoices:', error);
+            res.status(500).json({ error: 'Erro ao gerar faturas' });
+        }
+    }
+    static async getClinicInvoices(req, res) {
+        try {
+            const { clinicId } = req.params;
+            const invoices = await basePrisma.invoice.findMany({
+                where: { clinicId },
+                orderBy: [
+                    { year: 'desc' },
+                    { month: 'desc' },
+                    { createdAt: 'desc' }
+                ]
+            });
+            res.json(invoices);
+        }
+        catch (error) {
+            console.error('Error fetching invoices:', error);
+            res.status(500).json({ error: 'Erro ao buscar faturas da clínica' });
         }
     }
     static async generateInvoicePDF(req, res) {
         try {
             const { clinicId } = req.params;
-            const clinic = await prisma.clinic.findUnique({
+            const clinic = await basePrisma.clinic.findUnique({
                 where: { id: clinicId },
                 include: { _count: { select: { users: true } } }
             });
@@ -340,9 +548,21 @@ export class SaaSController {
                 return res.status(404).json({ error: 'Clínica não encontrada' });
             const pdfBuffer = await BillingService.generatePDF({
                 clinicName: clinic.name,
+                razaoSocial: clinic.razaoSocial || clinic.name,
+                cnpj: clinic.cnpj || '00.000.000/0000-00',
+                address: `${clinic.logradouro || ''}, ${clinic.numero || ''} ${clinic.complemento || ''} - ${clinic.bairro || ''}, ${clinic.cidade || ''}/${clinic.estado || ''}`.trim(),
                 userCount: clinic._count.users,
                 pricePerUser: clinic.pricePerUser,
-                total: clinic._count.users * clinic.pricePerUser
+                monthlyFee: clinic.monthlyFee || 0,
+                setupValue: clinic.setupValue || 0,
+                setupInstallments: clinic.setupInstallments || 1,
+                setupRemaining: clinic.setupRemainingInstallments || 0,
+                contractStartDate: clinic.contractStartDate || clinic.createdAt,
+                contractDuration: clinic.contractDurationMonths || 12,
+                status: 'PENDENTE', // Valor padrão para fatura draft/on-the-fly
+                total: (clinic.monthlyFee || (clinic._count.users * clinic.pricePerUser)) +
+                    (clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE' && (clinic.setupRemainingInstallments || 0) > 0
+                        ? ((clinic.setupValue || 0) / (clinic.setupInstallments || 1)) : 0)
             });
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename=fatura-${clinic.name}.pdf`);
@@ -355,7 +575,7 @@ export class SaaSController {
     static async generateInvoiceXML(req, res) {
         try {
             const { clinicId } = req.params;
-            const clinic = await prisma.clinic.findUnique({
+            const clinic = await basePrisma.clinic.findUnique({
                 where: { id: clinicId },
                 include: { _count: { select: { users: true } } }
             });

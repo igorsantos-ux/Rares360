@@ -175,7 +175,7 @@ export class ReceivableController {
             if (!clinicId) {
                 return res.status(400).json({ message: 'Clínica não identificada para o lançamento.' });
             }
-            const { description, patientId, procedureName, amount, dueDate, status = 'PENDENTE', fileUrl, category, paymentMethod } = req.body;
+            const { description, patientId, procedureName, amount, dueDate, status = 'PENDENTE', fileUrl, category, paymentMethod, quantity = 1, isExecuted = false } = req.body;
             if (!description || !amount || !dueDate) {
                 console.error('Campos obrigatórios ausentes:', { description, amount, dueDate });
                 return res.status(400).json({ message: 'Descrição, valor e data de vencimento são obrigatórios.' });
@@ -195,6 +195,8 @@ export class ReceivableController {
                     date: transactionDate, // Sincroniza com a data selecionada
                     fileUrl,
                     patientId,
+                    quantity: Number(quantity) || 1,
+                    isExecuted: Boolean(isExecuted),
                     clinicId: clinicId
                 }
             });

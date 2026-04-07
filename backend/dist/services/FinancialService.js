@@ -32,8 +32,8 @@ export class FinancialService {
             prisma.financialGoal.findFirst({
                 where: {
                     clinicId,
-                    month: now.getMonth() + 1,
-                    year: now.getFullYear()
+                    month: (startDate || now).getMonth() + 1,
+                    year: (startDate || now).getFullYear()
                 }
             })
         ]);
@@ -51,21 +51,25 @@ export class FinancialService {
         const expenseTransactions = transactions.filter((t) => t.type === 'EXPENSE');
         const grossRevenue = incomeTransactions.reduce((acc, t) => acc + t.amount, 0);
         const netRevenue = incomeTransactions.reduce((acc, t) => acc + (t.netAmount || t.amount), 0);
+        const receivedRevenue = incomeTransactions
+            .filter((t) => ['PAID', 'RECEBIDO', 'PAGO'].includes(t.status))
+            .reduce((acc, t) => acc + (t.netAmount || t.amount), 0);
         const paidExpenses = expenseTransactions
-            .filter((t) => t.status === 'PAID')
+            .filter((t) => ['PAID', 'RECEBIDO', 'PAGO'].includes(t.status))
             .reduce((acc, t) => acc + t.amount, 0) +
             normalizedPaidInstallments.reduce((acc, t) => acc + t.amount, 0);
         const pendingExpenses = expenseTransactions
-            .filter((t) => t.status === 'PENDING')
+            .filter((t) => ['PENDING', 'PENDENTE'].includes(t.status))
             .reduce((acc, t) => acc + t.amount, 0) +
             normalizedPendingInstallments.reduce((acc, t) => acc + t.amount, 0);
         const pendingReceivables = incomeTransactions
-            .filter((t) => t.status === 'PENDING')
+            .filter((t) => ['PENDING', 'PENDENTE'].includes(t.status))
             .reduce((acc, t) => acc + t.amount, 0);
         const uniquePatients = new Set(incomeTransactions.map((t) => t.patientId).filter(Boolean)).size;
         return {
             grossRevenue,
             netRevenue,
+            receivedRevenue,
             revenue: grossRevenue, // Manter compatibilidade
             expenses: paidExpenses,
             netProfit: netRevenue - paidExpenses,
@@ -107,12 +111,15 @@ export class FinancialService {
             remaining: Math.max(breakEvenPoint - totalSales, 0)
         };
     }
-    static async getEvolution(clinicId) {
+    static async getEvolution(clinicId, startDate, endDate) {
         const evolution = [];
         const now = new Date();
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-            const nextDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+        const end = endDate || now;
+        const start = startDate || new Date(end.getFullYear(), end.getMonth() - 6, 1);
+        let current = new Date(start.getFullYear(), start.getMonth(), 1);
+        while (current <= end) {
+            const date = new Date(current);
+            const nextDate = new Date(current.getFullYear(), current.getMonth() + 1, 1);
             const monthTransactions = await prisma.transaction.findMany({
                 where: {
                     clinicId,
@@ -134,20 +141,22 @@ export class FinancialService {
                 expenses,
                 profit: income - expenses
             });
+            current = nextDate;
         }
         return evolution;
     }
-    static async getDailyEvolution(clinicId) {
+    static async getDailyEvolution(clinicId, startDate, endDate) {
         const dailyData = [];
         const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = endDate || now;
+        const start = startDate || new Date(end.getFullYear(), end.getMonth(), 1);
         const transactions = await prisma.transaction.findMany({
             where: {
                 clinicId,
                 type: 'INCOME',
                 date: {
-                    gte: startOfMonth,
-                    lte: now
+                    gte: start,
+                    lte: end
                 }
             },
             orderBy: { date: 'asc' }
@@ -155,25 +164,27 @@ export class FinancialService {
         const goal = await prisma.financialGoal.findFirst({
             where: {
                 clinicId,
-                month: now.getMonth() + 1,
-                year: now.getFullYear()
+                month: start.getMonth() + 1,
+                year: start.getFullYear()
             }
         });
         const target = goal?.target || 600000;
-        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-        const dailyTarget = target / daysInMonth;
+        const diffTime = Math.abs(end.getTime() - start.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
+        const dailyTarget = target / 30; // Baseado em média mensal de 30 dias
         let accumulated = 0;
         let accumulatedTarget = 0;
-        for (let day = 1; day <= now.getDate(); day++) {
-            const dayStart = new Date(now.getFullYear(), now.getMonth(), day);
-            const dayEnd = new Date(now.getFullYear(), now.getMonth(), day, 23, 59, 59);
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+            const dayEnd = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59);
             const dayIncome = transactions
                 .filter(t => t.date >= dayStart && t.date <= dayEnd)
                 .reduce((acc, t) => acc + t.amount, 0);
             accumulated += dayIncome;
             accumulatedTarget += dailyTarget;
             dailyData.push({
-                day,
+                day: d.getDate(),
+                date: d.toLocaleDateString('pt-BR'),
                 income: dayIncome,
                 accumulated,
                 target: accumulatedTarget

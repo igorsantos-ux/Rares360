@@ -15,11 +15,16 @@ import receivableRoutes from './routes/receivableRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import pricingRoutes from './routes/pricingRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
+import clinicRoutes from './routes/clinicRoutes.js';
 import importRoutes from './routes/importRoutes.js';
 import cashRoutes from './routes/cashRoutes.js';
 import procedureRoutes from './routes/procedureRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
+import leadRoutes from './routes/leadRoutes.js';
+import appointmentRoutes from './routes/appointmentRoutes.js';
+import pepRoutes from './routes/pepRoutes.js';
 import { SeedService } from './services/SeedService.js';
+import { MigrationService } from './services/MigrationService.js';
 const app = express();
 // Logger de requisições - MOVIDO PARA O TOPO para capturar tudo (inclusive OPTIONS/CORS)
 app.use((req, res, next) => {
@@ -39,7 +44,7 @@ app.use(cors({
 app.use(express.json());
 app.use('/uploads', express.static('uploads'));
 app.get('/', (req, res) => {
-    res.json({ message: 'Heath Finance API is online' });
+    res.json({ message: 'Rares360 API is online' });
 });
 import { authMiddleware, tenantMiddleware } from './middlewares/authMiddleware.js';
 app.use('/api/auth', authRoutes);
@@ -57,6 +62,10 @@ app.use('/api/tasks', authMiddleware, tenantMiddleware, taskRoutes);
 app.use('/api/upload', authMiddleware, tenantMiddleware, uploadRoutes);
 app.use('/api/pricing', authMiddleware, tenantMiddleware, pricingRoutes);
 app.use('/api/compliance', authMiddleware, tenantMiddleware, complianceRoutes);
+app.use('/api/appointments', authMiddleware, tenantMiddleware, appointmentRoutes);
+app.use('/api/clinic', authMiddleware, tenantMiddleware, clinicRoutes);
+app.use('/api/pep', authMiddleware, tenantMiddleware, pepRoutes);
+app.use('/api/leads', leadRoutes);
 app.use('/api/import', authMiddleware, tenantMiddleware, importRoutes);
 process.on('SIGTERM', () => {
     console.log('SIGTERM recebido. Encerrando graciosamente...');
@@ -66,10 +75,12 @@ process.on('uncaughtException', (err) => {
     console.error('Exceção não capturada:', err);
 });
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Heath Finance API is running' });
+    res.json({ status: 'ok', message: 'Rares360 API is running' });
 });
 const port = 3001;
 app.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Server is officially listening on 0.0.0.0:${port}`);
-    SeedService.autoSeedIfEmpty().catch(err => console.error('Erro no auto-seed background:', err));
+    MigrationService.runSoftMigrations().then(() => {
+        SeedService.autoSeedIfEmpty().catch(err => console.error('Erro no auto-seed background:', err));
+    }).catch(err => console.error('Erro no soft-migration background:', err));
 });

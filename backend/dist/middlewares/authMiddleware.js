@@ -39,7 +39,7 @@ export const tenantMiddleware = (req, res, next) => {
         }
         clinicId = req.user.clinicId;
     }
-    if (!clinicId) {
+    if (!clinicId && req.user.role !== 'ADMIN_GLOBAL') {
         return res.status(401).json({ error: 'Clinic ID não identificado', message: 'Clinic ID não identificado' });
     }
     // Injeta o clinicId no req e no contexto global do AsyncLocalStorage

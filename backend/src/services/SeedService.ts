@@ -117,7 +117,7 @@ export class SeedService {
         await prisma.transaction.deleteMany();
         await prisma.financialGoal.deleteMany();
         await prisma.lead.deleteMany();
-        await prisma.stockItem.deleteMany();
+        await prisma.inventoryItem.deleteMany();
         await prisma.doctor.deleteMany();
         await prisma.patient.deleteMany();
         await prisma.clinic.deleteMany();
@@ -247,9 +247,9 @@ export class SeedService {
 
         // 8. Leads (Global ou por clínica? No schema não tem clinicId, vou manter global por enquanto ou adicionar depois)
         const leads = [
-            { name: 'Juliana P.', source: 'Instagram', status: 'Novo' },
-            { name: 'Marcos R.', source: 'Google', status: 'Contatado' },
-            { name: 'Beatriz F.', source: 'Instagram', status: 'Convertido' },
+            { name: 'Juliana P.', source: 'Instagram', status: 'Novo', clinicId: clinic.id },
+            { name: 'Marcos R.', source: 'Google', status: 'Contatado', clinicId: clinic.id },
+            { name: 'Beatriz F.', source: 'Instagram', status: 'Convertido', clinicId: clinic.id },
         ];
         for (const l of leads) {
             await prisma.lead.create({ data: l });
@@ -261,7 +261,7 @@ export class SeedService {
             { name: 'Ácido Hialurônico', category: 'Injetáveis', quantity: 25, minQuantity: 10, price: 850, clinicId: clinic.id },
         ];
         for (const it of items) {
-            await prisma.stockItem.create({ data: it });
+            await prisma.inventoryItem.create({ data: it });
         }
     }
 }

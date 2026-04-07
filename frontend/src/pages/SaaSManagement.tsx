@@ -17,7 +17,8 @@ import {
     MessageSquare,
     Star,
     Phone,
-    Cpu
+    Cpu,
+    Mail
 } from 'lucide-react';
 import { saasApi, leadsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -441,9 +442,18 @@ const SaaSManagement = () => {
             await leadsApi.updateStatus(leadId, status);
             fetchData();
         } catch (error) {
-            alert('Erro ao atualizar status do lead');
+            toast.error('Erro ao atualizar status do lead');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleUpdateLeadNotes = async (leadId: string, notes: string) => {
+        try {
+            await leadsApi.updateNotes(leadId, notes);
+            fetchData(); // atualiza a lista por tras
+        } catch (error) {
+            toast.error('Erro ao salvar anotações.');
         }
     };
 
@@ -470,8 +480,9 @@ const SaaSManagement = () => {
         switch (status) {
             case 'NOVO': return 'bg-blue-100 text-blue-700 border-blue-200';
             case 'EM_CONTATO': return 'bg-amber-100 text-amber-700 border-amber-200';
-            case 'CONVERTIDO': return 'bg-green-100 text-green-700 border-green-200';
-            case 'ARQUIVADO': return 'bg-slate-100 text-slate-700 border-slate-200';
+            case 'DEMONSTRACAO': return 'bg-purple-100 text-purple-700 border-purple-200';
+            case 'FECHADO': return 'bg-green-100 text-green-700 border-green-200';
+            case 'PERDIDO': return 'bg-red-100 text-red-700 border-red-200';
             default: return 'bg-slate-100 text-slate-700 border-slate-200';
         }
     };
@@ -674,8 +685,8 @@ const SaaSManagement = () => {
                                                 <td className="p-6 text-slate-500 font-semibold text-sm">
                                                     {activeTab === 'clinics' ? (item.cnpj || 'Não info') : activeTab === 'users' ? item.email : activeTab === 'leads' ? (
                                                         <div className="space-y-1">
-                                                            <p className="text-slate-800 font-bold">{item.email}</p>
-                                                            <p className="text-[10px]">{item.whatsapp}</p>
+                                                            <p className="text-slate-800 font-bold flex items-center gap-2"><Mail size={12}/> {item.email}</p>
+                                                            <p className="text-[10px] flex items-center gap-2"><Phone size={12}/> {item.whatsapp}</p>
                                                         </div>
                                                     ) : (
                                                         <div className="space-y-1 text-xs">
@@ -740,8 +751,9 @@ const SaaSManagement = () => {
                                                             >
                                                                 <option value="NOVO">Novo</option>
                                                                 <option value="EM_CONTATO">Em Contato</option>
-                                                                <option value="CONVERTIDO">Convertido</option>
-                                                                <option value="ARQUIVADO">Arquivado</option>
+                                                                <option value="DEMONSTRACAO">Demonstração</option>
+                                                                <option value="FECHADO">Fechado</option>
+                                                                <option value="PERDIDO">Perdido</option>
                                                             </select>
                                                             <div className="flex items-center gap-1">
                                                                 <button 
@@ -1737,12 +1749,13 @@ const SaaSManagement = () => {
 
                                         {selectedLead.message && (
                                             <div className="space-y-2">
-                                                <h4 className="text-xs font-black text-[#697D58] uppercase tracking-[0.2em]">Observações Adicionais</h4>
+                                                <h4 className="text-xs font-black text-[#697D58] uppercase tracking-[0.2em]">Observações do Lead</h4>
                                                 <div className="p-4 bg-white rounded-2xl border border-slate-100 italic text-slate-600 font-medium text-sm">
                                                     "{selectedLead.message}"
                                                 </div>
                                             </div>
                                         )}
+                                        
                                     </div>
                                 ) : (
                                     <div className="py-20 text-center">
@@ -1750,8 +1763,33 @@ const SaaSManagement = () => {
                                             <MessageSquare size={32} />
                                         </div>
                                         <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Este lead não enviou dados de diagnóstico (formulário legado)</p>
+                                        {selectedLead.message && (
+                                            <div className="mt-6 text-left max-w-sm mx-auto space-y-2">
+                                                <h4 className="text-xs font-black text-[#697D58] uppercase tracking-[0.2em] text-center">Mensagem</h4>
+                                                <div className="p-4 bg-white rounded-2xl border border-slate-100 italic text-slate-600 font-medium text-sm">
+                                                    "{selectedLead.message}"
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
+
+                                {/* NOVO: CAMPO DE ANOTAÇÕES DO VENDEDOR (Sempre visível) */}
+                                <div className="space-y-2 pt-8 mt-8 border-t border-[#8A9A5B]/10">
+                                    <h4 className="text-xs font-black text-[#697D58] uppercase tracking-[0.2em] flex justify-between items-center">
+                                        Anotações do Vendedor
+                                        <span className="text-[9px] text-slate-400">visível apenas aqui</span>
+                                    </h4>
+                                    <textarea 
+                                        rows={4}
+                                        className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-medium text-sm text-slate-700 resize-y"
+                                        placeholder="Digite aqui o histórico de conversas e anotações sobre este lead..."
+                                        value={selectedLead.notes || ''}
+                                        onChange={(e) => setSelectedLead({ ...selectedLead, notes: e.target.value })}
+                                        onBlur={(e) => handleUpdateLeadNotes(selectedLead.id, e.target.value)}
+                                    />
+                                    <p className="text-[9px] text-slate-400 text-right uppercase tracking-widest font-black pt-1">É salvo automaticamente ao sair do campo</p>
+                                </div>
                             </div>
 
                             <div className="p-6 border-t border-[#8A9A5B]/10 bg-white shrink-0 flex gap-4">

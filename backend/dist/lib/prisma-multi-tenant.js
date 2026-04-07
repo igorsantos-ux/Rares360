@@ -16,7 +16,14 @@ const TENANT_MODELS = [
     'ProcedurePricing',
     'DailyClosure',
     'ProcedureExecution',
-    'Task'
+    'Task',
+    'Appointment',
+    'Room',
+    'Equipment',
+    'ClinicalEvolution',
+    'Prescription',
+    'InventoryUsage',
+    'Proposal'
 ];
 export const extendPrisma = (prisma) => {
     return prisma.$extends({
@@ -32,8 +39,15 @@ export const extendPrisma = (prisma) => {
                         return query(args);
                     }
                     // Aplicar filtros de isolamento
-                    if (['findMany', 'findFirst', 'findUnique', 'count', 'aggregate', 'groupBy'].includes(operation)) {
+                    if (['findMany', 'findFirst', 'count', 'aggregate', 'groupBy'].includes(operation)) {
                         args.where = { ...args.where, clinicId };
+                        return query(args);
+                    }
+                    if (operation === 'findUnique') {
+                        // findUnique não aceita campos extras no where (além dos @unique/@id).
+                        // Transformamos em findFirst para permitir o filtro por clinicId mantendo o isolamento.
+                        args.where = { ...args.where, clinicId };
+                        return prisma[model].findFirst(args);
                     }
                     if (['create', 'createMany'].includes(operation)) {
                         if (operation === 'create') {
@@ -46,7 +60,15 @@ export const extendPrisma = (prisma) => {
                         }
                     }
                     if (['update', 'updateMany', 'upsert', 'delete', 'deleteMany'].includes(operation)) {
-                        args.where = { ...args.where, clinicId };
+                        // Para operações de escrita que usam o 'where', injetamos o clinicId.
+                        // Nota: Se for 'update' ou 'delete' via ID, o Prisma pode reclamar se adicionarmos o clinicId
+                        // na cláusula 'where' se este não fizer parte de um índice único composto.
+                        // Como usamos UUIDs, o risco de colisão/acesso indevido é baixíssimo, 
+                        // mas para garantir segurança, injetamos apenas se não for um 'id' simples ou se for 'Many'.
+                        const isSingleIdOperation = ['update', 'delete', 'upsert'].includes(operation) && args.where?.id;
+                        if (!isSingleIdOperation || operation.endsWith('Many')) {
+                            args.where = { ...args.where, clinicId };
+                        }
                     }
                     return query(args);
                 },

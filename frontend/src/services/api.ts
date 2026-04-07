@@ -202,6 +202,7 @@ export const leadsApi = {
     createLead: (data: any) => api.post('leads', data),
     getLeads: () => api.get('leads'),
     updateStatus: (id: string, status: string) => api.patch(`leads/${id}/status`, { status }),
+    updateNotes: (id: string, notes: string) => api.patch(`leads/${id}/notes`, { notes }),
 };
 
 export const appointmentsApi = {
