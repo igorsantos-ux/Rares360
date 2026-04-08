@@ -60,11 +60,49 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
 
   const watchedProcedureId = watch('procedureId');
   const watchedStartTime = watch('startTime');
+  const watchedProfessionalId = watch('professionalId');
+  const [availabilityWarning, setAvailabilityWarning] = useState<string | null>(null);
 
   // Buscar Pacientes, Profissionais, Salas e Equipamentos
   const { data: patients } = useQuery({ queryKey: ['patients-list'], queryFn: () => coreApi.getPatients().then(res => res.data.data || res.data) });
   const { data: resources } = useQuery({ queryKey: ['agenda-resources'], queryFn: () => appointmentsApi.getResources().then(res => res.data) });
   const { data: procedures } = useQuery({ queryKey: ['procedures-list'], queryFn: () => pricingApi.getSimulations().then(res => res.data) });
+
+  // Validar Disponibilidade do Médico
+  useEffect(() => {
+    if (watchedProfessionalId && watchedStartTime && resources?.professionals) {
+        const doctor = resources.professionals.find((d: any) => d.id === watchedProfessionalId);
+        if (doctor && doctor.availability) {
+            const date = new Date(watchedStartTime);
+            const dayNames = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+            const dayKey = dayNames[date.getDay()];
+            const config = doctor.availability[dayKey];
+
+            if (!config || !config.active) {
+                setAvailabilityWarning(`⚠️ Atenção: O(A) Dr(a) não atende neste dia da semana.`);
+            } else {
+                const [startH, startM] = config.start.split(':').map(Number);
+                const [endH, endM] = config.end.split(':').map(Number);
+                const currentH = date.getHours();
+                const currentM = date.getMinutes();
+
+                const startTimeNum = startH * 60 + startM;
+                const endTimeNum = endH * 60 + endM;
+                const currentTimeNum = currentH * 60 + currentM;
+
+                if (currentTimeNum < startTimeNum || currentTimeNum >= endTimeNum) {
+                    setAvailabilityWarning(`⚠️ Horário fora do expediente configurado (${config.start} às ${config.end}).`);
+                } else {
+                    setAvailabilityWarning(null);
+                }
+            }
+        } else {
+            setAvailabilityWarning(null);
+        }
+    } else {
+        setAvailabilityWarning(null);
+    }
+  }, [watchedProfessionalId, watchedStartTime, resources]);
 
   // Efeito para sugerir Sala/Equipamento p/ Botox e calcular fim
   useEffect(() => {
@@ -218,6 +256,13 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                     <FormGroup label="Fim (Automático)" icon={<Clock size={14} />} error={errors.endTime?.message}>
                         <input type="datetime-local" {...register('endTime')} className="form-input bg-white" />
                     </FormGroup>
+
+                    {availabilityWarning && (
+                        <div className="col-span-2 flex items-center gap-3 bg-amber-50 text-amber-700 p-4 rounded-2xl border border-amber-200 animate-in fade-in zoom-in duration-300">
+                            <AlertCircle size={20} className="shrink-0" />
+                            <p className="text-xs font-black uppercase tracking-tight">{availabilityWarning}</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Recursos Físicos */}

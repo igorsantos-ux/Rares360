@@ -18,10 +18,23 @@ const stockSchema = z.object({
 const doctorSchema = z.object({
     name: z.string().min(1, "Nome é obrigatório"),
     specialty: z.string().min(1, "Especialidade é obrigatória"),
-    commission: z.coerce.number().min(0).max(1, "Comissão deve ser entre 0 e 1"),
+    commission: z.coerce.number().min(0).optional(),
     crm: z.string().optional().nullable(),
     phone: z.string().optional().nullable(),
     isActive: z.boolean().optional().default(true),
+    
+    // Novos campos
+    cpf: z.string().optional().nullable(),
+    birthDate: z.string().optional().nullable(),
+    email: z.string().optional().nullable().or(z.literal('')),
+    crmUf: z.string().optional().nullable(),
+    rqe: z.string().optional().nullable(),
+    consultationValue: z.coerce.number().optional().nullable(),
+    repasseType: z.string().optional().nullable(),
+    repasseValue: z.coerce.number().optional().nullable(),
+    pixKey: z.string().optional().nullable(),
+    defaultDuration: z.coerce.number().optional().nullable(),
+    availability: z.any().optional().nullable(),
 });
 
 export class CoreController {
@@ -89,8 +102,15 @@ export class CoreController {
 
             const data = await MedicalService.createDoctor({
                 ...validation.data,
+                commission: validation.data.commission || 0,
                 crm: validation.data.crm ?? undefined,
                 phone: validation.data.phone ?? undefined,
+                cpf: validation.data.cpf ?? undefined,
+                email: validation.data.email ?? undefined,
+                crmUf: validation.data.crmUf ?? undefined,
+                rqe: validation.data.rqe ?? undefined,
+                pixKey: validation.data.pixKey ?? undefined,
+                birthDate: validation.data.birthDate ?? undefined,
                 clinicId: req.clinicId
             });
             res.status(201).json(data);
@@ -113,6 +133,11 @@ export class CoreController {
                 ...validation.data,
                 crm: validation.data.crm === null ? undefined : (validation.data.crm ?? undefined),
                 phone: validation.data.phone === null ? undefined : (validation.data.phone ?? undefined),
+                cpf: validation.data.cpf === null ? undefined : (validation.data.cpf ?? undefined),
+                email: validation.data.email === null ? undefined : (validation.data.email ?? undefined),
+                crmUf: validation.data.crmUf === null ? undefined : (validation.data.crmUf ?? undefined),
+                rqe: validation.data.rqe === null ? undefined : (validation.data.rqe ?? undefined),
+                pixKey: validation.data.pixKey === null ? undefined : (validation.data.pixKey ?? undefined),
             };
 
             const data = await MedicalService.updateDoctor(id, req.clinicId, updateData);

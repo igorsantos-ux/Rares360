@@ -152,13 +152,29 @@ model Transaction {
 }
 
 model Doctor {
-  id           String        @id @default(uuid())
-  name         String
-  crm          String?
-  specialty    String
-  phone        String?
-  isActive     Boolean       @default(true)
-  commission   Float
+  id                String        @id @default(uuid())
+  name              String
+  cpf               String?       @unique
+  birthDate         DateTime?
+  email             String?
+  crm               String?
+  crmUf             String?
+  rqe               String?
+  specialty         String
+  phone             String?
+  isActive          Boolean       @default(true)
+  commission        Float
+  
+  // Novos campos financeiros
+  consultationValue Float?
+  repasseType       String?
+  repasseValue      Float?
+  pixKey            String?
+  
+  // Disponibilidade
+  defaultDuration   Int           @default(30)
+  availability      Json?
+  
   clinicId     String
   clinic       Clinic        @relation(fields: [clinicId], references: [id])
   transactions Transaction[]

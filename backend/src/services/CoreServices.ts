@@ -40,16 +40,24 @@ export class MedicalService {
         crm?: string;
         phone?: string;
         isActive?: boolean;
+        cpf?: string;
+        birthDate?: Date | string;
+        email?: string;
+        crmUf?: string;
+        rqe?: string;
+        consultationValue?: number;
+        repasseType?: string;
+        repasseValue?: number;
+        pixKey?: string;
+        defaultDuration?: number;
+        availability?: any;
     }) {
         return await prisma.doctor.create({
             data: {
-                name: data.name,
-                specialty: data.specialty,
-                commission: data.commission,
-                clinicId: data.clinicId,
-                crm: data.crm,
-                phone: data.phone,
-                isActive: data.isActive !== undefined ? data.isActive : true
+                ...data,
+                birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
+                isActive: data.isActive !== undefined ? data.isActive : true,
+                defaultDuration: data.defaultDuration || 30
             } as any
         });
     }
@@ -58,12 +66,12 @@ export class MedicalService {
         return await prisma.doctor.update({
             where: { id, clinicId },
             data: {
-                name: data.name,
-                specialty: data.specialty,
+                ...data,
+                birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
                 commission: data.commission !== undefined ? Number(data.commission) : undefined,
-                crm: data.crm,
-                phone: data.phone,
-                isActive: data.isActive
+                consultationValue: data.consultationValue !== undefined ? Number(data.consultationValue) : undefined,
+                repasseValue: data.repasseValue !== undefined ? Number(data.repasseValue) : undefined,
+                defaultDuration: data.defaultDuration !== undefined ? Number(data.defaultDuration) : undefined,
             } as any
         });
     }
