@@ -85,6 +85,50 @@ export class AppointmentController {
                 orderBy: { startTime: 'asc' }
             });
 
+            // Agregação de Inteligência Financeira por Paciente
+            const patientIds = [...new Set(appointments.map(a => a.patientId))];
+            
+            if (patientIds.length > 0) {
+                const [transactions, proposals, appCounts] = await Promise.all([
+                    prisma.transaction.findMany({
+                        where: { patientId: { in: patientIds }, type: 'ENTRADA', status: 'PAID' },
+                        select: { patientId: true, amount: true }
+                    }),
+                    prisma.proposal.findMany({
+                        where: { patientId: { in: patientIds }, status: { in: ['PENDENTE', 'APROVADO'] } },
+                        select: { patientId: true, totalValue: true }
+                    }),
+                    prisma.appointment.groupBy({
+                        by: ['patientId'],
+                        where: { patientId: { in: patientIds } },
+                        _count: { id: true }
+                    })
+                ]);
+
+                // Mapear dados para cada agendamento
+                const enrichedAppointments = appointments.map(app => {
+                    const pTransactions = transactions.filter(t => t.patientId === app.patientId);
+                    const pProposals = proposals.filter(p => p.patientId === app.patientId);
+                    const pAppCount = appCounts.find(c => c.patientId === app.patientId)?._count.id || 0;
+
+                    const totalInvested = pTransactions.reduce((acc, t) => acc + t.amount, 0);
+                    const avgTicket = pTransactions.length > 0 ? totalInvested / pTransactions.length : 0;
+                    const provisionalRevenue = pProposals.reduce((acc, p) => acc + p.totalValue, 0);
+
+                    return {
+                        ...app,
+                        patientStats: {
+                            totalInvested,
+                            avgTicket,
+                            provisionalRevenue,
+                            isRecurring: pAppCount > 1
+                        }
+                    };
+                });
+
+                return res.json(enrichedAppointments);
+            }
+
             res.json(appointments);
         } catch (error: any) {
             console.error('Error listing appointments:', error);

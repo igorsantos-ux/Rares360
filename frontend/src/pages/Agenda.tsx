@@ -11,7 +11,9 @@ import {
     Users,
     MapPin,
     Cpu,
-    Loader2
+    Loader2,
+    Info,
+    TrendingUp
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { appointmentsApi } from '../services/api';
@@ -44,8 +46,8 @@ const Agenda = () => {
                 start: app.startTime,
                 end: app.endTime,
                 extendedProps: { ...app },
-                backgroundColor: getStatusColor(app.status).bg,
-                borderColor: getStatusColor(app.status).border,
+                backgroundColor: 'transparent',
+                borderColor: 'transparent',
                 textColor: getStatusColor(app.status).text,
             }));
         }
@@ -241,24 +243,21 @@ const Agenda = () => {
                     font-family: inherit;
                 }
                 .custom-calendar .fc-timegrid-slot {
-                    height: 4rem !important;
+                    height: 5rem !important;
                     border-bottom: 1px dashed #f1f5f9 !important;
                 }
                 .custom-calendar .fc-event {
-                    border-radius: 12px;
-                    padding: 4px 8px;
-                    font-weight: 700;
-                    font-size: 11px;
-                    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
-                    transition: all 0.2s;
-                    border-width: 0 0 0 4px !important;
+                    background: transparent !important;
+                    border: none !important;
+                    padding: 0 !important;
+                    margin: 2px !important;
                 }
-                .custom-calendar .fc-event:hover {
-                    transform: translateY(-1px);
-                    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+                .custom-calendar .fc-event-main {
+                    padding: 0 !important;
+                    height: 100%;
                 }
-                .custom-calendar .fc-v-event .fc-event-main {
-                    color: inherit;
+                .custom-calendar .fc-timegrid-cols .fc-event {
+                    min-height: 100px;
                 }
                 .custom-calendar .fc-timegrid-axis-cushion, 
                 .custom-calendar .fc-timegrid-slot-label-cushion {
@@ -280,18 +279,87 @@ const Agenda = () => {
     );
 };
 
+const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', { 
+        style: 'currency', 
+        currency: 'BRL',
+        maximumFractionDigits: 0
+    }).format(value);
+};
+
 const renderEventContent = (eventInfo: any) => {
+    const { event } = eventInfo;
+    const props = event.extendedProps;
+    const stats = props.patientStats || { totalInvested: 0, avgTicket: 0, provisionalRevenue: 0, isRecurring: false };
+    const palette = getStatusColor(props.status);
+
     return (
-        <div className="flex flex-col h-full overflow-hidden">
-            <div className="flex justify-between items-start">
-                <span className="truncate">{eventInfo.event.title}</span>
-                {eventInfo.event.extendedProps.isOverbook && (
-                    <span className="bg-amber-400 text-white text-[8px] px-1 rounded-md">Encaixe</span>
+        <div 
+            className="flex flex-col h-full w-full rounded-lg overflow-hidden border shadow-sm transition-all hover:shadow-md"
+            style={{ backgroundColor: palette.bodyBg, borderColor: palette.headerBg + '40' }}
+        >
+            {/* Header - 25% Height approx */}
+            <div 
+                className="px-2 py-1 flex items-center justify-between"
+                style={{ backgroundColor: palette.headerBg }}
+            >
+                <span className="text-[10px] font-black text-white uppercase tracking-tight">
+                    {eventInfo.timeText}
+                </span>
+                {props.isOverbook && (
+                    <span className="bg-white/20 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">
+                        Encaixe
+                    </span>
                 )}
             </div>
-            <span className="text-[9px] opacity-70 mt-auto">
-                {eventInfo.timeText} • {eventInfo.event.extendedProps.professional?.name?.split(' ')[0]}
-            </span>
+
+            {/* Body */}
+            <div className="p-2 flex flex-col flex-1 min-h-0">
+                {/* Identification */}
+                <div className="flex items-center gap-1 mb-0.5">
+                    <Info size={10} className="text-slate-400" />
+                    <span className="text-[11px] font-extrabold text-slate-800 truncate leading-tight">
+                        {props.patient?.fullName}
+                    </span>
+                </div>
+
+                {/* Procedure */}
+                <span className="text-[10px] font-medium text-slate-500 truncate mb-1">
+                    {props.procedure?.name || 'Consulta / Outro'}
+                </span>
+
+                {/* Profile Tag */}
+                <div className="flex items-center gap-1.5 mb-2">
+                    <div 
+                        className="w-1.5 h-1.5 rounded-full" 
+                        style={{ backgroundColor: stats.isRecurring ? '#10b981' : '#3b82f6' }}
+                    />
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                        {stats.isRecurring ? 'Recorrente' : 'Paciente Novo'}
+                    </span>
+                </div>
+
+                {/* Finance Grid */}
+                <div className="mt-auto pt-2 border-t border-slate-200/50 grid grid-cols-2 gap-x-2 gap-y-1">
+                    <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-400 uppercase font-black tracking-tighter">Investiu</span>
+                        <span className="text-[10px] font-black text-slate-700">{formatCurrency(stats.totalInvested)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-[8px] text-slate-400 uppercase font-black tracking-tighter">Ticket Md</span>
+                        <span className="text-[10px] font-black text-slate-700">{formatCurrency(stats.avgTicket)}</span>
+                    </div>
+                    <div className="flex flex-col col-span-2">
+                        <div className="flex items-center gap-1">
+                            <TrendingUp size={8} className="text-emerald-500" />
+                            <span className="text-[8px] text-slate-400 uppercase font-black tracking-tighter">Prev. Receita</span>
+                        </div>
+                        <span className="text-[10px] font-black text-emerald-600">
+                            {formatCurrency(stats.provisionalRevenue)}
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 };
@@ -324,12 +392,48 @@ const StatusLegend = ({ color, label }: any) => (
 
 const getStatusColor = (status: string) => {
     switch (status) {
-        case 'AGUARDANDO': return { bg: '#F5F5DC', border: '#E5E5CC', text: '#4A4A4A' };
-        case 'CONFIRMADO': return { bg: '#8FA189', border: '#7A8C75', text: '#FFFFFF' };
-        case 'CHECK_IN': return { bg: '#556B2F', border: '#445525', text: '#FFFFFF' };
-        case 'FALTA': return { bg: '#A0522D', border: '#8B4513', text: '#FFFFFF' };
-        case 'EXECUTADO': return { bg: '#E5E7EB', border: '#D1D5DB', text: '#9CA3AF' };
-        default: return { bg: '#FFFFFF', border: '#E2E8F0', text: '#64748B' };
+        case 'AGUARDANDO': 
+            return { 
+                headerBg: '#D97706', // Amarelo/Mostarda 
+                bodyBg: '#FEFCE8',    // Creme claro
+                text: '#92400E' 
+            };
+        case 'CONFIRMADO': 
+            return { 
+                headerBg: '#697D58', // Verde Oliva (Marca)
+                bodyBg: '#F7F8F6',    // Verde bem clarinho
+                text: '#3F4E33' 
+            };
+        case 'CHECK_IN': 
+            return { 
+                headerBg: '#6366F1', // Roxo (Indigo)
+                bodyBg: '#EEF2FF',    // Lilás suave
+                text: '#3730A3' 
+            };
+        case 'EXECUTADO': 
+            return { 
+                headerBg: '#64748B', // Cinza
+                bodyBg: '#F8FAFC',    
+                text: '#1E293B' 
+            };
+        case 'FALTA': 
+            return { 
+                headerBg: '#991B1B', // Vermelho Escuro
+                bodyBg: '#FEF2F2',    
+                text: '#7F1D1D' 
+            };
+        case 'CANCELADO': 
+            return { 
+                headerBg: '#94A3B8', // Cinza Azulado
+                bodyBg: '#F1F5F9',    
+                text: '#475569' 
+            };
+        default: 
+            return { 
+                headerBg: '#697D58', 
+                bodyBg: '#FFFFFF', 
+                text: '#1e293b' 
+            };
     }
 };
 
