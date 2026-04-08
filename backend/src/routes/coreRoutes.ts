@@ -9,7 +9,10 @@ const router = Router();
 router.use(authMiddleware, tenantMiddleware);
 
 router.get('/productivity', CoreController.getProductivity);
+router.get('/doctors', CoreController.listDoctors);
 router.post('/doctors', CoreController.createDoctor);
+router.patch('/doctors/:id', CoreController.updateDoctor);
+router.delete('/doctors/:id', CoreController.deleteDoctor);
 router.get('/stock', CoreController.getStock);
 router.post('/stock', CoreController.createStock);
 router.post('/stock/movement', CoreController.registerMovement);

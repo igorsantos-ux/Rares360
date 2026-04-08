@@ -15,6 +15,15 @@ const stockSchema = z.object({
     batch: z.string().optional().nullable(),
 });
 
+const doctorSchema = z.object({
+    name: z.string().min(1, "Nome é obrigatório"),
+    specialty: z.string().min(1, "Especialidade é obrigatória"),
+    commission: z.coerce.number().min(0).max(1, "Comissão deve ser entre 0 e 1"),
+    crm: z.string().optional().nullable(),
+    phone: z.string().optional().nullable(),
+    isActive: z.boolean().optional().default(true),
+});
+
 export class CoreController {
     static async getProductivity(req: any, res: Response) {
         try {
@@ -57,18 +66,71 @@ export class CoreController {
         }
     }
 
+    static async listDoctors(req: any, res: Response) {
+        try {
+            const data = await MedicalService.listDoctors(req.clinicId);
+            res.json(data);
+        } catch (error) {
+            console.error('Erro ao listar médicos:', error);
+            res.status(500).json({ error: 'Erro interno ao buscar médicos' });
+        }
+    }
+
     static async createDoctor(req: any, res: Response) {
         try {
-            const { name, specialty, commission } = req.body;
+            const validation = doctorSchema.safeParse(req.body);
+            
+            if (!validation.success) {
+                return res.status(400).json({ 
+                    error: 'Validação falhou', 
+                    details: validation.error.flatten().fieldErrors 
+                });
+            }
+
             const data = await MedicalService.createDoctor({
-                name,
-                specialty,
-                commission: Number(commission),
+                ...validation.data,
+                crm: validation.data.crm ?? undefined,
+                phone: validation.data.phone ?? undefined,
                 clinicId: req.clinicId
             });
             res.status(201).json(data);
         } catch (error) {
-            res.status(500).json({ error: 'Internal server error' });
+            console.error('Erro ao criar médico:', error);
+            res.status(500).json({ error: 'Erro interno ao salvar médico' });
+        }
+    }
+
+    static async updateDoctor(req: any, res: Response) {
+        try {
+            const { id } = req.params;
+            const validation = doctorSchema.partial().safeParse(req.body);
+
+            if (!validation.success) {
+                return res.status(400).json({ error: 'Validação falhou', details: validation.error.flatten().fieldErrors });
+            }
+
+            const updateData = {
+                ...validation.data,
+                crm: validation.data.crm === null ? undefined : (validation.data.crm ?? undefined),
+                phone: validation.data.phone === null ? undefined : (validation.data.phone ?? undefined),
+            };
+
+            const data = await MedicalService.updateDoctor(id, req.clinicId, updateData);
+            res.json(data);
+        } catch (error) {
+            console.error('Erro ao atualizar médico:', error);
+            res.status(500).json({ error: 'Erro interno ao atualizar médico' });
+        }
+    }
+
+    static async deleteDoctor(req: any, res: Response) {
+        try {
+            const { id } = req.params;
+            await MedicalService.deleteDoctor(id, req.clinicId);
+            res.status(204).send();
+        } catch (error) {
+            console.error('Erro ao deletar médico:', error);
+            res.status(500).json({ error: 'Erro interno ao deletar médico' });
         }
     }
 

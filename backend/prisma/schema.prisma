@@ -154,7 +154,10 @@ model Transaction {
 model Doctor {
   id           String        @id @default(uuid())
   name         String
+  crm          String?
   specialty    String
+  phone        String?
+  isActive     Boolean       @default(true)
   commission   Float
   clinicId     String
   clinic       Clinic        @relation(fields: [clinicId], references: [id])

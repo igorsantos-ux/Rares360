@@ -15,7 +15,8 @@ import {
     Lock as LockIcon,
     CheckSquare,
     Calendar,
-    ChevronDown
+    ChevronDown,
+    Stethoscope
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -64,6 +65,7 @@ const Sidebar = () => {
         { label: "Gestão", items: [
             { icon: <Calculator size={20} />, label: "Precificação", path: "/pricing" },
             { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
+            { icon: <Stethoscope size={20} />, label: "Médicos", path: "/medicos" },
             { icon: <FileText size={20} />, label: "Minha Clínica", path: "/my-clinic" },
             { icon: <Package size={20} />, label: "Estoque", path: "/inventory", id: "estoque-insumos" },
             { icon: <Target size={20} />, label: "Metas", path: "/goals" },
