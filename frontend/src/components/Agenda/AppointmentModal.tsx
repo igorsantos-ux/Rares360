@@ -169,9 +169,11 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
     try {
       setIsSubmitting(true);
       
-      // Sanitização de IDs opcionais para evitar erro de UUID vazio no Prisma
+      // Sanitização de IDs opcionais e ajuste de timezone
       const payload = {
         ...data,
+        startTime: data.startTime ? new Date(data.startTime).toISOString() : data.startTime,
+        endTime: data.endTime ? new Date(data.endTime).toISOString() : data.endTime,
         procedureId: data.procedureId || null,
         roomId: data.roomId || null,
         equipmentId: data.equipmentId || null,
