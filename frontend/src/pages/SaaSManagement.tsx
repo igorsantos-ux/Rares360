@@ -91,6 +91,7 @@ const SaaSManagement = () => {
         implementationFee: '0', monthlyFee: '0', proposalUrl: ''
     });
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'CLINIC_ADMIN', clinicId: '' });
+    const [newLead, setNewLead] = useState({ name: '', email: '', whatsapp: '', subject: 'Contato CRM', status: 'NOVO' });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formSection, setFormSection] = useState<number>(1);
 
@@ -247,6 +248,24 @@ const SaaSManagement = () => {
             fetchData();
         } catch (error: any) {
             const message = error.response?.data?.error || 'Erro ao criar usuário';
+            alert(message);
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleCreateLead = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (isSubmitting) return;
+
+        setIsSubmitting(true);
+        try {
+            await leadsApi.createLead(newLead);
+            setIsModalOpen(false);
+            setNewLead({ name: '', email: '', whatsapp: '', subject: 'Contato CRM', status: 'NOVO' });
+            fetchData();
+        } catch (error: any) {
+            const message = error.response?.data?.error || 'Erro ao criar lead';
             alert(message);
         } finally {
             setIsSubmitting(false);
@@ -1070,7 +1089,7 @@ const SaaSManagement = () => {
                             </button>
 
                             <h2 className="text-3xl font-black mb-1 text-[#697D58]">
-                                {activeTab === 'clinics' ? 'Configurar Nova Clínica' : 'Cadastrar Novo Usuário'}
+                                {activeTab === 'clinics' ? 'Configurar Nova Clínica' : activeTab === 'users' ? 'Cadastrar Novo Usuário' : 'Cadastrar Novo Lead'}
                             </h2>
                             <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-8">Gestão SaaS Rares360</p>
 
@@ -1285,7 +1304,7 @@ const SaaSManagement = () => {
                                         )}
                                     </div>
                                 </form>
-                            ) : (
+                            ) : activeTab === 'users' ? (
                                 <form onSubmit={handleCreateUser} className="space-y-6">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <InputField label="Nome Completo" required value={newUser.name} onChange={(v: any) => setNewUser({ ...newUser, name: v })} />
@@ -1311,7 +1330,23 @@ const SaaSManagement = () => {
                                         {isSubmitting ? 'CRIANDO...' : 'CRIAR USUÁRIO'}
                                     </button>
                                 </form>
-                            )}
+                            ) : activeTab === 'leads' ? (
+                                <form onSubmit={handleCreateLead} className="space-y-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <InputField label="Nome do Lead / Empresa" required value={newLead.name} onChange={(v: any) => setNewLead({ ...newLead, name: v })} />
+                                        <InputField label="E-mail" required type="email" value={newLead.email} onChange={(v: any) => setNewLead({ ...newLead, email: v })} />
+                                        <InputField label="WhatsApp" required value={newLead.whatsapp} onChange={(v: any) => setNewLead({ ...newLead, whatsapp: v })} />
+                                        <InputField label="Assunto/Motivo" required value={newLead.subject} onChange={(v: any) => setNewLead({ ...newLead, subject: v })} />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className="w-full py-5 bg-[#8A9A5B] text-white rounded-2xl font-black mt-6 shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {isSubmitting ? 'CRIANDO...' : 'CRIAR LEAD'}
+                                    </button>
+                                </form>
+                            ) : null}
                         </motion.div>
                     </div>
                 )}
