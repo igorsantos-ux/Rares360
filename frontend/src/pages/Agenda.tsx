@@ -14,11 +14,9 @@ import {
     Loader2
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
+import { appointmentsApi } from '../services/api';
 import { toast } from 'react-hot-toast';
 import AppointmentModal from '../components/Agenda/AppointmentModal';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 const Agenda = () => {
     const queryClient = useQueryClient();
@@ -39,10 +37,7 @@ const Agenda = () => {
     const { data: appointments, isLoading } = useQuery({
         queryKey: ['appointments', filters],
         queryFn: async () => {
-            const res = await axios.get(`${API_URL}/appointments`, {
-                params: filters,
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await appointmentsApi.getAppointments(filters);
             return res.data.map((app: any) => ({
                 id: app.id,
                 title: app.patient.fullName,
@@ -60,9 +55,7 @@ const Agenda = () => {
     const { data: resources } = useQuery({
         queryKey: ['agenda-resources'],
         queryFn: async () => {
-            const res = await axios.get(`${API_URL}/appointments/resources`, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            const res = await appointmentsApi.getResources();
             return res.data;
         }
     });
@@ -70,9 +63,7 @@ const Agenda = () => {
     // Mutação para Atualizar Agendamento (Drag & Drop)
     const updateMutation = useMutation({
         mutationFn: async ({ id, ...data }: any) => {
-            return axios.put(`${API_URL}/appointments/${id}`, data, {
-                headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+            return appointmentsApi.updateAppointment(id, data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['appointments'] });
