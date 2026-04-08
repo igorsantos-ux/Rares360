@@ -93,4 +93,26 @@ export class ClinicController {
             res.status(500).json({ error: 'Erro interno ao atualizar dados da clínica.' });
         }
     }
+
+    static async listAll(req: any, res: Response) {
+        try {
+            const clinics = await prisma.clinic.findMany({
+                where: { isActive: true },
+                select: {
+                    id: true,
+                    name: true,
+                    cnpj: true,
+                    cidade: true,
+                    estado: true,
+                    logo: true
+                },
+                orderBy: { name: 'asc' }
+            });
+
+            res.json(clinics);
+        } catch (error) {
+            console.error('Error listing all clinics:', error);
+            res.status(500).json({ error: 'Erro interno ao listar clínicas.' });
+        }
+    }
 }

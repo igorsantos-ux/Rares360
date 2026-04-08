@@ -19,17 +19,21 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('heath_finance_token');
     const clinicId = localStorage.getItem('heath_finance_clinic_id');
+    const activeClinicId = localStorage.getItem('heath_finance_active_clinic_id');
     
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     
-    if (clinicId) {
+    // Se houver uma clínica ativa (troca de contexto), ela tem prioridade
+    if (activeClinicId) {
+        config.headers['x-target-clinic-id'] = activeClinicId;
+    } else if (clinicId) {
         config.headers['x-clinic-id'] = clinicId;
     }
 
     // Log para depuração (remover em produção se necessário)
-    console.log(`🚀 Request: ${config.method?.toUpperCase()} ${config.baseURL}/${config.url} - Clinic: ${clinicId}`);
+    console.log(`🚀 Request: ${config.method?.toUpperCase()} ${config.baseURL}/${config.url} - Target Clinic: ${activeClinicId || clinicId}`);
     return config;
 });
 
@@ -217,6 +221,7 @@ export const appointmentsApi = {
 
 export const clinicApi = {
     getMe: () => api.get('clinic/me'),
+    getAll: () => api.get('clinic/all'),
     updateMe: (data: any) => api.patch('clinic/me', data),
     uploadLogo: (formData: FormData) => api.post('saas/clinics/upload-logo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }

@@ -4,17 +4,19 @@ import {
     X,
     LogOut,
     User as UserIcon,
-    Bell
+    Bell,
+    RefreshCw
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
+import ClinicSwitcher from './ClinicSwitcher';
 
 const Header = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { logout, user } = useAuth();
+    const { logout, user, activeClinicId, clearContext } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {
@@ -64,6 +66,9 @@ const Header = () => {
                 </div>
 
                 <div className="flex items-center gap-4 lg:gap-8">
+                    {/* Seletor de Clínica para Admin Global */}
+                    {user?.role === 'ADMIN_GLOBAL' && <ClinicSwitcher />}
+
                     {/* Notificações (Placeholder) */}
                     <button className="hidden sm:flex p-2.5 bg-white rounded-xl border border-[#8A9A5B]/10 text-slate-400 hover:text-[#8A9A5B] hover:shadow-sm transition-all">
                         <Bell size={20} />
@@ -88,6 +93,30 @@ const Header = () => {
                     </div>
                 </div>
             </header>
+
+            {/* Banner de Contexto Ativo */}
+            <AnimatePresence>
+                {activeClinicId && user?.role === 'ADMIN_GLOBAL' && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="bg-[#8A9A5B] text-white px-8 py-2 flex items-center justify-between text-xs font-bold uppercase tracking-widest z-[5]"
+                    >
+                        <div className="flex items-center gap-2">
+                            <span className="bg-white/20 px-2 py-0.5 rounded-md text-[10px]">Contexto Ativo</span>
+                            <span>Você está navegando nos dados de uma clínica específica. Alguns recursos globais podem estar limitados.</span>
+                        </div>
+                        <button 
+                            onClick={clearContext}
+                            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg transition-all border border-white/20"
+                        >
+                            <RefreshCw size={14} />
+                            <span>Remover Contexto</span>
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Mobile Drawer (Simplificado) */}
             <AnimatePresence>

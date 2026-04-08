@@ -637,3 +637,16 @@ model Invoice {
   @@index([clinicId, month, year])
 }
 
+
+model AdminAuditLog {
+  id                String   @id @default(uuid())
+  adminId           String
+  adminName         String
+  targetClinicId    String
+  targetClinicName  String?
+  action            String   @default("CONTEXT_SWITCH")
+  timestamp         DateTime @default(now())
+
+  @@index([adminId])
+  @@index([targetClinicId])
+}
