@@ -168,20 +168,31 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
+      
+      // Sanitização de IDs opcionais para evitar erro de UUID vazio no Prisma
+      const payload = {
+        ...data,
+        procedureId: data.procedureId || null,
+        roomId: data.roomId || null,
+        equipmentId: data.equipmentId || null,
+      };
+
       if (appointment?.id) {
-        await appointmentsApi.updateAppointment(appointment.id, data);
+        await appointmentsApi.updateAppointment(appointment.id, payload);
         toast.success('Agendamento atualizado!');
       } else {
-        await appointmentsApi.createAppointment(data);
+        await appointmentsApi.createAppointment(payload);
         toast.success('Agendamento criado com sucesso!');
       }
       onSuccess();
       onClose();
     } catch (error: any) {
+      console.error('Submission Error:', error);
       if (error.response?.status === 409) {
         toast.error(error.response.data.message || 'Conflito de recursos!');
       } else {
-        toast.error('Erro ao salvar agendamento.');
+        const detail = error.response?.data?.details || '';
+        toast.error(`Erro ao salvar agendamento: ${detail.substring(0, 50)}${detail.length > 50 ? '...' : ''}`);
       }
     } finally {
       setIsSubmitting(false);

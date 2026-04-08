@@ -126,9 +126,9 @@ export class AppointmentController {
                     notes: data.notes,
                     patientId: data.patientId,
                     professionalId: data.professionalId,
-                    roomId: data.roomId,
-                    equipmentId: data.equipmentId,
-                    procedureId: data.procedureId,
+                    roomId: data.roomId || null,
+                    equipmentId: data.equipmentId || null,
+                    procedureId: data.procedureId || null,
                     clinicId
                 },
                 include: {
@@ -141,8 +141,15 @@ export class AppointmentController {
 
             res.status(201).json(appointment);
         } catch (error: any) {
-            console.error('Error creating appointment:', error);
-            res.status(500).json({ error: 'Erro ao criar agendamento' });
+            console.error('--- ERRO AO CRIAR AGENDAMENTO ---');
+            console.error('Payload recebido:', req.body);
+            console.error('Mensagem de erro:', error.message);
+            if (error.code) console.error('Código Prisma:', error.code);
+            if (error.meta) console.error('Metadados Prisma:', error.meta);
+            res.status(500).json({ 
+                error: 'Erro ao criar agendamento',
+                details: error.message 
+            });
         }
     }
 
@@ -177,10 +184,16 @@ export class AppointmentController {
 
             const oldAppointment = await prisma.appointment.findUnique({ where: { id } });
             
+            // Sanitizar campos de relação para o update
+            const updateData = { ...data };
+            if (updateData.hasOwnProperty('roomId') && !updateData.roomId) updateData.roomId = null;
+            if (updateData.hasOwnProperty('equipmentId') && !updateData.equipmentId) updateData.equipmentId = null;
+            if (updateData.hasOwnProperty('procedureId') && !updateData.procedureId) updateData.procedureId = null;
+
             const appointment = await prisma.appointment.update({
                 where: { id },
                 data: {
-                    ...data,
+                    ...updateData,
                     startTime: startTime,
                     endTime: endTime,
                 }
@@ -193,8 +206,14 @@ export class AppointmentController {
 
             res.json(appointment);
         } catch (error: any) {
-            console.error('Error updating appointment:', error);
-            res.status(500).json({ error: 'Erro ao atualizar agendamento' });
+            console.error('--- ERRO AO ATUALIZAR AGENDAMENTO ---');
+            console.error('ID:', req.params.id);
+            console.error('Payload:', req.body);
+            console.error('Erro:', error.message);
+            res.status(500).json({ 
+                error: 'Erro ao atualizar agendamento',
+                details: error.message 
+            });
         }
     }
 
