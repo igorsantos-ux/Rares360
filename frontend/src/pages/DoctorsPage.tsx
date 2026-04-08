@@ -14,7 +14,6 @@ import {
     Calendar,
     X,
     Clock,
-    ChevronDown,
     Save
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
