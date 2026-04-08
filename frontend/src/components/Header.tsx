@@ -4,8 +4,7 @@ import {
     X,
     LogOut,
     User as UserIcon,
-    Bell,
-    RefreshCw
+    Bell
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -16,7 +15,7 @@ import ClinicSwitcher from './ClinicSwitcher';
 const Header = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { logout, user, activeClinicId, clearContext } = useAuth();
+    const { logout, user, activeClinicId } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {
@@ -94,26 +93,19 @@ const Header = () => {
                 </div>
             </header>
 
-            {/* Banner de Contexto Ativo */}
+            {/* Banner de Contexto Ativo - Otimizado para ser discreto */}
             <AnimatePresence>
                 {activeClinicId && user?.role === 'ADMIN_GLOBAL' && (
                     <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="bg-[#8A9A5B] text-white px-8 py-2 flex items-center justify-between text-xs font-bold uppercase tracking-widest z-[5]"
+                        className="bg-[#8A9A5B] text-white px-8 py-1.5 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest z-[5] shadow-inner"
                     >
-                        <div className="flex items-center gap-2">
-                            <span className="bg-white/20 px-2 py-0.5 rounded-md text-[10px]">Contexto Ativo</span>
-                            <span>Você está navegando nos dados de uma clínica específica. Alguns recursos globais podem estar limitados.</span>
+                        <div className="flex items-center gap-3">
+                            <span className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Modo de Suporte Ativo</span>
+                            <span className="opacity-90">Você está visualizando dados restritos desta unidade.</span>
                         </div>
-                        <button 
-                            onClick={clearContext}
-                            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg transition-all border border-white/20"
-                        >
-                            <RefreshCw size={14} />
-                            <span>Remover Contexto</span>
-                        </button>
                     </motion.div>
                 )}
             </AnimatePresence>

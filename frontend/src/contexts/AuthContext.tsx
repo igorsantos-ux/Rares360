@@ -52,7 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const setContextClinic = (clinicId: string) => {
         localStorage.setItem('heath_finance_active_clinic_id', clinicId);
         setActiveClinicId(clinicId);
-        // Forçar reload dos dados da aplicação
+        // O reload é necessário para reinicializar interceptors e estados de query com o novo clinicId
         window.location.reload();
     };
 

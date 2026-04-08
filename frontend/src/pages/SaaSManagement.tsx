@@ -1030,7 +1030,9 @@ const SaaSManagement = () => {
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        setContextClinic(item.id);
+                                                                        // Definimos a clínica ativa e forçamos o redirecionamento para o dashboard
+                                                                        localStorage.setItem('heath_finance_active_clinic_id', item.id);
+                                                                        window.location.href = '/dashboard';
                                                                     }}
                                                                     className="p-2 bg-[#8A9A5B]/10 text-[#697D58] rounded-xl hover:bg-[#8A9A5B] hover:text-white transition-all flex items-center gap-2 px-3 font-bold text-[10px] uppercase tracking-widest shadow-sm"
                                                                     title="Acessar Unidade"
