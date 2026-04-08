@@ -14,13 +14,15 @@ import {
     FileText,
     Lock as LockIcon,
     CheckSquare,
-    Calendar
+    Calendar,
+    ChevronDown
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { reportingApi } from '../services/api';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
 
 const Sidebar = () => {
     const location = useLocation();
@@ -69,23 +71,65 @@ const Sidebar = () => {
         ]}
     ];
 
+    const [openSection, setOpenSection] = useState<string | null>(null);
+
+    // Efeito para abrir a seção correta inicialmente
+    useEffect(() => {
+        const currentPath = location.pathname;
+        const activeGroup = navItems.find(group => 
+            group.items.some(item => item.path === currentPath)
+        );
+        if (activeGroup) {
+            setOpenSection(activeGroup.label);
+        }
+    }, [location.pathname]);
+
+    const toggleSection = (label: string) => {
+        setOpenSection(prev => prev === label ? null : label);
+    };
+
     return (
         <aside className="w-72 bg-[#F0EAD6] text-slate-800 flex flex-col h-screen border-r border-[#8A9A5B]/20 shadow-sm overflow-hidden">
             <div className="p-8 flex justify-center border-b border-[#8A9A5B]/10">
                 <img src="/logo-alamino-dark.png" alt="Logo Rares360" className="h-32 w-auto object-contain" />
             </div>
 
-            <nav className="flex-1 px-4 py-8 overflow-y-auto custom-scrollbar space-y-8">
-                {Array.isArray(navItems) ? navItems.map((group) => (
-                    <div key={group.label} className="space-y-2">
-                        <p className="px-4 text-[10px] font-black text-[#8A9A5B] uppercase tracking-[0.2em] opacity-60">{group.label}</p>
-                        <div className="space-y-1">
-                            {group.items.map((item) => (
-                                <SidebarLink key={item.path} item={item} active={location.pathname === item.path} />
-                            ))}
+            <nav className="flex-1 px-4 py-8 overflow-y-auto custom-scrollbar space-y-4">
+                {Array.isArray(navItems) ? navItems.map((group) => {
+                    const isOpen = openSection === group.label;
+                    return (
+                        <div key={group.label} className="space-y-1">
+                            <button 
+                                onClick={() => toggleSection(group.label)}
+                                className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-black text-[#8A9A5B] uppercase tracking-[0.2em] group transition-all duration-200 hover:bg-[#8A9A5B]/5 rounded-lg"
+                            >
+                                <span className="opacity-60 group-hover:opacity-100 transition-opacity">{group.label}</span>
+                                <ChevronDown 
+                                    size={14} 
+                                    className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} opacity-40 group-hover:opacity-100`} 
+                                />
+                            </button>
+                            
+                            <AnimatePresence initial={false}>
+                                {isOpen && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="space-y-1 py-1">
+                                            {group.items.map((item) => (
+                                                <SidebarLink key={item.path} item={item} active={location.pathname === item.path} />
+                                            ))}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
-                    </div>
-                )) : null}
+                    );
+                }) : null}
             </nav>
 
             <div className="p-6 mt-auto bg-white/30 backdrop-blur-sm border-t border-[#8A9A5B]/10">
