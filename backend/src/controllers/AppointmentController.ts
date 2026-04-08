@@ -280,7 +280,7 @@ export class AppointmentController {
             const [rooms, equipments, professionals] = await Promise.all([
                 prisma.room.findMany({ where: { clinicId } }),
                 prisma.equipment.findMany({ where: { clinicId } }),
-                prisma.doctor.findMany({ where: { clinicId, isActive: true } })
+                prisma.doctor.findMany({ where: { clinicId, isActive: true } as any })
             ]);
 
             res.json({ rooms, equipments, professionals });

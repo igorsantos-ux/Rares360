@@ -3,15 +3,11 @@ import {
     Stethoscope, 
     Plus, 
     Search, 
-    MoreHorizontal, 
-    Mail, 
     Phone, 
-    FileText, 
     Edit2, 
     Trash2,
     CheckCircle2,
-    XCircle,
-    ChevronRight
+    XCircle
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { coreApi } from '../services/api';

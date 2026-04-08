@@ -50,7 +50,7 @@ export class MedicalService {
                 crm: data.crm,
                 phone: data.phone,
                 isActive: data.isActive !== undefined ? data.isActive : true
-            }
+            } as any
         });
     }
 
@@ -64,7 +64,7 @@ export class MedicalService {
                 crm: data.crm,
                 phone: data.phone,
                 isActive: data.isActive
-            }
+            } as any
         });
     }
 
