@@ -57,7 +57,7 @@ const SelectField = ({ label, value, onChange, options, required = false }: any)
 );
 
 const SaaSManagement = () => {
-    const { logout, user } = useAuth();
+    const { logout, user, setContextClinic } = useAuth();
     const [clinics, setClinics] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [leads, setLeads] = useState<any[]>([]);
@@ -1026,6 +1026,18 @@ const SaaSManagement = () => {
                                                             >
                                                                 <Settings size={18} />
                                                             </button>
+                                                            {activeTab === 'clinics' && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setContextClinic(item.id);
+                                                                    }}
+                                                                    className="p-2 bg-[#8A9A5B]/10 text-[#697D58] rounded-xl hover:bg-[#8A9A5B] hover:text-white transition-all flex items-center gap-2 px-3 font-bold text-[10px] uppercase tracking-widest shadow-sm"
+                                                                    title="Acessar Unidade"
+                                                                >
+                                                                    <LayoutDashboard size={14} /> Acessar
+                                                                </button>
+                                                            )}
                                                             {(activeTab === 'clinics' || activeTab === 'users') && (
                                                                 <button
                                                                     onClick={(e) => {

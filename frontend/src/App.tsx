@@ -38,8 +38,8 @@ function App() {
   const { user, loading } = useAuth();
   const isPublicPage = ['/', '/about', '/login', '/contact'].includes(location.pathname);
 
-  // Só mostra Header se for Staff/Admin de Clínica e o carregamento terminou
-  const showHeader = !isPublicPage && !loading && user && user.role?.toUpperCase() !== 'ADMIN_GLOBAL';
+  // Mostra Header se o usuário estiver logado e não for uma página pública
+  const showHeader = !isPublicPage && !loading && user;
 
   // Loading global para rotas privadas durante a recuperação da sessão
   if (loading && !isPublicPage) {
