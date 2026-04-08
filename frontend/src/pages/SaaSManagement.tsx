@@ -91,7 +91,34 @@ const SaaSManagement = () => {
         implementationFee: '0', monthlyFee: '0', proposalUrl: ''
     });
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'CLINIC_ADMIN', clinicId: '' });
-    const [newLead, setNewLead] = useState({ name: '', email: '', whatsapp: '', subject: 'Contato CRM', status: 'NOVO' });
+    const [newLead, setNewLead] = useState({ 
+        name: '', 
+        email: '', 
+        whatsapp: '', 
+        subject: 'Contato CRM', 
+        status: 'NOVO',
+        diagnostic: {
+            clinicType: '',
+            operationTime: '',
+            professionalsCount: '',
+            mainChallenge: '',
+            monthlyRevenue: '',
+            hasDRE: '',
+            hasDFC: '',
+            organizedCosts: '',
+            knowsMargin: '',
+            knowsRevenueGoal: '',
+            knowsHighMarginProcedures: '',
+            identifiedNegativeMargin: '',
+            knowsMonthlyLeads: '',
+            monitorsConversion: '',
+            structuredFollowUp: '',
+            reliableInventory: '',
+            knowsSupplyCosts: '',
+            patientReturnControl: '',
+            pricingFactors: [] as string[]
+        }
+    });
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [formSection, setFormSection] = useState<number>(1);
 
@@ -262,7 +289,16 @@ const SaaSManagement = () => {
         try {
             await leadsApi.createLead(newLead);
             setIsModalOpen(false);
-            setNewLead({ name: '', email: '', whatsapp: '', subject: 'Contato CRM', status: 'NOVO' });
+            setNewLead({ 
+                name: '', email: '', whatsapp: '', subject: 'Contato CRM', status: 'NOVO',
+                diagnostic: {
+                    clinicType: '', operationTime: '', professionalsCount: '', mainChallenge: '', monthlyRevenue: '',
+                    hasDRE: '', hasDFC: '', organizedCosts: '', knowsMargin: '', knowsRevenueGoal: '',
+                    knowsHighMarginProcedures: '', identifiedNegativeMargin: '', knowsMonthlyLeads: '', 
+                    monitorsConversion: '', structuredFollowUp: '', reliableInventory: '', knowsSupplyCosts: '', 
+                    patientReturnControl: '', pricingFactors: []
+                }
+            });
             fetchData();
         } catch (error: any) {
             const message = error.response?.data?.error || 'Erro ao criar lead';
@@ -1332,18 +1368,69 @@ const SaaSManagement = () => {
                                 </form>
                             ) : activeTab === 'leads' ? (
                                 <form onSubmit={handleCreateLead} className="space-y-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <InputField label="Nome do Lead / Empresa" required value={newLead.name} onChange={(v: any) => setNewLead({ ...newLead, name: v })} />
-                                        <InputField label="E-mail" required type="email" value={newLead.email} onChange={(v: any) => setNewLead({ ...newLead, email: v })} />
-                                        <InputField label="WhatsApp" required value={newLead.whatsapp} onChange={(v: any) => setNewLead({ ...newLead, whatsapp: v })} />
-                                        <InputField label="Assunto/Motivo" required value={newLead.subject} onChange={(v: any) => setNewLead({ ...newLead, subject: v })} />
+                                    <div className="max-h-[60vh] overflow-y-auto pr-4 space-y-8 custom-scrollbar">
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Informações de Contato</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <InputField label="Nome do Lead / Empresa" required value={newLead.name} onChange={(v: any) => setNewLead({ ...newLead, name: v })} />
+                                                <InputField label="E-mail" required type="email" value={newLead.email} onChange={(v: any) => setNewLead({ ...newLead, email: v })} />
+                                                <InputField label="WhatsApp" required value={newLead.whatsapp} onChange={(v: any) => setNewLead({ ...newLead, whatsapp: v })} />
+                                                <InputField label="Assunto/Motivo" required value={newLead.subject} onChange={(v: any) => setNewLead({ ...newLead, subject: v })} />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Sobre a Clínica</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                <SelectField label="Tipo de Clínica" value={newLead.diagnostic.clinicType} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, clinicType: v } })} options={[
+                                                    { label: 'Estética', value: 'Estética' },
+                                                    { label: 'Odontologia', value: 'Odontologia' },
+                                                    { label: 'Dermatologia', value: 'Dermatologia' },
+                                                    { label: 'Outro', value: 'Outro' }
+                                                ]} />
+                                                <InputField label="Tempo de Operação" value={newLead.diagnostic.operationTime} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, operationTime: v } })} placeholder="Ex: 5 anos" />
+                                                <InputField label="Nº de Profissionais" value={newLead.diagnostic.professionalsCount} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, professionalsCount: v } })} />
+                                            </div>
+                                            <InputField label="Principal Desafio" value={newLead.diagnostic.mainChallenge} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, mainChallenge: v } })} placeholder="Qual o maior problema hoje?" />
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Gestão Financeira</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <SelectField label="Faturamento Mensal" value={newLead.diagnostic.monthlyRevenue} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, monthlyRevenue: v } })} options={[
+                                                    { label: 'Até R$ 30k', value: 'Até R$ 30k' },
+                                                    { label: 'R$ 30k - R$ 100k', value: 'R$ 30k - R$ 100k' },
+                                                    { label: 'Acima de R$ 100k', value: 'Acima de R$ 100k' }
+                                                ]} />
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <SelectField label="Possui DRE?" value={newLead.diagnostic.hasDRE} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, hasDRE: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                    <SelectField label="Possui DFC?" value={newLead.diagnostic.hasDFC} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, hasDFC: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                </div>
+                                                <SelectField label="Custos Organizados?" value={newLead.diagnostic.organizedCosts} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, organizedCosts: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                <SelectField label="Sabe a Margem?" value={newLead.diagnostic.knowsMargin} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, knowsMargin: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                <SelectField label="Meta de Faturamento?" value={newLead.diagnostic.knowsRevenueGoal} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, knowsRevenueGoal: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                <SelectField label="Destaque: Proc. Alta Margem" value={newLead.diagnostic.knowsHighMarginProcedures} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, knowsHighMarginProcedures: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Operação e Controle</h4>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <SelectField label="Controla Leads?" value={newLead.diagnostic.knowsMonthlyLeads} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, knowsMonthlyLeads: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                <SelectField label="Monitora Conversão?" value={newLead.diagnostic.monitorsConversion} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, monitorsConversion: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                <SelectField label="Follow-up Estruturado?" value={newLead.diagnostic.structuredFollowUp} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, structuredFollowUp: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                <SelectField label="Estoque Confiável?" value={newLead.diagnostic.reliableInventory} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, reliableInventory: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                <SelectField label="Custo de Insumos?" value={newLead.diagnostic.knowsSupplyCosts} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, knowsSupplyCosts: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                                <SelectField label="Controle de Retorno?" value={newLead.diagnostic.patientReturnControl} onChange={(v: any) => setNewLead({ ...newLead, diagnostic: { ...newLead.diagnostic, patientReturnControl: v } })} options={[{ label: 'Sim', value: 'Sim' }, { label: 'Não', value: 'Não' }]} />
+                                            </div>
+                                        </div>
                                     </div>
                                     <button
                                         type="submit"
                                         disabled={isSubmitting}
                                         className="w-full py-5 bg-[#8A9A5B] text-white rounded-2xl font-black mt-6 shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {isSubmitting ? 'CRIANDO...' : 'CRIAR LEAD'}
+                                        {isSubmitting ? 'CRIANDO...' : 'CRIAR LEAD COMPLETO'}
                                     </button>
                                 </form>
                             ) : null}
