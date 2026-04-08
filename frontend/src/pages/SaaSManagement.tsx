@@ -57,7 +57,7 @@ const SelectField = ({ label, value, onChange, options, required = false }: any)
 );
 
 const SaaSManagement = () => {
-    const { logout, user, setContextClinic } = useAuth();
+    const { logout, user } = useAuth();
     const [clinics, setClinics] = useState<any[]>([]);
     const [users, setUsers] = useState<any[]>([]);
     const [leads, setLeads] = useState<any[]>([]);
