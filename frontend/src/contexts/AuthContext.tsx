@@ -16,9 +16,6 @@ interface User {
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    activeClinicId: string | null;
-    setContextClinic: (clinicId: string) => void;
-    clearContext: () => void;
     login: (token: string, user: User) => void;
     logout: () => void;
     completeOnboarding: () => void;
@@ -30,7 +27,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(localStorage.getItem('heath_finance_token'));
-    const [activeClinicId, setActiveClinicId] = useState<string | null>(localStorage.getItem('heath_finance_active_clinic_id'));
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -49,18 +45,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loadUser();
     }, [token]);
 
-    const setContextClinic = (clinicId: string) => {
-        localStorage.setItem('heath_finance_active_clinic_id', clinicId);
-        setActiveClinicId(clinicId);
-        // O reload é necessário para reinicializar interceptors e estados de query com o novo clinicId
-        window.location.reload();
-    };
-
-    const clearContext = () => {
-        localStorage.removeItem('heath_finance_active_clinic_id');
-        setActiveClinicId(null);
-        window.location.reload();
-    };
 
     const login = (newToken: string, newUser: User) => {
         localStorage.setItem('heath_finance_token', newToken);
@@ -77,7 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('heath_finance_active_clinic_id');
         setToken(null);
         setUser(null);
-        setActiveClinicId(null);
     };
 
     const completeOnboarding = () => {
@@ -90,9 +73,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         <AuthContext.Provider value={{ 
             user, 
             token, 
-            activeClinicId,
-            setContextClinic,
-            clearContext,
             login, 
             logout, 
             completeOnboarding, 

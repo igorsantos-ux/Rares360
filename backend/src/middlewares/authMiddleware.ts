@@ -41,49 +41,14 @@ export const roleMiddleware = (allowedRoles: string[]) => {
 import { tenantContext } from '../lib/context.js';
 
 export const tenantMiddleware = async (req: any, res: Response, next: NextFunction) => {
-    // Para ADMIN_GLOBAL, permitimos sobrescrever o clinicId via header ou query para suporte/gestão
-    let clinicId = req.headers['x-target-clinic-id'] || req.headers['x-clinic-id'] || req.query.targetClinicId;
-
     if (req.user.role !== 'ADMIN_GLOBAL') {
-        // Se não for Admin Global, ignoramos qualquer tentativa de injeção de ID
         if (!req.user.clinicId) {
             return res.status(403).json({ error: 'Usuário sem clínica vinculada', message: 'Usuário sem clínica vinculada' });
         }
-        clinicId = req.user.clinicId;
+        req.clinicId = req.user.clinicId;
     }
 
-    if (!clinicId && req.user.role !== 'ADMIN_GLOBAL') {
-        return res.status(401).json({ error: 'Clinic ID não identificado', message: 'Clinic ID não identificado' });
-    }
-
-    // Se houver uma troca de contexto por um ADMIN_GLOBAL, registramos no log de auditoria
-    if (req.user.role === 'ADMIN_GLOBAL' && clinicId && clinicId !== req.user.clinicId) {
-        try {
-            // Buscamos o nome da clínica para o log (opcional, melhora a leitura)
-            const targetClinic = await prisma.clinic.findUnique({
-                where: { id: clinicId as string },
-                select: { name: true }
-            });
-
-            await prisma.adminAuditLog.create({
-                data: {
-                    adminId: req.user.id,
-                    adminName: req.user.name,
-                    targetClinicId: clinicId as string,
-                    targetClinicName: targetClinic?.name || 'Clínica Desconhecida',
-                    action: 'CONTEXT_SWITCH'
-                }
-            });
-            
-            console.log(`[AUDIT] Admin ${req.user.name} trocou contexto para clínica: ${targetClinic?.name}`);
-        } catch (logError) {
-            console.error('Erro ao gravar log de auditoria:', logError);
-            // Seguimos em frente mesmo se o log falhar para não travar o sistema
-        }
-    }
-
-    // Injeta o clinicId no req e no contexto global do AsyncLocalStorage
-    req.clinicId = clinicId;
+    const clinicId = req.clinicId;
     
     tenantContext.run({ clinicId }, () => {
         next();

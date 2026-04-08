@@ -10,12 +10,11 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
-import ClinicSwitcher from './ClinicSwitcher';
 
 const Header = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { logout, user, activeClinicId } = useAuth();
+    const { logout, user } = useAuth();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {
@@ -65,8 +64,6 @@ const Header = () => {
                 </div>
 
                 <div className="flex items-center gap-4 lg:gap-8">
-                    {/* Seletor de Clínica para Admin Global */}
-                    {user?.role === 'ADMIN_GLOBAL' && <ClinicSwitcher />}
 
                     {/* Notificações (Placeholder) */}
                     <button className="hidden sm:flex p-2.5 bg-white rounded-xl border border-[#8A9A5B]/10 text-slate-400 hover:text-[#8A9A5B] hover:shadow-sm transition-all">
@@ -93,22 +90,6 @@ const Header = () => {
                 </div>
             </header>
 
-            {/* Banner de Contexto Ativo - Otimizado para ser discreto */}
-            <AnimatePresence>
-                {activeClinicId && user?.role === 'ADMIN_GLOBAL' && (
-                    <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="bg-[#8A9A5B] text-white px-8 py-1.5 flex items-center justify-center text-[10px] font-bold uppercase tracking-widest z-[5] shadow-inner"
-                    >
-                        <div className="flex items-center gap-3">
-                            <span className="bg-white/20 px-1.5 py-0.5 rounded text-[9px]">Modo de Suporte Ativo</span>
-                            <span className="opacity-90">Você está visualizando dados restritos desta unidade.</span>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
 
             {/* Mobile Drawer (Simplificado) */}
             <AnimatePresence>

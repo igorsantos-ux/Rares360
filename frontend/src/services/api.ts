@@ -19,21 +19,15 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('heath_finance_token');
     const clinicId = localStorage.getItem('heath_finance_clinic_id');
-    const activeClinicId = localStorage.getItem('heath_finance_active_clinic_id');
     
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
     
-    // Se houver uma clínica ativa (troca de contexto), ela tem prioridade
-    if (activeClinicId) {
-        config.headers['x-target-clinic-id'] = activeClinicId;
-    } else if (clinicId) {
+    if (clinicId) {
         config.headers['x-clinic-id'] = clinicId;
     }
 
-    // Log para depuração (remover em produção se necessário)
-    console.log(`🚀 Request: ${config.method?.toUpperCase()} ${config.baseURL}/${config.url} - Target Clinic: ${activeClinicId || clinicId}`);
     return config;
 });
 

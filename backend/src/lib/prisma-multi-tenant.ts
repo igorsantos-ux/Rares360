@@ -3,6 +3,7 @@ import { getClinicId } from './context.js';
 
 // Lista de modelos que possuem explicitamente o campo clinicId
 const TENANT_MODELS = [
+  'User',
   'Transaction',
   'Doctor',
   'Patient',

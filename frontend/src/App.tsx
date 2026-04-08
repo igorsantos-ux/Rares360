@@ -37,10 +37,8 @@ function App() {
   const location = useLocation();
   const { user, loading } = useAuth();
   const isPublicPage = ['/', '/about', '/login', '/contact'].includes(location.pathname);
-  const isSaaSDashboard = location.pathname === '/saas-dashboard';
-
-  // Mostra Header/Sidebar clínico se o usuário estiver logado, não for página pública e NÃO for o Painel Global
-  const showHeader = !isPublicPage && !loading && user && !isSaaSDashboard;
+  // Mostra Header se o usuário estiver logado, não for página pública e não for ADMIN_GLOBAL
+  const showHeader = !isPublicPage && !loading && user && user.role !== 'ADMIN_GLOBAL';
 
   // Loading global para rotas privadas durante a recuperação da sessão
   if (loading && !isPublicPage) {

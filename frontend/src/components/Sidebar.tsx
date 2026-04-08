@@ -16,8 +16,7 @@ import {
     CheckSquare,
     Calendar,
     ChevronDown,
-    Stethoscope,
-    ArrowLeft
+    Stethoscope
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -29,7 +28,7 @@ import { useState, useEffect } from 'react';
 const Sidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const { logout, user, activeClinicId, clearContext } = useAuth();
+    const { logout } = useAuth();
 
     const handleLogout = () => {
         logout();
@@ -96,19 +95,6 @@ const Sidebar = () => {
             <div className="p-8 flex justify-center border-b border-[#8A9A5B]/10">
                 <img src="/logo-alamino-dark.png" alt="Logo Rares360" className="h-32 w-auto object-contain" />
             </div>
-
-            {/* Botão de Retorno ao Painel Global (Apenas para Admin Global em contexto) */}
-            {user?.role === 'ADMIN_GLOBAL' && activeClinicId && (
-                <div className="px-4 pt-6">
-                    <button
-                        onClick={clearContext}
-                        className="w-full flex items-center gap-3 px-4 py-3.5 bg-[#697D58] text-white rounded-2xl shadow-lg shadow-[#697D58]/20 hover:bg-[#8A9A5B] transition-all duration-300 group"
-                    >
-                        <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-                        <span className="font-black text-xs uppercase tracking-widest">Painel Global</span>
-                    </button>
-                </div>
-            )}
 
             <nav className="flex-1 px-4 py-8 overflow-y-auto custom-scrollbar space-y-4">
                 {Array.isArray(navItems) ? navItems.map((group) => {
