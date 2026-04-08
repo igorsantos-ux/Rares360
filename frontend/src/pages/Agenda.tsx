@@ -243,21 +243,21 @@ const Agenda = () => {
                     font-family: inherit;
                 }
                 .custom-calendar .fc-timegrid-slot {
-                    height: 6.5rem !important;
+                    height: 10rem !important;
                     border-bottom: 1px dashed #f1f5f9 !important;
                 }
                 .custom-calendar .fc-event {
                     background: transparent !important;
                     border: none !important;
                     padding: 0 !important;
-                    margin: 1px !important;
+                    margin: 2px !important;
                 }
                 .custom-calendar .fc-event-main {
                     padding: 0 !important;
                     height: 100%;
                 }
                 .custom-calendar .fc-timegrid-cols .fc-event {
-                    min-height: 120px;
+                    min-height: 160px;
                 }
                 .custom-calendar .fc-timegrid-axis-cushion, 
                 .custom-calendar .fc-timegrid-slot-label-cushion {
@@ -300,61 +300,61 @@ const renderEventContent = (eventInfo: any) => {
         >
             {/* Header - Compact */}
             <div 
-                className="px-2 py-0.5 flex items-center justify-between"
+                className="px-2 py-1 flex items-center justify-between"
                 style={{ backgroundColor: palette.headerBg }}
             >
-                <span className="text-[9px] font-black text-white uppercase tracking-tight">
+                <span className="text-[10px] font-black text-white uppercase tracking-tight">
                     {eventInfo.timeText}
                 </span>
                 {props.isOverbook && (
-                    <span className="bg-white/20 text-white text-[7px] px-1 py-0.5 rounded-full font-bold">
+                    <span className="bg-white/20 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">
                         Encaixe
                     </span>
                 )}
             </div>
 
-            {/* Body - Compact */}
-            <div className="p-1.5 flex flex-col flex-1 min-h-0">
+            {/* Body - Comfortable */}
+            <div className="p-2 flex flex-col flex-1 min-h-0">
                 {/* Identification */}
-                <div className="flex items-center gap-1 mb-0.5">
-                    <Info size={9} className="text-slate-400" />
-                    <span className="text-[10px] font-extrabold text-slate-800 truncate leading-tight">
+                <div className="flex items-center gap-1.5 mb-1">
+                    <Info size={11} className="text-slate-400" />
+                    <span className="text-[12px] font-extrabold text-slate-800 truncate leading-tight">
                         {props.patient?.fullName}
                     </span>
                 </div>
 
                 {/* Procedure */}
-                <span className="text-[9px] font-medium text-slate-500 truncate mb-0.5">
+                <span className="text-[11px] font-medium text-slate-500 truncate mb-1">
                     {props.procedure?.name || 'Consulta / Outro'}
                 </span>
 
                 {/* Profile Tag */}
-                <div className="flex items-center gap-1 mb-1.5">
+                <div className="flex items-center gap-1.5 mb-2">
                     <div 
-                        className="w-1 h-1 rounded-full" 
+                        className="w-1.5 h-1.5 rounded-full" 
                         style={{ backgroundColor: stats.isRecurring ? '#10b981' : '#3b82f6' }}
                     />
-                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                         {stats.isRecurring ? 'Recorrente' : 'Paciente Novo'}
                     </span>
                 </div>
 
-                {/* Finance Grid - Optimized */}
-                <div className="mt-auto pt-1.5 border-t border-slate-200/50 grid grid-cols-2 gap-x-1 gap-y-0.5">
+                {/* Finance Grid - Larger */}
+                <div className="mt-auto pt-2 border-t border-slate-200/50 grid grid-cols-2 gap-x-2 gap-y-1">
                     <div className="flex flex-col">
-                        <span className="text-[7px] text-slate-400 uppercase font-bold tracking-tighter">Investiu</span>
-                        <span className="text-[9px] font-black text-slate-900 leading-none">{formatCurrency(stats.totalInvested)}</span>
+                        <span className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter">Investiu</span>
+                        <span className="text-[11px] font-black text-slate-900 leading-none">{formatCurrency(stats.totalInvested)}</span>
                     </div>
                     <div className="flex flex-col text-right">
-                        <span className="text-[7px] text-slate-400 uppercase font-bold tracking-tighter">Ticket Md</span>
-                        <span className="text-[9px] font-black text-slate-900 leading-none">{formatCurrency(stats.avgTicket)}</span>
+                        <span className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter">Ticket Md</span>
+                        <span className="text-[11px] font-black text-slate-900 leading-none">{formatCurrency(stats.avgTicket)}</span>
                     </div>
-                    <div className="flex flex-col col-span-2 pt-1">
+                    <div className="flex flex-col col-span-2 pt-2">
                         <div className="flex items-center gap-1 mb-0.5">
-                            <TrendingUp size={7} className="text-emerald-500" />
-                            <span className="text-[7px] text-emerald-600 uppercase font-bold tracking-tighter">Previsibilidade</span>
+                            <TrendingUp size={9} className="text-emerald-500" />
+                            <span className="text-[8px] text-emerald-600 uppercase font-bold tracking-tighter">Previsibilidade</span>
                         </div>
-                        <span className="text-[10px] font-black text-emerald-700 leading-none">
+                        <span className="text-[11px] font-black text-emerald-700 leading-none">
                             {formatCurrency(stats.provisionalRevenue)}
                         </span>
                     </div>
