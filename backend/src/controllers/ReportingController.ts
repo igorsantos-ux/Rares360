@@ -113,7 +113,7 @@ export class ReportingController {
                 where: {
                     clinicId,
                     type: 'INCOME',
-                    dueDate: {
+                    date: {
                         gte: firstDayMonth,
                         lte: lastDayMonth
                     }
@@ -166,7 +166,7 @@ export class ReportingController {
                     where: {
                         clinicId,
                         type: 'INCOME',
-                        dueDate: {
+                        date: {
                             gte: date,
                             lt: nextDate
                         }
