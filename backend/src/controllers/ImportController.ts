@@ -49,37 +49,42 @@ export class ImportController {
                     }
                 }
 
-                // Upsert para evitar duplicados
-                await prisma.patient.upsert({
-                    where: { 
-                        email_clinicId: { 
-                            email: email || `temp_${Date.now()}_${Math.random()}@rares360.com.br`, 
-                            clinicId 
-                        } 
-                    },
-                    update: {
-                        name,
-                        phone,
-                        birthDate,
-                        cpf: cpf ? String(cpf).replace(/\D/g, '') : undefined,
-                        rg: cleanRow['RG'] ? String(cleanRow['RG']) : undefined,
-                        profession: cleanRow['PROFISSÃO'] || cleanRow['PROFISSÃO '],
-                        healthInsurance: cleanRow['CONVÊNIO'] || cleanRow['PLANO DE SAÚDE'],
-                        leadSource: cleanRow['ORIGEM'] || cleanRow['INDICAÇÃO']
-                    },
-                    create: {
-                        name,
-                        email: email || null,
-                        phone,
-                        birthDate,
-                        cpf: cpf ? String(cpf).replace(/\D/g, '') : undefined,
+                // Busca manual para evitar erro de índice composto inexistente
+                const existingPatient = await prisma.patient.findFirst({
+                    where: {
                         clinicId,
-                        rg: cleanRow['RG'] ? String(cleanRow['RG']) : undefined,
-                        profession: cleanRow['PROFISSÃO'] || cleanRow['PROFISSÃO '],
-                        healthInsurance: cleanRow['CONVÊNIO'] || cleanRow['PLANO DE SAÚDE'],
-                        leadSource: cleanRow['ORIGEM'] || cleanRow['INDICAÇÃO']
+                        OR: [
+                            cpf ? { cpf: String(cpf).replace(/\D/g, '') } : null,
+                            email ? { email: email } : null
+                        ].filter(Boolean) as any
                     }
                 });
+
+                const patientData = {
+                    fullName: name,
+                    phone,
+                    birthDate,
+                    cpf: cpf ? String(cpf).replace(/\D/g, '') : undefined,
+                    rg: cleanRow['RG'] ? String(cleanRow['RG']) : undefined,
+                    profession: cleanRow['PROFISSÃO'] || cleanRow['PROFISSÃO '],
+                    healthInsurance: cleanRow['CONVÊNIO'] || cleanRow['PLANO DE SAÚDE'],
+                    leadSource: cleanRow['ORIGEM'] || cleanRow['INDICAÇÃO'],
+                    clinicId
+                };
+
+                if (existingPatient) {
+                    await prisma.patient.update({
+                        where: { id: existingPatient.id },
+                        data: patientData
+                    });
+                } else {
+                    await prisma.patient.create({
+                        data: {
+                            ...patientData,
+                            email: email || null
+                        }
+                    });
+                }
                 importCount++;
             }
 
