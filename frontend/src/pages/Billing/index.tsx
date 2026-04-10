@@ -117,7 +117,7 @@ const BillingPage = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-4">
                     <DateRangePicker 
                         value={dateRange}
-                        onChange={(newRange) => {
+                        onChange={(newRange: { startDate: string; endDate: string }) => {
                             setDateRange(newRange);
                             // Lógica inteligente de agrupamento baseada no período
                             const start = new Date(newRange.startDate);

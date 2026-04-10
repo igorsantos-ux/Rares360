@@ -1,8 +1,8 @@
 import * as React from "react";
-import { format, subDays, startOfMonth, endOfMonth, startOfYear, endOfYear, isSameDay } from "date-fns";
+import { format, subDays, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Calendar as CalendarIcon, ChevronDown } from "lucide-react";
-import { DateRange, DayPicker } from "react-day-picker";
+import { type DateRange, DayPicker } from "react-day-picker";
 import * as Popover from "@radix-ui/react-popover";
 import { cn } from "../../lib/utils"; // Assumindo que existe, ou usarei clsx direto
 
