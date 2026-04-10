@@ -253,11 +253,32 @@ export class ImportController {
                         cleanRow[key.trim().toUpperCase()] = row[key];
                     }
 
-                    const valorRaw = cleanRow['PREÇO DE VENDA'] || 0;
-                    const valor = Math.abs(typeof valorRaw === 'string' ? parseFloat(valorRaw.replace(/\D/g, '').replace(',', '.')) : valorRaw);
+                    // Helper para parse de valores monetários BR/US
+                    const parseCurrency = (val: any) => {
+                        if (typeof val === 'number') return val;
+                        if (!val || typeof val !== 'string') return 0;
+                        
+                        // Remover R$ e espaços
+                        let clean = val.replace(/R\$\s?/, '').trim();
+                        
+                        // Se tiver vírgula e ponto (ex: 1.234,56), remover o ponto e trocar vírgula por ponto
+                        if (clean.includes(',') && clean.includes('.')) {
+                            clean = clean.replace(/\./g, '').replace(',', '.');
+                        } 
+                        // Se tiver apenas vírgula (ex: 1234,56), trocar por ponto
+                        else if (clean.includes(',')) {
+                            clean = clean.replace(',', '.');
+                        }
+                        
+                        const parsed = parseFloat(clean);
+                        return isNaN(parsed) ? 0 : parsed;
+                    };
+
+                    const valorRaw = cleanRow['PREÇO DE VENDA'] || cleanRow['PREÇO- TABELA'] || 0;
+                    const valor = Math.abs(parseCurrency(valorRaw));
                     
-                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO '] || valorRaw;
-                    const valorLiquido = Math.abs(typeof valorLiquidoRaw === 'string' ? parseFloat(valorLiquidoRaw.replace(/\D/g, '').replace(',', '.')) : valorLiquidoRaw);
+                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['VALOR LÍQUIDO'] || valorRaw;
+                    const valorLiquido = Math.abs(parseCurrency(valorLiquidoRaw));
 
                     let date = new Date();
                     const dataRaw = cleanRow['DATA DA VENDA'];
@@ -270,7 +291,7 @@ export class ImportController {
                         }
                     }
 
-                    const procedimento = cleanRow['PROCEDIMENTO '] || 'Procedimento não informado';
+                    const procedimento = cleanRow['PROCEDIMENTO'] || 'Procedimento não informado';
                     const paciente = cleanRow['PACIENTE'] || '';
                     const descricao = `${procedimento}${paciente ? ` - ${paciente}` : ''}`;
 
@@ -322,13 +343,23 @@ export class ImportController {
                     const name = cleanRow['PROCEDIMENTO'];
                     if (!name) continue;
 
-                    const priceRaw = cleanRow['PREÇO- TABELA '] || 0;
-                    const price = Math.abs(typeof priceRaw === 'string' ? parseFloat(priceRaw.replace(/\D/g, '').replace(',', '.')) : priceRaw);
-                    
-                    const costRaw = cleanRow['TOTAL - CUSTO OPERACIONAL'] || 0;
-                    const cost = Math.abs(typeof costRaw === 'string' ? parseFloat(costRaw.replace(/\D/g, '').replace(',', '.')) : costRaw);
+                    const parseCurrency = (val: any) => {
+                        if (typeof val === 'number') return val;
+                        if (!val || typeof val !== 'string') return 0;
+                        let clean = val.replace(/R\$\s?/, '').trim();
+                        if (clean.includes(',') && clean.includes('.')) clean = clean.replace(/\./g, '').replace(',', '.');
+                        else if (clean.includes(',')) clean = clean.replace(',', '.');
+                        const parsed = parseFloat(clean);
+                        return isNaN(parsed) ? 0 : parsed;
+                    };
 
-                    const duration = cleanRow['DURAÇÃO'] || 60;
+                    const priceRaw = cleanRow['PREÇO- TABELA'] || cleanRow['PREÇO - TABELA'] || cleanRow['PRECO TABELA'] || 0;
+                    const price = Math.abs(parseCurrency(priceRaw));
+                    
+                    const costRaw = cleanRow['TOTAL - CUSTO OPERACIONAL'] || cleanRow['CUSTO OPERACIONAL'] || 0;
+                    const cost = Math.abs(parseCurrency(costRaw));
+
+                    const duration = cleanRow['DURAÇÃO'] || cleanRow['DURACAO'] || 60;
 
                     const existing = await prisma.procedurePricing.findFirst({
                         where: { name, clinicId }
