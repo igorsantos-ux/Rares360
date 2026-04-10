@@ -213,6 +213,8 @@ model Patient {
   priority                  String?
   insurance                 String?
   insurancePlan             String?
+  healthInsurance           String?
+  leadSource                String?
   photoUrl                  String?
   createdAt                 DateTime             @default(now())
   clinicId                  String

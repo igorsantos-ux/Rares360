@@ -96,4 +96,120 @@ export class ImportController {
             return res.status(500).json({ message: 'Erro ao processar planilha', error: error.message });
         }
     }
+    static async bulkImportPatients(req, res) {
+        try {
+            const clinicId = req.user?.clinicId;
+            if (!clinicId) {
+                return res.status(401).json({ message: 'Clínica não identificada' });
+            }
+            if (!req.file) {
+                return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+            }
+            // Ler o buffer do arquivo Excel
+            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            // Converter para JSON as colunas
+            const data = xlsx.utils.sheet_to_json(worksheet);
+            if (data.length === 0) {
+                return res.status(400).json({ message: 'A planilha está vazia' });
+            }
+            let importedCount = 0;
+            let updatedCount = 0;
+            for (const row of data) {
+                // Normalizar as chaves para facilitar o match (Case Insensitive e Trim)
+                const cleanRow = {};
+                for (const key in row) {
+                    cleanRow[key.trim().toLowerCase()] = row[key];
+                }
+                const fullName = cleanRow['paciente'] || cleanRow['nome'] || cleanRow['nome completo'];
+                if (!fullName)
+                    continue;
+                const cpf = cleanRow['cpf'] ? String(cleanRow['cpf']).replace(/\D/g, '') : null;
+                const rg = cleanRow['rg'] ? String(cleanRow['rg']) : null;
+                const email = cleanRow['e-mail'] || cleanRow['email'];
+                const phone = cleanRow['celular'] || cleanRow['telefone'] || cleanRow['whatsapp'];
+                const profession = cleanRow['profissão'] || cleanRow['profissao'] || cleanRow['cargo'];
+                const gender = cleanRow['sexo'] || cleanRow['gênero'] || cleanRow['genero'];
+                const maritalStatus = cleanRow['estado civil'];
+                // Mapeamento de LeadSource (Origem + Indicação)
+                const origin = cleanRow['origem'] || '';
+                const indication = cleanRow['indicação'] || cleanRow['indicacao'] || '';
+                const leadSource = [origin, indication].filter(Boolean).join(' / ');
+                // Endereço concatenado
+                const rua = cleanRow['endereço'] || cleanRow['endereco'] || '';
+                const numero = cleanRow['número'] || cleanRow['numero'] || '';
+                const bairro = cleanRow['bairro'] || '';
+                const cidade = cleanRow['cidade'] || '';
+                const estado = cleanRow['estado'] || '';
+                const cep = cleanRow['cep'] || '';
+                const addressParts = [rua, numero, bairro, cidade, estado, cep].filter(Boolean);
+                const address = addressParts.length > 0 ? addressParts.join(', ') : null;
+                // Nascimento
+                let birthDate = null;
+                const birthRaw = cleanRow['nascimento'] || cleanRow['data de nascimento'];
+                if (birthRaw) {
+                    if (typeof birthRaw === 'number') {
+                        birthDate = new Date(Math.round((birthRaw - 25569) * 86400 * 1000));
+                    }
+                    else {
+                        const parsedDate = new Date(birthRaw);
+                        if (!isNaN(parsedDate.getTime())) {
+                            birthDate = parsedDate;
+                        }
+                    }
+                }
+                const patientData = {
+                    fullName,
+                    rg,
+                    cpf,
+                    birthDate,
+                    gender,
+                    maritalStatus,
+                    profession,
+                    phone: phone ? String(phone) : null,
+                    email: email ? String(email) : null,
+                    address,
+                    leadSource,
+                    clinicId
+                };
+                // Lógica de Upsert baseada no CPF (se existir)
+                if (cpf) {
+                    const existingPatient = await prisma.patient.findFirst({
+                        where: { cpf, clinicId }
+                    });
+                    if (existingPatient) {
+                        await prisma.patient.update({
+                            where: { id: existingPatient.id },
+                            data: patientData
+                        });
+                        updatedCount++;
+                    }
+                    else {
+                        await prisma.patient.create({
+                            data: patientData
+                        });
+                        importedCount++;
+                    }
+                }
+                else {
+                    // Se não tem CPF, cria sempre
+                    await prisma.patient.create({
+                        data: patientData
+                    });
+                    importedCount++;
+                }
+            }
+            return res.json({
+                message: 'Processamento concluído',
+                imported: importedCount,
+                updated: updatedCount,
+                total: data.length
+            });
+        }
+        catch (error) {
+            console.error('Erro na importação de pacientes:', error);
+            return res.status(500).json({ message: 'Erro ao processar planilha de pacientes', error: error.message });
+        }
+    }
 }

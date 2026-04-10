@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { coreApi } from '../../services/api';
 import { PatientSheet } from '../../components/Patients/PatientSheet';
+import { ImportPatientsModal } from '../../components/Patients/ImportPatientsModal';
 import {
     Users,
     Search,
@@ -42,6 +43,7 @@ const PatientsPage = () => {
     const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState('');
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
     const { data, isLoading } = useQuery({
@@ -88,13 +90,22 @@ const PatientsPage = () => {
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Pacientes</h2>
                     <p className="text-slate-500 font-medium mt-1">Gestão inteligente e análise de LTV da base de clientes.</p>
                 </div>
-                <button 
-                    onClick={handleNewPatient}
-                    className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
-                >
-                    <UserPlus size={20} />
-                    Cadastrar Paciente
-                </button>
+                <div className="flex gap-3">
+                    <button 
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#8A9A5B]/20 text-[#697D58] rounded-2xl font-bold text-sm shadow-sm hover:bg-[#8A9A5B]/5 transition-all w-fit"
+                    >
+                        <TrendingUp size={20} className="rotate-90" />
+                        Importar Planilha
+                    </button>
+                    <button 
+                        onClick={handleNewPatient}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
+                    >
+                        <UserPlus size={20} />
+                        Cadastrar Paciente
+                    </button>
+                </div>
             </div>
 
             {/* Analytical Stats */}
@@ -279,6 +290,12 @@ const PatientsPage = () => {
                 onClose={() => setIsSheetOpen(false)} 
                 onSave={() => queryClient.invalidateQueries({ queryKey: ['patients'] })}
                 patient={selectedPatient}
+            />
+
+            <ImportPatientsModal 
+                isOpen={isImportModalOpen} 
+                onClose={() => setIsImportModalOpen(false)} 
+                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['patients'] })}
             />
         </div>
     );

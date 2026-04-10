@@ -70,6 +70,44 @@ export class AppointmentController {
                 },
                 orderBy: { startTime: 'asc' }
             });
+            // Agregação de Inteligência Financeira por Paciente
+            const patientIds = [...new Set(appointments.map(a => a.patientId))];
+            if (patientIds.length > 0) {
+                const [transactions, proposals, appCounts] = await Promise.all([
+                    prisma.transaction.findMany({
+                        where: { patientId: { in: patientIds }, type: 'ENTRADA', status: 'PAID' },
+                        select: { patientId: true, amount: true }
+                    }),
+                    prisma.proposal.findMany({
+                        where: { patientId: { in: patientIds }, status: { in: ['PENDENTE', 'APROVADO'] } },
+                        select: { patientId: true, totalValue: true }
+                    }),
+                    prisma.appointment.groupBy({
+                        by: ['patientId'],
+                        where: { patientId: { in: patientIds } },
+                        _count: { id: true }
+                    })
+                ]);
+                // Mapear dados para cada agendamento
+                const enrichedAppointments = appointments.map(app => {
+                    const pTransactions = transactions.filter(t => t.patientId === app.patientId);
+                    const pProposals = proposals.filter(p => p.patientId === app.patientId);
+                    const pAppCount = appCounts.find(c => c.patientId === app.patientId)?._count.id || 0;
+                    const totalInvested = pTransactions.reduce((acc, t) => acc + t.amount, 0);
+                    const avgTicket = pTransactions.length > 0 ? totalInvested / pTransactions.length : 0;
+                    const provisionalRevenue = pProposals.reduce((acc, p) => acc + p.totalValue, 0);
+                    return {
+                        ...app,
+                        patientStats: {
+                            totalInvested,
+                            avgTicket,
+                            provisionalRevenue,
+                            isRecurring: pAppCount > 1
+                        }
+                    };
+                });
+                return res.json(enrichedAppointments);
+            }
             res.json(appointments);
         }
         catch (error) {
@@ -107,9 +145,9 @@ export class AppointmentController {
                     notes: data.notes,
                     patientId: data.patientId,
                     professionalId: data.professionalId,
-                    roomId: data.roomId,
-                    equipmentId: data.equipmentId,
-                    procedureId: data.procedureId,
+                    roomId: data.roomId || null,
+                    equipmentId: data.equipmentId || null,
+                    procedureId: data.procedureId || null,
                     clinicId
                 },
                 include: {
@@ -122,8 +160,17 @@ export class AppointmentController {
             res.status(201).json(appointment);
         }
         catch (error) {
-            console.error('Error creating appointment:', error);
-            res.status(500).json({ error: 'Erro ao criar agendamento' });
+            console.error('--- ERRO AO CRIAR AGENDAMENTO ---');
+            console.error('Payload recebido:', req.body);
+            console.error('Mensagem de erro:', error.message);
+            if (error.code)
+                console.error('Código Prisma:', error.code);
+            if (error.meta)
+                console.error('Metadados Prisma:', error.meta);
+            res.status(500).json({
+                error: 'Erro ao criar agendamento',
+                details: error.message
+            });
         }
     }
     static async update(req, res) {
@@ -152,10 +199,18 @@ export class AppointmentController {
                 }
             }
             const oldAppointment = await prisma.appointment.findUnique({ where: { id } });
+            // Sanitizar campos de relação para o update
+            const updateData = { ...data };
+            if (updateData.hasOwnProperty('roomId') && !updateData.roomId)
+                updateData.roomId = null;
+            if (updateData.hasOwnProperty('equipmentId') && !updateData.equipmentId)
+                updateData.equipmentId = null;
+            if (updateData.hasOwnProperty('procedureId') && !updateData.procedureId)
+                updateData.procedureId = null;
             const appointment = await prisma.appointment.update({
                 where: { id },
                 data: {
-                    ...data,
+                    ...updateData,
                     startTime: startTime,
                     endTime: endTime,
                 }
@@ -167,8 +222,14 @@ export class AppointmentController {
             res.json(appointment);
         }
         catch (error) {
-            console.error('Error updating appointment:', error);
-            res.status(500).json({ error: 'Erro ao atualizar agendamento' });
+            console.error('--- ERRO AO ATUALIZAR AGENDAMENTO ---');
+            console.error('ID:', req.params.id);
+            console.error('Payload:', req.body);
+            console.error('Erro:', error.message);
+            res.status(500).json({
+                error: 'Erro ao atualizar agendamento',
+                details: error.message
+            });
         }
     }
     /**
@@ -248,7 +309,7 @@ export class AppointmentController {
             const [rooms, equipments, professionals] = await Promise.all([
                 prisma.room.findMany({ where: { clinicId } }),
                 prisma.equipment.findMany({ where: { clinicId } }),
-                prisma.doctor.findMany({ where: { clinicId } })
+                prisma.doctor.findMany({ where: { clinicId, isActive: true } })
             ]);
             res.json({ rooms, equipments, professionals });
         }

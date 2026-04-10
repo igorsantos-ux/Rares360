@@ -20,14 +20,38 @@ export class MedicalService {
             };
         });
     }
+    static async listDoctors(clinicId) {
+        return await prisma.doctor.findMany({
+            where: { clinicId },
+            orderBy: { name: 'asc' }
+        });
+    }
     static async createDoctor(data) {
         return await prisma.doctor.create({
             data: {
-                name: data.name,
-                specialty: data.specialty,
-                commission: data.commission,
-                clinicId: data.clinicId
+                ...data,
+                birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
+                isActive: data.isActive !== undefined ? data.isActive : true,
+                defaultDuration: data.defaultDuration || 30
             }
+        });
+    }
+    static async updateDoctor(id, clinicId, data) {
+        return await prisma.doctor.update({
+            where: { id, clinicId },
+            data: {
+                ...data,
+                birthDate: data.birthDate ? new Date(data.birthDate) : undefined,
+                commission: data.commission !== undefined ? Number(data.commission) : undefined,
+                consultationValue: data.consultationValue !== undefined ? Number(data.consultationValue) : undefined,
+                repasseValue: data.repasseValue !== undefined ? Number(data.repasseValue) : undefined,
+                defaultDuration: data.defaultDuration !== undefined ? Number(data.defaultDuration) : undefined,
+            }
+        });
+    }
+    static async deleteDoctor(id, clinicId) {
+        return await prisma.doctor.delete({
+            where: { id, clinicId }
         });
     }
 }

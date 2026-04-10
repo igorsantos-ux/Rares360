@@ -46,6 +46,8 @@ const patientSchema = z.object({
   priority: z.string().optional(),
   insurance: z.string().optional(),
   insurancePlan: z.string().optional(),
+  healthInsurance: z.string().optional(),
+  leadSource: z.string().optional(),
   photoUrl: z.string().optional(),
 });
 
@@ -71,6 +73,8 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
       gender: '',
       maritalStatus: '',
       origin: '',
+      leadSource: '',
+      healthInsurance: '',
       priority: 'Normal'
     }
   });
@@ -123,6 +127,8 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
                 priority: 'Normal',
                 insurance: '',
                 insurancePlan: '',
+                healthInsurance: '',
+                leadSource: '',
                 photoUrl: ''
             });
             setPhotoPreview(null);
@@ -178,7 +184,7 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
   const tabs = [
     { id: 'pessoais', label: 'Dados Pessoais', icon: <User size={16} /> },
     { id: 'contato', label: 'Contato & Endereço', icon: <Phone size={16} /> },
-    { id: 'clinico', label: 'Dados Clínicos', icon: <HeartPulse size={16} /> },
+    { id: 'clinico', label: 'Clínico & Admin', icon: <HeartPulse size={16} /> },
     { id: 'execucoes', label: 'Execuções', icon: <History size={16} /> },
   ];
 
@@ -271,8 +277,8 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Nome Social</label>
-                                <input {...register('socialName')} className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all" />
+                                <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">RG</label>
+                                <input {...register('rg')} placeholder="00.000.000-0" className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">CPF</label>
@@ -282,8 +288,8 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">RG</label>
-                                <input {...register('rg')} className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all" />
+                                <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Nome Social</label>
+                                <input {...register('socialName')} className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all" />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Nascimento</label>
@@ -342,6 +348,11 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
                                 <input {...register('email')} placeholder="email@exemplo.com" className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all" />
                                 {errors.email && <span className="text-red-500 text-[10px] font-bold">{errors.email.message}</span>}
                             </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Profissão</label>
+                            <input {...register('profession')} placeholder="Ex: Advogado, Engenheiro..." className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all" />
                         </div>
 
                         <div className="space-y-1.5">
@@ -404,11 +415,26 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider flex items-center gap-2"><CreditCard size={14} /> Convênio</label>
-                                <input {...register('insurance')} placeholder="Ex: Unimed, Bradesco" className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all" />
+                                <select {...register('healthInsurance')} className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all">
+                                    <option value="">Particular (Sem Convênio)</option>
+                                    <option value="Unimed">Unimed</option>
+                                    <option value="Bradesco">Bradesco Saúde</option>
+                                    <option value="SulAmérica">SulAmérica</option>
+                                    <option value="Amil">Amil</option>
+                                    <option value="Porto Seguro">Porto Seguro</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Plano</label>
-                                <input {...register('insurancePlan')} placeholder="Ex: Top Nacional" className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all" />
+                                <label className="text-xs font-bold text-[#697D58] uppercase tracking-wider">Origem / Indicação</label>
+                                <select {...register('leadSource')} className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all">
+                                    <option value="">Selecione</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="Google">Google (Busca)</option>
+                                    <option value="Indicação">Indicação de Paciente</option>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="Outros">Outros</option>
+                                </select>
                             </div>
                         </div>
 

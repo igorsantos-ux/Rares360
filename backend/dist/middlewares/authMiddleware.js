@@ -30,20 +30,14 @@ export const roleMiddleware = (allowedRoles) => {
     };
 };
 import { tenantContext } from '../lib/context.js';
-export const tenantMiddleware = (req, res, next) => {
-    // Para ADMIN_GLOBAL, permitimos sobrescrever o clinicId via header para suporte/gestão
-    let clinicId = req.headers['x-clinic-id'];
+export const tenantMiddleware = async (req, res, next) => {
     if (req.user.role !== 'ADMIN_GLOBAL') {
         if (!req.user.clinicId) {
             return res.status(403).json({ error: 'Usuário sem clínica vinculada', message: 'Usuário sem clínica vinculada' });
         }
-        clinicId = req.user.clinicId;
+        req.clinicId = req.user.clinicId;
     }
-    if (!clinicId && req.user.role !== 'ADMIN_GLOBAL') {
-        return res.status(401).json({ error: 'Clinic ID não identificado', message: 'Clinic ID não identificado' });
-    }
-    // Injeta o clinicId no req e no contexto global do AsyncLocalStorage
-    req.clinicId = clinicId;
+    const clinicId = req.clinicId;
     tenantContext.run({ clinicId }, () => {
         next();
     });
