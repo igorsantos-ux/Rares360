@@ -38,8 +38,6 @@ const COLORS = ['#8A9A5B', '#DEB587', '#5B7C9A', '#9A5B7C', '#5B9A7C', '#c4c8b2'
 const BillingPage = () => {
     const [groupBy, setGroupBy] = useState<GroupBy>('month');
     
-    // Filtros de Data e GroupBy automáticos via Quick Filters
-    const [activeFilter, setActiveFilter] = useState('monthly');
     const today = new Date();
     const [dateRange, setDateRange] = useState({
         startDate: format(subDays(today, 30), 'yyyy-MM-dd'),
@@ -60,34 +58,6 @@ const BillingPage = () => {
         }
     });
 
-    const handleQuickFilter = (type: 'daily' | 'weekly' | 'monthly' | 'semiannual' | 'annual') => {
-        setActiveFilter(type);
-        const now = new Date();
-        const end = format(now, 'yyyy-MM-dd');
-        
-        switch (type) {
-            case 'daily':
-                setDateRange({ startDate: end, endDate: end });
-                setGroupBy('day');
-                break;
-            case 'weekly':
-                setDateRange({ startDate: format(subDays(now, 7), 'yyyy-MM-dd'), endDate: end });
-                setGroupBy('day');
-                break;
-            case 'monthly':
-                setDateRange({ startDate: format(subDays(now, 30), 'yyyy-MM-dd'), endDate: end });
-                setGroupBy('week');
-                break;
-            case 'semiannual':
-                setDateRange({ startDate: format(subDays(now, 180), 'yyyy-MM-dd'), endDate: end });
-                setGroupBy('month');
-                break;
-            case 'annual':
-                setDateRange({ startDate: format(subDays(now, 365), 'yyyy-MM-dd'), endDate: end });
-                setGroupBy('month');
-                break;
-        }
-    };
 
     if (isLoading && !dashboardData) return (
         <div className="min-h-screen flex items-center justify-center bg-slate-50/50">
@@ -145,28 +115,20 @@ const BillingPage = () => {
                     <p className="text-slate-500 font-medium mt-1">Análise de performance, evolução temporal e rankings estratégicos.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
-                    {/* Filtros de Período Rápidos e Agrupamento */}
-                    <div className="flex bg-slate-100/80 p-1.5 rounded-2xl overflow-x-auto max-w-full hidden-scrollbar shadow-inner">
-                        {[
-                            { id: 'daily', label: 'Diário' },
-                            { id: 'weekly', label: 'Semanal' },
-                            { id: 'monthly', label: 'Mensal' },
-                            { id: 'semiannual', label: 'Semestral' },
-                            { id: 'annual', label: 'Anual' }
-                        ].map((btn) => (
-                            <button
-                                key={btn.id}
-                                onClick={() => handleQuickFilter(btn.id as any)}
-                                className={`px-5 py-2 rounded-xl text-xs font-black transition-all capitalize whitespace-nowrap ${
-                                    activeFilter === btn.id 
-                                    ? 'bg-white text-[#8A9A5B] shadow-sm' 
-                                    : 'text-slate-400 hover:text-slate-600'
-                                }`}
-                            >
-                                {btn.label}
-                            </button>
-                        ))}
-                    </div>
+                    <DateRangePicker 
+                        value={dateRange}
+                        onChange={(newRange) => {
+                            setDateRange(newRange);
+                            // Lógica inteligente de agrupamento baseada no período
+                            const start = new Date(newRange.startDate);
+                            const end = new Date(newRange.endDate);
+                            const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24));
+                            
+                            if (diffDays <= 31) setGroupBy('day');
+                            else if (diffDays <= 90) setGroupBy('week');
+                            else setGroupBy('month');
+                        }}
+                    />
 
                     <div className="flex items-center gap-3">
                         <button
