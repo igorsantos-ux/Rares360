@@ -1,11 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { reportingApi } from '../../services/api';
-import api from '../../services/api';
 import {
     BarChart3,
     TrendingUp,
-    UploadCloud,
     Loader2,
     PieChart as PieChartIcon,
     ArrowUpRight,
@@ -15,9 +13,6 @@ import {
     Tags,
     Crown,
     User,
-    Download,
-    ArrowRight,
-    X,
     FileSpreadsheet
 } from 'lucide-react';
 import { ImportFinanceModal } from '../../components/Financial/ImportFinanceModal';
@@ -35,7 +30,6 @@ import {
     LabelList
 } from 'recharts';
 import { format, subDays } from 'date-fns';
-import { toast } from 'react-hot-toast';
 
 type GroupBy = 'day' | 'week' | 'month';
 
@@ -52,7 +46,6 @@ const BillingPage = () => {
         endDate: format(today, 'yyyy-MM-dd')
     });
 
-    const [uploading, setUploading] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const { data: dashboardData, isLoading, isError, refetch } = useQuery({

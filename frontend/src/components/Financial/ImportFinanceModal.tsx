@@ -5,7 +5,6 @@ import {
     FileText, 
     CheckCircle2, 
     Loader2, 
-    Download,
     ArrowRight,
     TrendingUp,
     Tags,
