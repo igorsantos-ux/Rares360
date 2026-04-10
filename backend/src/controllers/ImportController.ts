@@ -3,6 +3,91 @@ import prisma from '../lib/prisma.js';
 import * as xlsx from 'xlsx';
 
 export class ImportController {
+    static async bulkImportPatients(req: Request, res: Response) {
+        try {
+            const clinicId = (req as any).user?.clinicId;
+            if (!clinicId) {
+                return res.status(401).json({ message: 'Clínica não identificada' });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+            }
+
+            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const data: any[] = xlsx.utils.sheet_to_json(worksheet);
+
+            if (data.length === 0) {
+                return res.status(400).json({ message: 'Planilha vazia' });
+            }
+
+            let importCount = 0;
+
+            for (const row of data) {
+                const cleanRow: any = {};
+                for (const key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+
+                const name = cleanRow['NOME'] || cleanRow['NOME COMPLETO'];
+                if (!name) continue;
+
+                const email = cleanRow['E-MAIL'] || cleanRow['EMAIL'];
+                const phone = String(cleanRow['CELULAR'] || cleanRow['TELEFONE'] || '');
+                const birthDateRaw = cleanRow['DATA DE NASCIMENTO'];
+                
+                let birthDate = null;
+                if (birthDateRaw) {
+                    if (typeof birthDateRaw === 'number') {
+                        birthDate = new Date(Math.round((birthDateRaw - 25569) * 86400 * 1000));
+                    } else {
+                        const parsed = new Date(birthDateRaw);
+                        if (!isNaN(parsed.getTime())) birthDate = parsed;
+                    }
+                }
+
+                // Upsert para evitar duplicados
+                await prisma.patient.upsert({
+                    where: { 
+                        email_clinicId: { 
+                            email: email || `temp_${Date.now()}_${Math.random()}@rares360.com.br`, 
+                            clinicId 
+                        } 
+                    },
+                    update: {
+                        name,
+                        phone,
+                        birthDate,
+                        rg: cleanRow['RG'] ? String(cleanRow['RG']) : undefined,
+                        profession: cleanRow['PROFISSÃO'] || cleanRow['PROFISSÃO '],
+                        healthInsurance: cleanRow['CONVÊNIO'] || cleanRow['PLANO DE SAÚDE'],
+                        leadSource: cleanRow['ORIGEM'] || cleanRow['INDICAÇÃO']
+                    },
+                    create: {
+                        name,
+                        email: email || null,
+                        phone,
+                        birthDate,
+                        clinicId,
+                        rg: cleanRow['RG'] ? String(cleanRow['RG']) : undefined,
+                        profession: cleanRow['PROFISSÃO'] || cleanRow['PROFISSÃO '],
+                        healthInsurance: cleanRow['CONVÊNIO'] || cleanRow['PLANO DE SAÚDE'],
+                        leadSource: cleanRow['ORIGEM'] || cleanRow['INDICAÇÃO']
+                    }
+                });
+                importCount++;
+            }
+
+            return res.json({ message: `${importCount} pacientes processados com sucesso!`, count: importCount });
+
+        } catch (error: any) {
+            console.error('Erro na importação de pacientes:', error);
+            return res.status(500).json({ message: 'Erro interno ao importar pacientes', error: error.message });
+        }
+    }
+
     static async importTransactions(req: Request, res: Response) {
         try {
             const clinicId = (req as any).user?.clinicId;
