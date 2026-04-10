@@ -398,6 +398,9 @@ export class ImportController {
                 updated: updatedCount
             });
 
+        } catch (error: any) {
+            console.error('Erro na importação financeira:', error);
+            return res.status(500).json({ message: 'Erro ao processar planilha financeira', error: error.message });
         }
     }
 
