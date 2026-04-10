@@ -31,12 +31,13 @@ export class ImportController {
                     cleanRow[key.trim().toUpperCase()] = row[key];
                 }
 
-                const name = cleanRow['NOME'] || cleanRow['NOME COMPLETO'];
+                const name = cleanRow['NOME'] || cleanRow['NOME COMPLETO'] || cleanRow['PACIENTE'] || cleanRow['NOME DO PACIENTE'];
                 if (!name) continue;
 
-                const email = cleanRow['E-MAIL'] || cleanRow['EMAIL'];
-                const phone = String(cleanRow['CELULAR'] || cleanRow['TELEFONE'] || '');
-                const birthDateRaw = cleanRow['DATA DE NASCIMENTO'];
+                const email = cleanRow['E-MAIL'] || cleanRow['EMAIL'] || cleanRow['EMAIL PRINCIPAL'];
+                const phone = String(cleanRow['CELULAR'] || cleanRow['TELEFONE'] || cleanRow['TELEFONE CELULAR'] || cleanRow['FONE'] || '');
+                const cpf = cleanRow['CPF'] || cleanRow['DOCUMENTO'];
+                const birthDateRaw = cleanRow['DATA DE NASCIMENTO'] || cleanRow['NASCIMENTO'] || cleanRow['DATA NASCIMENTO'];
                 
                 let birthDate = null;
                 if (birthDateRaw) {
@@ -60,6 +61,7 @@ export class ImportController {
                         name,
                         phone,
                         birthDate,
+                        cpf: cpf ? String(cpf).replace(/\D/g, '') : undefined,
                         rg: cleanRow['RG'] ? String(cleanRow['RG']) : undefined,
                         profession: cleanRow['PROFISSÃO'] || cleanRow['PROFISSÃO '],
                         healthInsurance: cleanRow['CONVÊNIO'] || cleanRow['PLANO DE SAÚDE'],
@@ -70,6 +72,7 @@ export class ImportController {
                         email: email || null,
                         phone,
                         birthDate,
+                        cpf: cpf ? String(cpf).replace(/\D/g, '') : undefined,
                         clinicId,
                         rg: cleanRow['RG'] ? String(cleanRow['RG']) : undefined,
                         profession: cleanRow['PROFISSÃO'] || cleanRow['PROFISSÃO '],
