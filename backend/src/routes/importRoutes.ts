@@ -6,6 +6,9 @@ import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Rota de diagnóstico (pública temporariamente para debug)
+router.get('/diagnostics/db', ImportController.diagnoseDB);
+
 router.use(authMiddleware, tenantMiddleware);
 
 // Rota de importação de transações (Excel)

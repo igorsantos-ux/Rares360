@@ -402,5 +402,18 @@ export class ImportController {
             console.error('Erro na importação financeira:', error);
             return res.status(500).json({ message: 'Erro ao processar planilha financeira', error: error.message });
         }
+    static async diagnoseDB(req: Request, res: Response) {
+        try {
+            const dbUrl = process.env.DATABASE_URL || '';
+            // Máscara para o hostname
+            const hostname = dbUrl.split('@')[1]?.split(':')[0] || 'Hostname não encontrado';
+            return res.json({ 
+                status: 'online',
+                db_hostname: hostname,
+                message: 'Verifique se este hostname coincide com o do seu Supabase atual.'
+            });
+        } catch (error: any) {
+            return res.status(500).json({ error: error.message });
+        }
     }
 }
