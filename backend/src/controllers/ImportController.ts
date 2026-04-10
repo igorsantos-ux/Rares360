@@ -299,9 +299,10 @@ export class ImportController {
                         }
                     }
 
-                    const procedimento = cleanRow['PROCEDIMENTO'] || 'Procedimento não informado';
+                    const procedimento = cleanRow['PROCEDIMENTO'] || cleanRow['PROCEDIMENTO '] || 'Procedimento não informado';
+                    const medico = cleanRow['MEDICO SOLICITANTE'] || cleanRow['MÉDICO SOLICITANTE'] || '';
                     const paciente = cleanRow['PACIENTE'] || '';
-                    const descricao = `${procedimento}${paciente ? ` - ${paciente}` : ''}`;
+                    const descricao = `${procedimento}${paciente ? ` - ${paciente}` : ''}${medico ? ` (${medico})` : ''}`;
 
                     return {
                         description: descricao,
@@ -312,6 +313,8 @@ export class ImportController {
                         category: cleanRow['TIPO'] || 'Faturamento',
                         paymentMethod: cleanRow['FORMA DE PAGAMENTO'] || 'Outros',
                         centerOfCost: 'Operacional',
+                        procedureName: procedimento,
+                        doctorName: medico,
                         date: date,
                         clinicId: clinicId
                     };

@@ -133,6 +133,7 @@ model Transaction {
   category           String
   centerOfCost       String              @default("Operacional")
   procedureName      String?
+  doctorName         String?
   cost               Float               @default(0)
   date               DateTime            @default(now())
   doctorId           String?

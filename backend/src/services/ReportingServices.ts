@@ -235,7 +235,7 @@ export class BillingService {
             procMap[proc] = (procMap[proc] || 0) + t.amount;
             
             // Médicos
-            const doc = t.doctor?.name || 'Clínica';
+            const doc = (t as any).doctorName || t.doctor?.name || 'Clínica';
             doctorMap[doc] = (doctorMap[doc] || 0) + t.amount;
 
             // Categorias (usaremos como Vendedores/Sellers proxy pois a regra de Vendedor não está clara no BD)
