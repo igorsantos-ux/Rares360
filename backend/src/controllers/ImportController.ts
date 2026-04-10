@@ -309,23 +309,7 @@ export class ImportController {
                     };
                 });
 
-                // De-duplicação
-                const existingTransactions = await prisma.transaction.findMany({
-                    where: { clinicId, type: 'INCOME' },
-                    select: { description: true, amount: true, date: true }
-                });
-
-                const existingSet = new Set(existingTransactions.map(t => 
-                    `${t.description.trim()}|${t.amount}|${t.date.toISOString().split('T')[0]}`
-                ));
-
-                const validTransactions = transactionsToCreate.filter(t => {
-                    if (t.amount <= 0) return false;
-                    const hash = `${t.description.trim()}|${t.amount}|${t.date.toISOString().split('T')[0]}`;
-                    if (existingSet.has(hash)) return false;
-                    existingSet.add(hash);
-                    return true;
-                });
+                const validTransactions = transactionsToCreate.filter(t => t.amount > 0);
 
                 if (validTransactions.length > 0) {
                     const result = await prisma.transaction.createMany({ data: validTransactions });
