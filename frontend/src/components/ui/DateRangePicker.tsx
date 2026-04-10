@@ -14,18 +14,33 @@ export interface DateRangePickerProps {
 
 export function DateRangePicker({ className, value, onChange }: DateRangePickerProps) {
     const [open, setOpen] = React.useState(false);
-
-    // Converter string para Date para o DayPicker
-    const range: DateRange | undefined = {
+    
+    // Estado interno para a seleção temporária dentro do modal
+    const [tempRange, setTempRange] = React.useState<DateRange | undefined>({
         from: value.startDate ? new Date(value.startDate) : undefined,
         to: value.endDate ? new Date(value.endDate) : undefined,
-    };
+    });
+
+    // Sincronizar estado interno quando o valor externo mudar ou o modal abrir
+    React.useEffect(() => {
+        if (open) {
+            setTempRange({
+                from: value.startDate ? new Date(value.startDate) : undefined,
+                to: value.endDate ? new Date(value.endDate) : undefined,
+            });
+        }
+    }, [open, value]);
 
     const handleSelect = (newRange: DateRange | undefined) => {
-        if (newRange?.from) {
-            const startDate = format(newRange.from, "yyyy-MM-dd");
-            const endDate = newRange.to ? format(newRange.to, "yyyy-MM-dd") : startDate;
+        setTempRange(newRange);
+    };
+
+    const handleConfirm = () => {
+        if (tempRange?.from) {
+            const startDate = format(tempRange.from, "yyyy-MM-dd");
+            const endDate = tempRange.to ? format(tempRange.to, "yyyy-MM-dd") : startDate;
             onChange({ startDate, endDate });
+            setOpen(false);
         }
     };
 
@@ -42,7 +57,10 @@ export function DateRangePicker({ className, value, onChange }: DateRangePickerP
 
     const applyPreset = (presetFn: () => { from: Date; to: Date }) => {
         const { from, to } = presetFn();
-        onChange({ startDate: format(from, "yyyy-MM-dd"), endDate: format(to, "yyyy-MM-dd") });
+        const startStr = format(from, "yyyy-MM-dd");
+        const endStr = format(to, "yyyy-MM-dd");
+        onChange({ startDate: startStr, endDate: endStr });
+        setTempRange({ from, to });
         setOpen(false);
     };
 
@@ -54,17 +72,17 @@ export function DateRangePicker({ className, value, onChange }: DateRangePickerP
                         id="date"
                         className={cn(
                             "w-[300px] justify-start text-left font-bold flex items-center gap-3 px-5 py-3 bg-[#FCFDFB] border border-[#8A9A5B]/20 rounded-2xl text-slate-600 hover:bg-[#8A9A5B]/5 transition-all shadow-sm",
-                            !range && "text-slate-400"
+                            !tempRange && "text-slate-400"
                         )}
                     >
                         <CalendarIcon className="mr-0 h-4 w-4 text-[#556B2F]" />
-                        {range?.from ? (
-                            range.to ? (
+                        {tempRange?.from ? (
+                            tempRange.to ? (
                                 <>
-                                    {format(range.from, "dd/MM/yy")} - {format(range.to, "dd/MM/yy")}
+                                    {format(tempRange.from, "dd/MM/yy")} - {format(tempRange.to, "dd/MM/yy")}
                                 </>
                             ) : (
-                                format(range.from, "dd/MM/yy")
+                                format(tempRange.from, "dd/MM/yy")
                             )
                         ) : (
                             <span>Selecione um período</span>
@@ -95,8 +113,8 @@ export function DateRangePicker({ className, value, onChange }: DateRangePickerP
                         <div className="p-4">
                             <DayPicker
                                 mode="range"
-                                defaultMonth={range?.from}
-                                selected={range}
+                                defaultMonth={tempRange?.from}
+                                selected={tempRange}
                                 onSelect={handleSelect}
                                 numberOfMonths={2}
                                 locale={ptBR}
@@ -127,7 +145,7 @@ export function DateRangePicker({ className, value, onChange }: DateRangePickerP
                             />
                             <div className="mt-4 pt-4 border-t border-slate-100 flex justify-end gap-2 px-2">
                                 <button 
-                                    onClick={() => setOpen(false)}
+                                    onClick={handleConfirm}
                                     className="px-6 py-2.5 bg-[#556B2F] text-white rounded-xl font-black text-xs shadow-lg shadow-[#556B2F]/20 hover:brightness-110 active:scale-95 transition-all"
                                 >
                                     Confirmar Período
