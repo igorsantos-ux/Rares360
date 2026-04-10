@@ -11,4 +11,7 @@ router.use(authMiddleware, tenantMiddleware);
 // Rota de importação de transações (Excel)
 router.post('/transactions', upload.single('file'), ImportController.importTransactions);
 
+// Nova rota de importação financeira unificada (Billing, Pricing, Equipment)
+router.post('/finance', upload.single('file'), ImportController.importFinancialData);
+
 export default router;

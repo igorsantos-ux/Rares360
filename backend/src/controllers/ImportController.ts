@@ -119,7 +119,7 @@ export class ImportController {
         }
     }
 
-    static async bulkImportPatients(req: Request, res: Response) {
+    static async importFinancialData(req: Request, res: Response) {
         try {
             const clinicId = (req as any).user?.clinicId;
             if (!clinicId) {
@@ -130,120 +130,177 @@ export class ImportController {
                 return res.status(400).json({ message: 'Nenhum arquivo enviado' });
             }
 
+            const { type } = req.body;
+            if (!type) {
+                return res.status(400).json({ message: 'Tipo de importação não especificado' });
+            }
+
             // Ler o buffer do arquivo Excel
             const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-            const sheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[sheetName];
+            
+            // Determinar qual aba usar baseado no tipo ou pegar a padrão
+            let sheetName = '';
+            if (type === 'billing') {
+                sheetName = workbook.SheetNames.find(n => n.includes('FATURAMENTO DIARIO')) || workbook.SheetNames[0];
+            } else if (type === 'pricing') {
+                sheetName = workbook.SheetNames.find(n => n.includes('PREÇO PROCEDIMENTOS')) || workbook.SheetNames[0];
+            } else if (type === 'equipment') {
+                sheetName = workbook.SheetNames.find(n => n.includes('TECNOLOGIAS')) || workbook.SheetNames[0];
+            } else {
+                sheetName = workbook.SheetNames[0];
+            }
 
-            // Converter para JSON as colunas
+            const worksheet = workbook.Sheets[sheetName];
             const data: any[] = xlsx.utils.sheet_to_json(worksheet);
 
             if (data.length === 0) {
-                return res.status(400).json({ message: 'A planilha está vazia' });
+                return res.status(400).json({ message: 'A planilha ou aba selecionada está vazia' });
             }
 
-            let importedCount = 0;
+            let resultCount = 0;
             let updatedCount = 0;
 
-            for (const row of data) {
-                // Normalizar as chaves para facilitar o match (Case Insensitive e Trim)
-                const cleanRow: any = {};
-                for (const key in row) {
-                    cleanRow[key.trim().toLowerCase()] = row[key];
-                }
+            if (type === 'billing') {
+                // Lógica de Faturamento Diário (Transactions)
+                const transactionsToCreate = data.map((row: any) => {
+                    const cleanRow: any = {};
+                    for (const key in row) {
+                        cleanRow[key.trim().toUpperCase()] = row[key];
+                    }
 
-                const fullName = cleanRow['paciente'] || cleanRow['nome'] || cleanRow['nome completo'];
-                if (!fullName) continue;
+                    const valorRaw = cleanRow['PREÇO DE VENDA'] || 0;
+                    const valor = Math.abs(typeof valorRaw === 'string' ? parseFloat(valorRaw.replace(/\D/g, '').replace(',', '.')) : valorRaw);
+                    
+                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO '] || valorRaw;
+                    const valorLiquido = Math.abs(typeof valorLiquidoRaw === 'string' ? parseFloat(valorLiquidoRaw.replace(/\D/g, '').replace(',', '.')) : valorLiquidoRaw);
 
-                const cpf = cleanRow['cpf'] ? String(cleanRow['cpf']).replace(/\D/g, '') : null;
-                const rg = cleanRow['rg'] ? String(cleanRow['rg']) : null;
-                const email = cleanRow['e-mail'] || cleanRow['email'];
-                const phone = cleanRow['celular'] || cleanRow['telefone'] || cleanRow['whatsapp'];
-                const profession = cleanRow['profissão'] || cleanRow['profissao'] || cleanRow['cargo'];
-                const gender = cleanRow['sexo'] || cleanRow['gênero'] || cleanRow['genero'];
-                const maritalStatus = cleanRow['estado civil'];
-                
-                // Mapeamento de LeadSource (Origem + Indicação)
-                const origin = cleanRow['origem'] || '';
-                const indication = cleanRow['indicação'] || cleanRow['indicacao'] || '';
-                const leadSource = [origin, indication].filter(Boolean).join(' / ');
-
-                // Endereço concatenado
-                const rua = cleanRow['endereço'] || cleanRow['endereco'] || '';
-                const numero = cleanRow['número'] || cleanRow['numero'] || '';
-                const bairro = cleanRow['bairro'] || '';
-                const cidade = cleanRow['cidade'] || '';
-                const estado = cleanRow['estado'] || '';
-                const cep = cleanRow['cep'] || '';
-                const addressParts = [rua, numero, bairro, cidade, estado, cep].filter(Boolean);
-                const address = addressParts.length > 0 ? addressParts.join(', ') : null;
-
-                // Nascimento
-                let birthDate: Date | null = null;
-                const birthRaw = cleanRow['nascimento'] || cleanRow['data de nascimento'];
-                if (birthRaw) {
-                    if (typeof birthRaw === 'number') {
-                        birthDate = new Date(Math.round((birthRaw - 25569) * 86400 * 1000));
-                    } else {
-                        const parsedDate = new Date(birthRaw);
-                        if (!isNaN(parsedDate.getTime())) {
-                            birthDate = parsedDate;
+                    let date = new Date();
+                    const dataRaw = cleanRow['DATA DA VENDA'];
+                    if (dataRaw) {
+                        if (typeof dataRaw === 'number') {
+                            date = new Date(Math.round((dataRaw - 25569) * 86400 * 1000));
+                        } else {
+                            const parsed = new Date(dataRaw);
+                            if (!isNaN(parsed.getTime())) date = parsed;
                         }
                     }
+
+                    const procedimento = cleanRow['PROCEDIMENTO '] || 'Procedimento não informado';
+                    const paciente = cleanRow['PACIENTE'] || '';
+                    const descricao = `${procedimento}${paciente ? ` - ${paciente}` : ''}`;
+
+                    return {
+                        description: descricao,
+                        amount: valor,
+                        netAmount: valorLiquido,
+                        type: 'INCOME',
+                        status: 'PAID',
+                        category: cleanRow['TIPO'] || 'Faturamento',
+                        paymentMethod: cleanRow['FORMA DE PAGAMENTO'] || 'Outros',
+                        centerOfCost: 'Operacional',
+                        date: date,
+                        clinicId: clinicId
+                    };
+                });
+
+                // De-duplicação
+                const existingTransactions = await prisma.transaction.findMany({
+                    where: { clinicId, type: 'INCOME' },
+                    select: { description: true, amount: true, date: true }
+                });
+
+                const existingSet = new Set(existingTransactions.map(t => 
+                    `${t.description.trim()}|${t.amount}|${t.date.toISOString().split('T')[0]}`
+                ));
+
+                const validTransactions = transactionsToCreate.filter(t => {
+                    if (t.amount <= 0) return false;
+                    const hash = `${t.description.trim()}|${t.amount}|${t.date.toISOString().split('T')[0]}`;
+                    if (existingSet.has(hash)) return false;
+                    existingSet.add(hash);
+                    return true;
+                });
+
+                if (validTransactions.length > 0) {
+                    const result = await prisma.transaction.createMany({ data: validTransactions });
+                    resultCount = result.count;
                 }
+            } 
+            else if (type === 'pricing') {
+                // Lógica de Precificação (ProcedurePricing)
+                for (const row of data) {
+                    const cleanRow: any = {};
+                    for (const key in row) {
+                        cleanRow[key.trim().toUpperCase()] = row[key];
+                    }
 
-                const patientData: any = {
-                    fullName,
-                    rg,
-                    cpf,
-                    birthDate,
-                    gender,
-                    maritalStatus,
-                    profession,
-                    phone: phone ? String(phone) : null,
-                    email: email ? String(email) : null,
-                    address,
-                    leadSource,
-                    clinicId
-                };
+                    const name = cleanRow['PROCEDIMENTO'];
+                    if (!name) continue;
 
-                // Lógica de Upsert baseada no CPF (se existir)
-                if (cpf) {
-                    const existingPatient = await prisma.patient.findFirst({
-                        where: { cpf, clinicId }
+                    const priceRaw = cleanRow['PREÇO- TABELA '] || 0;
+                    const price = Math.abs(typeof priceRaw === 'string' ? parseFloat(priceRaw.replace(/\D/g, '').replace(',', '.')) : priceRaw);
+                    
+                    const costRaw = cleanRow['TOTAL - CUSTO OPERACIONAL'] || 0;
+                    const cost = Math.abs(typeof costRaw === 'string' ? parseFloat(costRaw.replace(/\D/g, '').replace(',', '.')) : costRaw);
+
+                    const duration = cleanRow['DURAÇÃO'] || 60;
+
+                    const existing = await prisma.procedurePricing.findFirst({
+                        where: { name, clinicId }
                     });
 
-                    if (existingPatient) {
-                        await prisma.patient.update({
-                            where: { id: existingPatient.id },
-                            data: patientData
+                    if (existing) {
+                        await prisma.procedurePricing.update({
+                            where: { id: existing.id },
+                            data: { currentPrice: price, totalCost: cost, durationMinutes: Number(duration) }
                         });
                         updatedCount++;
                     } else {
-                        await prisma.patient.create({
-                            data: patientData
+                        await prisma.procedurePricing.create({
+                            data: { name, currentPrice: price, totalCost: cost, durationMinutes: Number(duration), clinicId }
                         });
-                        importedCount++;
+                        resultCount++;
                     }
-                } else {
-                    // Se não tem CPF, cria sempre
-                    await prisma.patient.create({
-                        data: patientData
+                }
+            }
+            else if (type === 'equipment') {
+                // Lógica de Tecnologias (Equipment)
+                for (const row of data) {
+                    const cleanRow: any = {};
+                    for (const key in row) {
+                        cleanRow[key.trim().toUpperCase()] = row[key];
+                    }
+
+                    const name = cleanRow['TECNOLOGIA'] || cleanRow['NOME'] || cleanRow['EQUIPAMENTO'];
+                    if (!name) continue;
+
+                    const status = cleanRow['STATUS'] || 'ATIVO';
+
+                    const existing = await prisma.equipment.findFirst({
+                        where: { name, clinicId }
                     });
-                    importedCount++;
+
+                    if (!existing) {
+                        await prisma.equipment.create({
+                            data: { name, status, clinicId }
+                        });
+                        resultCount++;
+                    } else {
+                        updatedCount++;
+                    }
                 }
             }
 
             return res.json({
                 message: 'Processamento concluído',
-                imported: importedCount,
-                updated: updatedCount,
-                total: data.length
+                total: data.length,
+                imported: resultCount,
+                updated: updatedCount
             });
 
         } catch (error: any) {
-            console.error('Erro na importação de pacientes:', error);
-            return res.status(500).json({ message: 'Erro ao processar planilha de pacientes', error: error.message });
+            console.error('Erro na importação financeira:', error);
+            return res.status(500).json({ message: 'Erro ao processar planilha financeira', error: error.message });
         }
     }
 }

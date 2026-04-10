@@ -571,6 +571,7 @@ model Room {
 model Equipment {
   id           String        @id @default(uuid())
   name         String
+  status       String?       @default("ATIVO")
   clinicId     String
   clinic       Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   appointments Appointment[]
