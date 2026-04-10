@@ -16,6 +16,7 @@ import {
     FileSpreadsheet
 } from 'lucide-react';
 import { ImportFinanceModal } from '../../components/Financial/ImportFinanceModal';
+import { DateRangePicker } from '../../components/ui/DateRangePicker';
 import { 
     BarChart, 
     Bar, 
