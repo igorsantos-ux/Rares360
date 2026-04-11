@@ -87,7 +87,7 @@ const Dashboard = () => {
         queryFn: () => financialApi.getEvolution(periodParams).then(res => res.data)
     });
 
-    const { data: goalStats, isLoading: isGoalLoading } = useQuery({
+    const { data: goalStats } = useQuery({
         queryKey: ['monthly-goal-stats'],
         queryFn: () => goalsApi.getSummary().then(res => res.data)
     });
@@ -131,7 +131,6 @@ const Dashboard = () => {
     const realizado = goalStats?.currentRevenue !== undefined ? goalStats.currentRevenue : (dashboard?.receivedRevenue || 0);
     const bruto = dashboard?.grossRevenue || 0;
     const pendenteReceber = dashboard?.pendingReceivables || 0;
-    const totalPacientes = goalStats?.uniquePatients || dashboard?.totalPatients || 0;
     const gapMeta = goalStats?.gap !== undefined ? goalStats.gap : Math.max(meta - realizado, 0);
 
     // Indicadores Dinâmicos do Backend
