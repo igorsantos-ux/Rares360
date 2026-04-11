@@ -10,8 +10,10 @@ import {
     RefreshCw
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { financialApi, integrationApi } from '../services/api';
+import { financialApi, integrationApi, goalsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import GoalModal from '../components/GoalModal';
+import { Edit2 } from 'lucide-react';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -85,6 +87,13 @@ const Dashboard = () => {
         queryFn: () => financialApi.getEvolution(periodParams).then(res => res.data)
     });
 
+    const { data: goalStats, isLoading: isGoalLoading } = useQuery({
+        queryKey: ['monthly-goal-stats'],
+        queryFn: () => goalsApi.getSummary().then(res => res.data)
+    });
+
+    const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+
     if (error) {
         return (
             <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
@@ -117,39 +126,20 @@ const Dashboard = () => {
     }
 
     // --- Lógica de Metas e Produtividade (Somente após carregar) ---
-    const meta = dashboard?.goal || 600000;
-    const realizado = dashboard?.receivedRevenue || 0; // Faturamento Realizado = RECEBIDO
+    // Usando dados dinâmicos do novo GoalService se disponíveis
+    const meta = goalStats?.revenueTarget || dashboard?.goal || 600000;
+    const realizado = goalStats?.currentRevenue !== undefined ? goalStats.currentRevenue : (dashboard?.receivedRevenue || 0);
     const bruto = dashboard?.grossRevenue || 0;
     const pendenteReceber = dashboard?.pendingReceivables || 0;
-    const totalPacientes = dashboard?.totalPatients || 0;
-    const gapMeta = Math.max(meta - realizado, 0);
+    const totalPacientes = goalStats?.uniquePatients || dashboard?.totalPatients || 0;
+    const gapMeta = goalStats?.gap !== undefined ? goalStats.gap : Math.max(meta - realizado, 0);
 
-    // Cálculos de Dias
-    const agora = new Date();
-    const ultimoDiaMes = new Date(agora.getFullYear(), agora.getMonth() + 1, 0).getDate();
-    const diaAtual = agora.getDate();
-    
-    // Função simples para dias úteis (Seg-Sex)
-    const getBusinessDays = (start: number, end: number) => {
-        let count = 0;
-        const current = new Date();
-        for (let d = start; d <= end; d++) {
-            const date = new Date(current.getFullYear(), current.getMonth(), d);
-            const day = date.getDay();
-            if (day !== 0 && day !== 6) count++;
-        }
-        return count;
-    };
-
-    const diasUteisRestantes = Math.max(getBusinessDays(diaAtual + 1, ultimoDiaMes), 0);
-    const diasTrabalhados = Math.max(diaAtual, 1);
-
-    // Indicadores Dinâmicos
-    const ritmoNecessario = diasUteisRestantes > 0 ? gapMeta / diasUteisRestantes : 0;
-    const ticketMedioDia = realizado / diasTrabalhados;
-    const ticketMedioPaciente = totalPacientes > 0 ? realizado / totalPacientes : 0;
-    const projecaoPacientes = ticketMedioPaciente > 0 ? Math.ceil(gapMeta / ticketMedioPaciente) : 0;
-    const progressoMeta = meta > 0 ? Math.min(Math.round((realizado / meta) * 100), 100) : 0;
+    // Indicadores Dinâmicos do Backend
+    const ritmoNecessario = goalStats?.requiredPace || 0;
+    const ticketMedioDia = goalStats?.ticketMedioDia || 0;
+    const ticketMedioPaciente = goalStats?.ticketPorPaciente || 0;
+    const projecaoPacientes = goalStats?.pacientesFaltantes || 0;
+    const progressoMeta = goalStats?.progress !== undefined ? goalStats.progress : (meta > 0 ? Math.min(Math.round((realizado / meta) * 100), 100) : 0);
 
     return (
         <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-12">
@@ -245,10 +235,21 @@ const Dashboard = () => {
                                 <div className="w-12 h-12 bg-[#F0EAD6]/10 rounded-2xl flex items-center justify-center">
                                     <Target size={24} className="text-[#DEB587]" />
                                 </div>
-                                <h4 className="text-3xl font-black">Meta de Faturamento</h4>
+                                <div className="flex items-center gap-3">
+                                    <h4 className="text-3xl font-black">Meta de Faturamento</h4>
+                                    <button 
+                                        onClick={() => setIsGoalModalOpen(true)}
+                                        className="p-2 hover:bg-white/10 rounded-full transition-all text-[#DEB587] group"
+                                    >
+                                        <Edit2 size={16} className="group-hover:scale-110 transition-transform" />
+                                    </button>
+                                </div>
                             </div>
                             <p className="text-[#F0EAD6]/70 font-medium text-lg">
                                 Meta do Mês: <span className="text-white font-bold">R$ {meta.toLocaleString('pt-BR')}</span>
+                                {goalStats?.workingDays && (
+                                    <span className="ml-3 text-[10px] text-[#DEB587] font-black uppercase tracking-widest">({goalStats.workingDays} dias úteis)</span>
+                                )}
                             </p>
                         </div>
 
@@ -402,6 +403,12 @@ const Dashboard = () => {
                 </div>
             </div>
 
+            <GoalModal 
+                isOpen={isGoalModalOpen}
+                onClose={() => setIsGoalModalOpen(false)}
+                currentGoal={meta}
+                currentWorkingDays={goalStats?.workingDays || 22}
+            />
         </div>
     );
 };

@@ -260,6 +260,10 @@ export class ImportController {
                     for (const key in row) {
                         cleanRow[key.trim().toUpperCase()] = row[key];
                     }
+                    // Log das chaves encontradas para depuração (apenas na primeira linha)
+                    if (data.indexOf(row) === 0) {
+                        console.log('DEBUG: Chaves da planilha (norm):', Object.keys(cleanRow));
+                    }
 
                     // Helper para parse de valores monetários BR/US
                     const parseCurrency = (val: any) => {

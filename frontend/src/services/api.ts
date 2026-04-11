@@ -213,6 +213,11 @@ export const appointmentsApi = {
     getResources: () => api.get('appointments/resources'),
 };
 
+export const goalsApi = {
+    getSummary: () => api.get('goals/summary'),
+    update: (data: { revenueTarget?: number; workingDays?: number }) => api.post('goals/update', data),
+};
+
 export const clinicApi = {
     getMe: () => api.get('clinic/me'),
     getAll: () => api.get('clinic/all'),
