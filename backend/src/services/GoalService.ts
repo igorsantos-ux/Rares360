@@ -122,11 +122,14 @@ export class GoalService {
         };
     }
 
-    static async updateGoal(clinicId: string, data: { revenueTarget?: number; workingDays?: number }) {
-        const monthYear = this.getMonthYearKey();
+    static async updateGoal(clinicId: string, data: { revenueTarget?: number; workingDays?: number; monthYear?: string }) {
+        const monthYear = data.monthYear || this.getMonthYearKey();
         return await prisma.monthlyGoal.upsert({
             where: { clinicId_monthYear: { clinicId, monthYear } },
-            update: data,
+            update: {
+                revenueTarget: data.revenueTarget,
+                workingDays: data.workingDays
+            },
             create: {
                 clinicId,
                 monthYear,

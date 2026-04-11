@@ -14,10 +14,11 @@ export class GoalController {
 
     static async updateGoal(req: any, res: Response) {
         try {
-            const { revenueTarget, workingDays } = req.body;
+            const { revenueTarget, workingDays, monthYear } = req.body;
             const updated = await GoalService.updateGoal(req.clinicId, {
                 revenueTarget: revenueTarget ? Number(revenueTarget) : undefined,
-                workingDays: workingDays ? Number(workingDays) : undefined
+                workingDays: workingDays ? Number(workingDays) : undefined,
+                monthYear
             });
             res.json(updated);
         } catch (error: any) {
