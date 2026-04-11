@@ -12,12 +12,22 @@ import {
     Loader2
 } from 'lucide-react';
 import { Progress } from '../components/ui/Progress';
+import { useState } from 'react';
+import GoalModal from '../components/GoalModal';
+import { goalsApi } from '../services/api';
 
 const Goals = () => {
     const { data: response, isLoading } = useQuery({
         queryKey: ['goals-report'],
         queryFn: () => reportingApi.getGoals()
     });
+
+    const { data: goalStats } = useQuery({
+        queryKey: ['monthly-goal-stats'],
+        queryFn: () => goalsApi.getSummary().then(res => res.data)
+    });
+
+    const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
 
     // A API retorna um array direto de metas [FinancialGoal]
     const goalsList = Array.isArray(response?.data) ? response.data : [];
@@ -49,7 +59,10 @@ const Goals = () => {
                     <p className="text-slate-500 font-medium mt-1">Acompanhamento estratégico de objetivos do negócio.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
+                    <button 
+                        onClick={() => setIsGoalModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all"
+                    >
                         <PlusIcon />
                         Nova Meta
                     </button>
@@ -128,6 +141,13 @@ const Goals = () => {
                     ))
                 )}
             </div>
+
+            <GoalModal 
+                isOpen={isGoalModalOpen}
+                onClose={() => setIsGoalModalOpen(false)}
+                currentGoal={goalStats?.revenueTarget || 0}
+                currentWorkingDays={goalStats?.workingDays || 22}
+            />
         </div>
     );
 };
