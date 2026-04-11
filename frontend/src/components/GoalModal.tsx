@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Calendar, Save, Loader2, Info } from 'lucide-react';
+import { Target, Save, Loader2, Info } from 'lucide-react';
 import { goalsApi } from '../services/api';
 import { useQueryClient } from '@tanstack/react-query';
 import CurrencyInput from 'react-currency-input-field';
