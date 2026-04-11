@@ -215,7 +215,9 @@ export const appointmentsApi = {
 
 export const goalsApi = {
     getSummary: () => api.get('goals/summary'),
-    update: (data: { revenueTarget?: number; workingDays?: number; monthYear?: string }) => api.post('goals/update', data),
+    getList: (monthYear: string) => api.get(`goals/list/${monthYear}`),
+    save: (data: any) => api.post('goals/save', data),
+    delete: (id: string) => api.delete(`goals/${id}`),
 };
 
 export const clinicApi = {

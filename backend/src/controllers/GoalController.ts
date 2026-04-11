@@ -1,5 +1,5 @@
-import { Request, Response } from 'express';
-import { GoalService } from '../services/GoalService.js';
+import { Response } from 'express';
+import { GoalService, GoalType } from '../services/GoalService.js';
 
 export class GoalController {
     static async getSummary(req: any, res: Response) {
@@ -12,18 +12,46 @@ export class GoalController {
         }
     }
 
-    static async updateGoal(req: any, res: Response) {
+    static async getMonthlyList(req: any, res: Response) {
         try {
-            const { revenueTarget, workingDays, monthYear } = req.body;
-            const updated = await GoalService.updateGoal(req.clinicId, {
-                revenueTarget: revenueTarget ? Number(revenueTarget) : undefined,
-                workingDays: workingDays ? Number(workingDays) : undefined,
-                monthYear
-            });
-            res.json(updated);
+            const { monthYear } = req.params;
+            const goals = await GoalService.getMonthlyGoals(req.clinicId, monthYear);
+            res.json(goals);
         } catch (error: any) {
-            console.error('[GoalController.updateGoal] Error:', error);
-            res.status(500).json({ error: 'Erro ao atualizar meta', message: error.message });
+            console.error('[GoalController.getMonthlyList] Error:', error);
+            res.status(500).json({ error: 'Erro ao listar metas', message: error.message });
+        }
+    }
+
+    static async saveGoal(req: any, res: Response) {
+        try {
+            const { id, name, type, targetValue, workingDays, monthYear, isPrimary } = req.body;
+            
+            const saved = await GoalService.saveGoal(req.clinicId, {
+                id,
+                name,
+                type: type as GoalType,
+                targetValue: Number(targetValue),
+                workingDays: workingDays ? Number(workingDays) : undefined,
+                monthYear,
+                isPrimary: Boolean(isPrimary)
+            });
+            
+            res.json(saved);
+        } catch (error: any) {
+            console.error('[GoalController.saveGoal] Error:', error);
+            res.status(500).json({ error: 'Erro ao salvar meta', message: error.message });
+        }
+    }
+
+    static async deleteGoal(req: any, res: Response) {
+        try {
+            const { id } = req.params;
+            await GoalService.deleteGoal(req.clinicId, id);
+            res.status(204).send();
+        } catch (error: any) {
+            console.error('[GoalController.deleteGoal] Error:', error);
+            res.status(500).json({ error: 'Erro ao excluir meta', message: error.message });
         }
     }
 }

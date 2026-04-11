@@ -642,18 +642,27 @@ model Invoice {
   @@index([clinicId, month, year])
 }
 
+enum GoalType {
+  COMERCIAL
+  ESTOQUE
+  OPERACIONAL
+}
+
 model MonthlyGoal {
   id            String   @id @default(cuid())
   clinicId      String
   monthYear     String   // ex: "04-2026"
-  revenueTarget Float
+  name          String?  @default("Meta de Faturamento")
+  type          GoalType @default(COMERCIAL)
+  isPrimary     Boolean  @default(false)
+  targetValue   Float
   workingDays   Int      @default(22)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   clinic        Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
 
-  @@unique([clinicId, monthYear])
   @@index([clinicId])
+  @@index([clinicId, monthYear])
 }
 
 

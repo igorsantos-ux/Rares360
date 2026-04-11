@@ -1,5 +1,7 @@
 import prisma from '../lib/prisma.js';
-import { startOfMonth, endOfMonth, differenceInBusinessDays, addDays, getDay, isWeekend } from 'date-fns';
+import { startOfMonth, endOfMonth } from 'date-fns';
+
+export type GoalType = 'COMERCIAL' | 'ESTOQUE' | 'OPERACIONAL';
 
 export class GoalService {
     private static getMonthYearKey(date: Date = new Date()): string {
@@ -28,23 +30,46 @@ export class GoalService {
         const firstDay = startOfMonth(now);
         const lastDay = endOfMonth(now);
 
-        // 1. Busca ou cria a meta do mês
-        let goal = await prisma.monthlyGoal.findUnique({
-            where: { clinicId_monthYear: { clinicId, monthYear } }
+        // 1. Busca a meta PRINCIPAL do mês
+        let primaryGoal = await prisma.monthlyGoal.findFirst({
+            where: { clinicId, monthYear, isPrimary: true }
         });
 
-        if (!goal) {
-            goal = await prisma.monthlyGoal.create({
-                data: {
-                    clinicId,
-                    monthYear,
-                    revenueTarget: 600000,
-                    workingDays: 22
+        // Se não existir nenhuma meta para o mês, cria a padrão como principal
+        if (!primaryGoal) {
+            const existingAny = await prisma.monthlyGoal.findFirst({ where: { clinicId, monthYear } });
+            
+            if (!existingAny) {
+                primaryGoal = await prisma.monthlyGoal.create({
+                    data: {
+                        clinicId,
+                        monthYear,
+                        name: 'Meta de Faturamento',
+                        type: 'COMERCIAL',
+                        isPrimary: true,
+                        targetValue: 600000,
+                        workingDays: 22
+                    }
+                });
+            } else {
+                // Se existem outras mas nenhuma principal (erro de integridade ou migração), 
+                // tornamos a primeira comercial encontrada em principal
+                const firstComercial = await prisma.monthlyGoal.findFirst({
+                    where: { clinicId, monthYear, type: 'COMERCIAL' }
+                });
+                
+                if (firstComercial) {
+                    primaryGoal = await prisma.monthlyGoal.update({
+                        where: { id: firstComercial.id },
+                        data: { isPrimary: true }
+                    });
+                } else {
+                    primaryGoal = existingAny; // Fallback
                 }
-            });
+            }
         }
 
-        // 2. Faturamento Atual (Recebido/Pago)
+        // 2. Faturamento Atual (Recebido/Pago) - Focamos em transações financeiras para a meta principal comercial
         const transactions = await prisma.transaction.findMany({
             where: {
                 clinicId,
@@ -57,24 +82,20 @@ export class GoalService {
         const currentRevenue = transactions.reduce((acc, t) => acc + (t.netAmount || t.amount), 0);
         
         // 3. Progresso
-        const progress = Math.min((currentRevenue / goal.revenueTarget) * 100, 100);
+        const progress = primaryGoal.targetValue > 0 ? Math.min((currentRevenue / primaryGoal.targetValue) * 100, 100) : 0;
 
         // 4. GAP
-        const gap = Math.max(goal.revenueTarget - currentRevenue, 0);
+        const gap = Math.max(primaryGoal.targetValue - currentRevenue, 0);
 
         // 5. Ritmo Necessário
         const daysPassed = this.getBusinessDaysPassed(firstDay, now);
-        const daysRemaining = Math.max(goal.workingDays - daysPassed, 0);
+        const daysRemaining = Math.max(primaryGoal.workingDays - daysPassed, 0);
         const requiredPace = daysRemaining > 0 ? gap / daysRemaining : gap;
 
         // 6. Produtividade (Ticket)
-        // Ticket Médio Dia
         const ticketMedioDia = daysPassed > 0 ? currentRevenue / daysPassed : 0;
-
-        // Ticket Médio Paciente
         const uniquePatients = new Set(transactions.map(t => t.patientId).filter(Boolean)).size;
         
-        // Se pacientes for 0, tentamos buscar o ticket histórico dos últimos 3 meses
         let ticketPorPaciente = uniquePatients > 0 ? currentRevenue / uniquePatients : 0;
         
         if (ticketPorPaciente === 0) {
@@ -95,16 +116,17 @@ export class GoalService {
             ticketPorPaciente = histPatients > 0 ? histRevenue / histPatients : 0;
         }
 
-        // Faltam p/ Meta (Pacientes)
         const pacientesFaltantes = ticketPorPaciente > 0 ? Math.ceil(gap / ticketPorPaciente) : 0;
 
         const formatBRL = (val: number) => 
             new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
         return {
+            id: primaryGoal.id,
+            name: primaryGoal.name,
             monthYear,
-            revenueTarget: goal.revenueTarget,
-            workingDays: goal.workingDays,
+            targetValue: primaryGoal.targetValue,
+            workingDays: primaryGoal.workingDays,
             currentRevenue,
             currentRevenueFormatted: formatBRL(currentRevenue),
             progress: Math.round(progress),
@@ -122,20 +144,69 @@ export class GoalService {
         };
     }
 
-    static async updateGoal(clinicId: string, data: { revenueTarget?: number; workingDays?: number; monthYear?: string }) {
-        const monthYear = data.monthYear || this.getMonthYearKey();
-        return await prisma.monthlyGoal.upsert({
-            where: { clinicId_monthYear: { clinicId, monthYear } },
-            update: {
-                revenueTarget: data.revenueTarget,
-                workingDays: data.workingDays
-            },
-            create: {
+    static async getMonthlyGoals(clinicId: string, monthYear: string) {
+        return await prisma.monthlyGoal.findMany({
+            where: { clinicId, monthYear },
+            orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }]
+        });
+    }
+
+    static async saveGoal(clinicId: string, data: { 
+        id?: string;
+        name?: string;
+        type?: GoalType;
+        targetValue: number;
+        workingDays?: number;
+        monthYear: string;
+        isPrimary?: boolean;
+    }) {
+        // Se esta meta está sendo definida como primária, desativamos as outras primárias do mês
+        if (data.isPrimary) {
+            await prisma.monthlyGoal.updateMany({
+                where: { clinicId, monthYear: data.monthYear, isPrimary: true },
+                data: { isPrimary: false }
+            });
+        }
+
+        // Se for a primeira meta do mês, ela DEVE ser primária
+        const existingCount = await prisma.monthlyGoal.count({
+            where: { clinicId, monthYear: data.monthYear }
+        });
+
+        const isPrimary = existingCount === 0 ? true : (data.isPrimary ?? false);
+
+        if (data.id) {
+            return await prisma.monthlyGoal.update({
+                where: { id: data.id },
+                data: {
+                    name: data.name,
+                    type: data.type,
+                    targetValue: data.targetValue,
+                    workingDays: data.workingDays,
+                    isPrimary: isPrimary
+                }
+            });
+        }
+
+        return await prisma.monthlyGoal.create({
+            data: {
                 clinicId,
-                monthYear,
-                revenueTarget: data.revenueTarget || 600000,
-                workingDays: data.workingDays || 22
+                name: data.name || 'Nova Meta',
+                type: data.type || 'COMERCIAL',
+                targetValue: data.targetValue,
+                workingDays: data.workingDays || 22,
+                monthYear: data.monthYear,
+                isPrimary: isPrimary
             }
         });
+    }
+
+    static async deleteGoal(clinicId: string, goalId: string) {
+        const goal = await prisma.monthlyGoal.findUnique({ where: { id: goalId } });
+        if (!goal || goal.clinicId !== clinicId) throw new Error('Meta não encontrada');
+        
+        if (goal.isPrimary) throw new Error('Não é possível excluir a meta principal do ciclo');
+
+        return await prisma.monthlyGoal.delete({ where: { id: goalId } });
     }
 }

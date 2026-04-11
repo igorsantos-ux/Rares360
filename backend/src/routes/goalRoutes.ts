@@ -7,6 +7,8 @@ const router = Router();
 router.use(authMiddleware, tenantMiddleware);
 
 router.get('/summary', GoalController.getSummary);
-router.post('/update', GoalController.updateGoal);
+router.get('/list/:monthYear', GoalController.getMonthlyList);
+router.post('/save', GoalController.saveGoal);
+router.delete('/:id', GoalController.deleteGoal);
 
 export default router;

@@ -7,7 +7,10 @@ import {
     Wallet,
     PieChart,
     Loader2,
-    RefreshCw
+    RefreshCw,
+    TrendingUp,
+    Package,
+    Activity
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { financialApi, integrationApi, goalsApi } from '../services/api';
@@ -92,6 +95,17 @@ const Dashboard = () => {
         queryFn: () => goalsApi.getSummary().then(res => res.data)
     });
 
+    const { data: allGoals } = useQuery({
+        queryKey: ['monthly-goals-list', (new Date().getMonth() + 1).toString().padStart(2, '0')],
+        queryFn: () => {
+            const now = new Date();
+            const monthYear = `${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getFullYear()}`;
+            return goalsApi.getList(monthYear).then(res => res.data);
+        }
+    });
+
+    const secondaryGoals = allGoals?.filter((g: any) => !g.isPrimary) || [];
+
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
 
     if (error) {
@@ -127,7 +141,7 @@ const Dashboard = () => {
 
     // --- Lógica de Metas e Produtividade (Somente após carregar) ---
     // Usando dados dinâmicos do novo GoalService se disponíveis
-    const meta = goalStats?.revenueTarget || dashboard?.goal || 600000;
+    const meta = goalStats?.targetValue || dashboard?.goal || 600000;
     const realizado = goalStats?.currentRevenue !== undefined ? goalStats.currentRevenue : (dashboard?.receivedRevenue || 0);
     const bruto = dashboard?.grossRevenue || 0;
     const pendenteReceber = dashboard?.pendingReceivables || 0;
@@ -305,6 +319,31 @@ const Dashboard = () => {
                 </div>
             </div>
 
+            {/* SEÇÃO EXTRA: Metas Secundárias */}
+            {secondaryGoals.length > 0 && (
+                <section className="space-y-4 pt-4">
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] ml-2">Objetivos Secundários</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {secondaryGoals.map((goal: any) => (
+                            <div key={goal.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="p-2 bg-slate-50 rounded-lg">
+                                            {goal.type === 'ESTOQUE' ? <Package size={14} className="text-amber-500" /> : <Activity size={14} className="text-blue-500" />}
+                                        </div>
+                                        <span className="text-[10px] font-black text-slate-400 uppercase">{goal.type}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-[#697D58]">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(goal.targetValue)}
+                                    </span>
+                                </div>
+                                <p className="text-sm font-bold text-slate-700">{goal.name}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            )}
+
             {/* SEÇÃO 4: Gráficos de Evolução */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Gráfico 1: Evolução Diária Acumulada vs Meta */}
@@ -405,8 +444,6 @@ const Dashboard = () => {
             <GoalModal 
                 isOpen={isGoalModalOpen}
                 onClose={() => setIsGoalModalOpen(false)}
-                currentGoal={meta}
-                currentWorkingDays={goalStats?.workingDays || 22}
             />
         </div>
     );
