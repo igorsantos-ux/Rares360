@@ -336,7 +336,7 @@ const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose }) => {
                                             groupSeparator="."
                                             prefix="R$ "
                                             value={targetValue}
-                                            onValueChange={(value) => setTargetValue(value ? parseFloat(value.replace(',', '.')) : 0)}
+                                            onValueChange={(_, __, values) => setTargetValue(values?.float ?? 0)}
                                             className="w-full bg-[#697D58]/5 border-none rounded-2xl p-6 text-3xl font-black text-[#697D58] focus:outline-none focus:ring-2 focus:ring-[#697D58]/20 transition-all"
                                         />
                                         <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none opacity-20">

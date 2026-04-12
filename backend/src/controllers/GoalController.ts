@@ -39,8 +39,12 @@ export class GoalController {
             
             res.json(saved);
         } catch (error: any) {
-            console.error('[GoalController.saveGoal] Error:', error);
-            res.status(500).json({ error: 'Erro ao salvar meta', message: error.message });
+            console.error('[GoalController.saveGoal] Error details:', error);
+            res.status(500).json({ 
+                error: 'Erro ao salvar meta', 
+                message: error.message,
+                details: error
+            });
         }
     }
 
