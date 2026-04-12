@@ -73,8 +73,8 @@ const Procedures = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
                 <div>
-                    <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Serviços e Preços</h2>
-                    <p className="text-slate-500 font-medium mt-1">Gestão de procedimentos e análise de margem de lucro.</p>
+                    <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Procedimentos</h2>
+                    <p className="text-slate-500 font-medium mt-1">Gestão de catálogo e análise de margem de lucro real.</p>
                 </div>
                 <button 
                     onClick={() => { setSelectedProcedureId(null); setIsModalOpen(true); }}
