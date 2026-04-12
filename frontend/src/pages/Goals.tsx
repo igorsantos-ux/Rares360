@@ -14,7 +14,7 @@ import {
 import { Progress } from '../components/ui/Progress';
 import { useState } from 'react';
 import GoalModal from '../components/GoalModal';
-import { goalsApi } from '../services/api';
+
 
 const Goals = () => {
     const { data: response, isLoading } = useQuery({
@@ -22,10 +22,7 @@ const Goals = () => {
         queryFn: () => reportingApi.getGoals()
     });
 
-    const { data: goalStats } = useQuery({
-        queryKey: ['monthly-goal-stats'],
-        queryFn: () => goalsApi.getSummary().then(res => res.data)
-    });
+
 
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
 
