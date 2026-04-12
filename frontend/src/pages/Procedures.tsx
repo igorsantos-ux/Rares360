@@ -8,6 +8,7 @@ import {
     TrendingUp, 
     Package,
     Loader2,
+    Upload,
 } from 'lucide-react';
 import { proceduresApi } from '../services/api';
 import { toast, Toaster } from 'react-hot-toast';
