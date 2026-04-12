@@ -388,7 +388,7 @@ export class ImportController {
 
                 if (validTransactions.length > 0) {
                     const result = await prisma.transaction.createMany({ 
-                        data: validTransactions.map(t => ({ ...t, importBatchId: batch.id })) 
+                        data: validTransactions.map(({ patientName, ...t }) => ({ ...t, importBatchId: batch.id })) 
                     });
                     resultCount = result.count;
 
