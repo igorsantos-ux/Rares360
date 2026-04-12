@@ -49,9 +49,9 @@ const Procedures = () => {
         }).format(value);
     };
 
-    const categories = Array.from(new Set(procedures?.map((p: any) => p.category) || []));
+    const categories = Array.from(new Set(procedures?.items?.map((p: any) => p.category) || []));
 
-    const filteredProcedures = procedures?.filter((p: any) => {
+    const filteredProcedures = procedures?.items?.filter((p: any) => {
         const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
         const matchesCategory = category === 'all' || p.category === category;
         return matchesSearch && matchesCategory;
@@ -103,7 +103,7 @@ const Procedures = () => {
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Margem Saudável</p>
                         <h5 className="text-2xl font-black text-[#1A202C]">
-                            {filteredProcedures?.filter((p: any) => p.marginPercentage >= 40).length || 0} itens
+                            {filteredProcedures?.filter((p: any) => p.margin >= 40).length || 0} itens
                         </h5>
                     </div>
                 </div>
@@ -114,7 +114,7 @@ const Procedures = () => {
                     <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Margem Crítica</p>
                         <h5 className="text-2xl font-black text-[#1A202C]">
-                             {filteredProcedures?.filter((p: any) => p.marginPercentage < 20).length || 0} itens
+                             {filteredProcedures?.filter((p: any) => p.margin < 20).length || 0} itens
                         </h5>
                     </div>
                 </div>
@@ -189,13 +189,13 @@ const Procedures = () => {
                                     <td className="px-8 py-6 text-center">
                                         <div className="flex flex-col items-center gap-1">
                                             <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border ${
-                                                p.marginPercentage >= 40 
+                                                p.margin >= 40 
                                                 ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                                                : p.marginPercentage < 20
+                                                : p.margin < 20
                                                 ? 'bg-rose-50 text-rose-600 border-rose-200'
                                                 : 'bg-amber-50 text-amber-600 border-amber-200'
                                             }`}>
-                                                {Math.round(p.marginPercentage || 0)}%
+                                                {Math.round(p.margin || 0)}%
                                             </span>
                                         </div>
                                     </td>
