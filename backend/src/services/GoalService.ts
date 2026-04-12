@@ -208,6 +208,7 @@ export class GoalService {
         if (goal.isPrimary) throw new Error('Não é possível excluir a meta principal do ciclo');
 
         return await prisma.monthlyGoal.delete({ where: { id: goalId } });
+    }
 
     static async getGoalsReport(clinicId: string) {
         const now = new Date();
