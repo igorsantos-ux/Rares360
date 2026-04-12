@@ -145,8 +145,6 @@ const Goals = () => {
             <GoalModal 
                 isOpen={isGoalModalOpen}
                 onClose={() => setIsGoalModalOpen(false)}
-                currentGoal={goalStats?.revenueTarget || 0}
-                currentWorkingDays={goalStats?.workingDays || 22}
             />
         </div>
     );

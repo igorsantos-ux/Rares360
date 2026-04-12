@@ -8,7 +8,6 @@ import {
     PieChart,
     Loader2,
     RefreshCw,
-    TrendingUp,
     Package,
     Activity
 } from 'lucide-react';
