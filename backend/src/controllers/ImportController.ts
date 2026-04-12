@@ -374,9 +374,7 @@ export class ImportController {
                 }
             } 
             else if (type === 'pricing') {
-                // Lógica de Precificação (Procedure)
-                const { ProcedureService } = await import('../services/ProcedureService.js');
-                
+                // Lógica de Procedimentos Simplificada (TIPO, PROCEDIMENTO, DURAÇÃO, PRODUTO, TAREFA)
                 for (const row of data) {
                     const cleanRow: any = {};
                     for (const key in row) {
@@ -396,30 +394,17 @@ export class ImportController {
                         return isNaN(parsed) ? 0 : parsed;
                     };
 
-                    const basePrice = Math.abs(parseNumber(cleanRow['PREÇO- TABELA'] || cleanRow['PREÇO - TABELA'] || cleanRow['PRECO TABELA'] || cleanRow['VALOR'] || cleanRow['PREÇO DE VENDA'] || 0));
-                    const fixedCost = Math.abs(parseNumber(cleanRow['CUSTO FIXO'] || cleanRow['FIXED']) || 0);
-                    const variableCost = Math.abs(parseNumber(cleanRow['CUSTO VARIAVEL'] || cleanRow['CUSTO VARIÁVEL'] || cleanRow['TOTAL - CUSTO OPERACIONAL'] || cleanRow['CUSTO OPERACIONAL']) || 0);
-                    const taxes = Math.abs(parseNumber(cleanRow['IMPOSTOS'] || cleanRow['TAXAS'] || cleanRow['TAXES']) || 0);
-                    const commission = Math.abs(parseNumber(cleanRow['COMISSAO'] || cleanRow['COMISSÃO'] || cleanRow['COMMISSION']) || 0);
-                    
-                    const category = cleanRow['CATEGORIA'] || cleanRow['GRUPO'] || 'Geral';
-                    const duration = Number(cleanRow['DURAÇÃO'] || cleanRow['DURACAO'] || 60);
-
-                    const finance = ProcedureService.calculateFinance({ 
-                        fixedCost, variableCost, taxes, commission, basePrice 
-                    });
+                    const category = cleanRow['TIPO'] || cleanRow['CATEGORIA'] || cleanRow['GRUPO'] || 'Geral';
+                    const duration = Number(cleanRow['DURAÇÃO'] || cleanRow['DURACAO'] || 30);
+                    const productName = String(cleanRow['PRODUTO'] || '');
+                    const taskCount = Number(cleanRow['TAREFA'] || 0);
 
                     const procedureData = {
                         name,
                         category,
-                        durationMinutes: duration,
-                        fixedCost,
-                        variableCost,
-                        taxes,
-                        commission,
-                        basePrice,
-                        currentPrice: basePrice,
-                        totalCost: finance.totalCost,
+                        durationMinutes: isNaN(duration) ? 30 : duration,
+                        productName,
+                        taskCount: isNaN(taskCount) ? 0 : taskCount,
                         clinicId
                     };
 

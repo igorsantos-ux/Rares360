@@ -74,7 +74,7 @@ const Procedures = () => {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-1">
                 <div>
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Procedimentos</h2>
-                    <p className="text-slate-500 font-medium mt-1">Gestão de catálogo e análise de margem de lucro real.</p>
+                    <p className="text-slate-500 font-medium mt-1">Catálogo operacional e gestão de tarefas clínicas.</p>
                 </div>
                 <button 
                     onClick={() => { setSelectedProcedureId(null); setIsModalOpen(true); }}
@@ -85,14 +85,14 @@ const Procedures = () => {
                 </button>
             </div>
 
-            {/* Stats Overview */}
+            {/* Stats Overview Simplificado */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-white p-7 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex items-center gap-6 group hover:translate-y-[-4px] transition-all duration-300">
                     <div className="w-14 h-14 bg-[#8A9A5B]/10 rounded-2xl flex items-center justify-center text-[#8A9A5B] group-hover:scale-110 transition-transform">
                         <Package size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total de Serviços</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total de Itens</p>
                         <h5 className="text-2xl font-black text-[#1A202C]">{filteredProcedures?.length || 0}</h5>
                     </div>
                 </div>
@@ -101,9 +101,9 @@ const Procedures = () => {
                         <TrendingUp size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Margem Saudável</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Categorias Ativas</p>
                         <h5 className="text-2xl font-black text-[#1A202C]">
-                            {filteredProcedures?.filter((p: any) => p.margin >= 40).length || 0} itens
+                             {categories.length} grupos
                         </h5>
                     </div>
                 </div>
@@ -112,9 +112,9 @@ const Procedures = () => {
                         <Filter size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Margem Crítica</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tarefas Vinculadas</p>
                         <h5 className="text-2xl font-black text-[#1A202C]">
-                             {filteredProcedures?.filter((p: any) => p.margin < 20).length || 0} itens
+                             {filteredProcedures?.reduce((acc: number, p: any) => acc + (p.taskCount || 0), 0) || 0}
                         </h5>
                     </div>
                 </div>
@@ -156,17 +156,22 @@ const Procedures = () => {
                     <table className="w-full text-left">
                         <thead>
                             <tr className="bg-slate-50/50">
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Tipo</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Procedimento</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoria</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Custo Total</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Preço Base</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Margem</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Duração</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Produto</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tarefa</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#8A9A5B]/5">
                             {filteredProcedures?.map((p: any) => (
                                 <tr key={p.id} className="hover:bg-[#8A9A5B]/5 transition-colors group">
+                                    <td className="px-8 py-6">
+                                        <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest border border-slate-200">
+                                            {p.category}
+                                        </span>
+                                    </td>
                                     <td className="px-8 py-6">
                                         <div className="flex items-center gap-4">
                                             <div className="w-10 h-10 bg-white border border-[#8A9A5B]/10 text-[#8A9A5B] rounded-xl flex items-center justify-center font-black text-xs shadow-sm">
@@ -175,29 +180,16 @@ const Procedures = () => {
                                             <p className="font-black text-slate-700 text-sm leading-tight">{p.name}</p>
                                         </div>
                                     </td>
-                                    <td className="px-8 py-6">
-                                        <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest border border-slate-200">
-                                            {p.category}
-                                        </span>
-                                    </td>
                                     <td className="px-8 py-6 text-center text-xs font-bold text-slate-600">
-                                        {formatCurrency(p.totalCost || 0)}
+                                        {p.durationMinutes} min
                                     </td>
-                                    <td className="px-8 py-6 text-center text-sm font-black text-slate-800">
-                                        {formatCurrency(p.basePrice || 0)}
+                                    <td className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-tight">
+                                        {p.productName || 'N/A'}
                                     </td>
                                     <td className="px-8 py-6 text-center">
-                                        <div className="flex flex-col items-center gap-1">
-                                            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border ${
-                                                p.margin >= 40 
-                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200' 
-                                                : p.margin < 20
-                                                ? 'bg-rose-50 text-rose-600 border-rose-200'
-                                                : 'bg-amber-50 text-amber-600 border-amber-200'
-                                            }`}>
-                                                {Math.round(p.margin || 0)}%
-                                            </span>
-                                        </div>
+                                        <span className="px-2.5 py-1 bg-[#8A9A5B]/10 text-[#8A9A5B] rounded-lg text-[10px] font-black border border-[#8A9A5B]/20">
+                                            {p.taskCount || 0}
+                                        </span>
                                     </td>
                                     <td className="px-8 py-6 text-right">
                                         <div className="flex items-center justify-end gap-2">
@@ -216,7 +208,7 @@ const Procedures = () => {
                                                         onClick={() => handleEdit(p.id)}
                                                         className="w-full text-left px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
                                                     >
-                                                        Detalhes e Preço
+                                                        Detalhes
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDelete(p.id)}
@@ -235,7 +227,7 @@ const Procedures = () => {
                     {(!filteredProcedures || filteredProcedures.length === 0) && (
                         <div className="py-20 flex flex-col items-center gap-4">
                             <Package className="text-slate-200" size={48} strokeWidth={1} />
-                            <p className="text-slate-400 font-bold text-sm uppercase tracking-widest text-center">Nenhum serviço encontrado</p>
+                            <p className="text-slate-400 font-bold text-sm uppercase tracking-widest text-center">Nenhum procedimento encontrado</p>
                         </div>
                     )}
                 </div>

@@ -489,6 +489,10 @@ model Procedure {
   totalCost       Float           @default(0) // (fixedCost + variableCost + impostos + comissao)
   currentPrice    Float           @default(0) // Preço praticado hoje
   targetMargin    Float           @default(50)
+  
+  // Novos Campos Operacionais
+  productName     String?
+  taskCount       Int             @default(0)
 
   clinicId        String
   createdAt       DateTime        @default(now())
