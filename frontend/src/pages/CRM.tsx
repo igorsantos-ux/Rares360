@@ -5,14 +5,12 @@ import {
     LayoutGrid, 
     List, 
     Phone, 
-    Clock, 
     CheckCircle2, 
     Search, 
     Filter,
     Loader2,
     TrendingUp,
     AlertCircle,
-    Calendar,
     MessageSquare
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';

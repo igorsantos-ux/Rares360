@@ -3,7 +3,6 @@ import {
     Clock, 
     MessageSquare, 
     MoreHorizontal,
-    TrendingUp,
     AlertCircle,
     User,
     ArrowRight
@@ -17,7 +16,7 @@ interface TaskCardProps {
     onStatusChange: (status: string) => void;
 }
 
-export const TaskCard: React.FC<TaskCardProps> = ({ task, onStatusChange }) => {
+export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const isOverdue = isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate));
   
   const getPriorityColor = (priority: string) => {
