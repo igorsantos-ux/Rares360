@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Save, Loader2, Plus, Trash2, TrendingUp, Package, Activity } from 'lucide-react';
+import { Target, Save, Loader2, Plus, Trash2, TrendingUp, Package, Activity, AlertTriangle } from 'lucide-react';
+import AlertDialog from './ui/AlertDialog';
 import { goalsApi } from '../services/api';
 import { useQueryClient } from '@tanstack/react-query';
 import CurrencyInput from 'react-currency-input-field';
@@ -83,6 +84,10 @@ const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, initialGoalId, i
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     
+    // Delete Alert State
+    const [idToDelete, setIdToDelete] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+    
     const queryClient = useQueryClient();
 
     const fetchGoals = async () => {
@@ -160,17 +165,21 @@ const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, initialGoalId, i
         setIsPrimary(goal.isPrimary);
     };
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('Tem certeza que deseja excluir esta meta?')) return;
+    const handleDelete = async () => {
+        if (!idToDelete) return;
         
         try {
-            await goalsApi.delete(id);
+            setIsDeleting(true);
+            await goalsApi.delete(idToDelete);
             await queryClient.invalidateQueries({ queryKey: ['monthly-goal-stats'] });
             await queryClient.invalidateQueries({ queryKey: ['monthly-goals-list'] });
             toast.success('Meta excluída com sucesso');
+            setIdToDelete(null);
             fetchGoals();
         } catch (error) {
             toast.error('Erro ao excluir meta');
+        } finally {
+            setIsDeleting(false);
         }
     };
 
@@ -281,7 +290,7 @@ const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, initialGoalId, i
                                     </p>
                                     
                                     <button 
-                                        onClick={(e) => { e.stopPropagation(); handleDelete(goal.id!); }}
+                                        onClick={(e) => { e.stopPropagation(); setIdToDelete(goal.id!); }}
                                         className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 p-1.5 text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
                                     >
                                         <Trash2 size={12} />
@@ -413,6 +422,19 @@ const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, initialGoalId, i
                     </div>
                 </DialogFooter>
             </DialogContent>
+
+            <AlertDialog 
+                isOpen={!!idToDelete}
+                onClose={() => setIdToDelete(null)}
+                onConfirm={handleDelete}
+                title="Excluir Meta"
+                description="Tem certeza que deseja excluir esta meta? Esta ação não pode ser desfeita e afetará os cálculos de progresso do período."
+                confirmText="Excluir Meta"
+                cancelText="Manter Meta"
+                variant="danger"
+                icon={AlertTriangle}
+                isPending={isDeleting}
+            />
         </Dialog>
     );
 };
