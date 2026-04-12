@@ -11,6 +11,13 @@ router.get('/diagnostics/db', ImportController.diagnoseDB);
 
 router.use(authMiddleware, tenantMiddleware);
 
+// Novas rotas de gestão de lotes
+router.get('/', ImportController.listImportBatches);
+router.delete('/:batchId', ImportController.deleteImportBatch);
+
+// Rota de importação de pacientes
+router.post('/patients', upload.single('file'), ImportController.bulkImportPatients);
+
 // Rota de importação de transações (Excel)
 router.post('/transactions', upload.single('file'), ImportController.importTransactions);
 

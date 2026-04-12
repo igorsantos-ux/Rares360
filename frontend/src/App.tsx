@@ -25,6 +25,7 @@ import TasksPage from './pages/Tarefas';
 import Agenda from './pages/Agenda';
 import MyClinic from './pages/MyClinic';
 import DoctorsPage from './pages/DoctorsPage';
+import ImportHistory from './pages/ImportHistory';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -105,6 +106,7 @@ function App() {
                 <Route path="/automations" element={<Automations />} />
                 <Route path="/my-clinic" element={<MyClinic />} />
                 <Route path="/medicos" element={<DoctorsPage />} />
+                <Route path="/imports" element={<ImportHistory />} />
               </Route>
 
               {/* Redirects */}

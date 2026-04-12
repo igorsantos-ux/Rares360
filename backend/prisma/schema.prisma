@@ -89,6 +89,7 @@ model Clinic {
   proposals             Proposal[]
   invoices              Invoice[]
   monthlyGoals          MonthlyGoal[]
+  importBatches         ImportBatch[]
 }
 
 model User {
@@ -145,12 +146,17 @@ model Transaction {
   quantity           Float               @default(1)
   isExecuted         Boolean             @default(false)
   procedureExecution ProcedureExecution?
+  
+  importBatchId      String?
+  importBatch        ImportBatch?        @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
   clinic             Clinic              @relation(fields: [clinicId], references: [id])
   doctor             Doctor?             @relation(fields: [doctorId], references: [id])
   patient            Patient?            @relation(fields: [patientId], references: [id])
 
   @@index([clinicId, date])
   @@index([clinicId, status])
+  @@index([importBatchId])
 }
 
 model Doctor {
@@ -220,6 +226,10 @@ model Patient {
   photoUrl                  String?
   createdAt                 DateTime             @default(now())
   clinicId                  String
+  
+  importBatchId             String?
+  importBatch               ImportBatch?         @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
   clinic                    Clinic               @relation(fields: [clinicId], references: [id])
   procedureExecutions       ProcedureExecution[]
   tasks                     Task[]
@@ -231,6 +241,7 @@ model Patient {
   proposals                 Proposal[]
 
   @@index([clinicId, fullName])
+  @@index([importBatchId])
 }
 
 model ClinicalEvolution {
@@ -328,11 +339,16 @@ model InventoryItem {
   batch           String?
   lastRestock     DateTime         @default(now())
   clinicId        String
+  
+  importBatchId   String?
+  importBatch     ImportBatch?     @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
   clinic          Clinic           @relation(fields: [clinicId], references: [id])
   movements       StockMovement[]
   inventoryUsages InventoryUsage[]
 
   @@index([clinicId, name])
+  @@index([importBatchId])
 }
 
 model StockMovement {
@@ -466,9 +482,15 @@ model ProcedurePricing {
   clinicId        String
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
-  supplies        PricingSupply[]
-  appointments    Appointment[]
-  clinic          Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  
+  importBatchId String?
+  importBatch   ImportBatch?    @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
+  supplies      PricingSupply[]
+  appointments  Appointment[]
+  clinic        Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@index([importBatchId])
 }
 
 model DailyClosure {
@@ -575,10 +597,15 @@ model Equipment {
   name         String
   status       String?       @default("ATIVO")
   clinicId     String
+  
+  importBatchId String?
+  importBatch   ImportBatch?   @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
   clinic       Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   appointments Appointment[]
 
   @@index([clinicId])
+  @@index([importBatchId])
 }
 
 model Appointment {
@@ -665,6 +692,31 @@ model MonthlyGoal {
   @@index([clinicId, monthYear])
 }
 
+
+enum ImportModule {
+  PACIENTES
+  FATURAMENTO
+  ESTOQUE
+}
+
+model ImportBatch {
+  id          String       @id @default(cuid())
+  clinicId    String
+  module      ImportModule
+  fileName    String
+  recordCount Int
+  createdAt   DateTime     @default(now())
+  clinic      Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  // Relações reversas para visualização facilitada (opcional, mas bom para integridade)
+  patients           Patient[]
+  transactions       Transaction[]
+  inventoryItems     InventoryItem[]
+  procedurePricings  ProcedurePricing[]
+  equipments         Equipment[]
+
+  @@index([clinicId])
+}
 
 model AdminAuditLog {
   id                String   @id @default(uuid())

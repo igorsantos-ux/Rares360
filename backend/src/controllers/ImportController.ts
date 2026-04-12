@@ -10,11 +10,7 @@ export class ImportController {
                 return res.status(401).json({ message: 'Clínica não identificada' });
             }
 
-            if (!req.file) {
-                return res.status(400).json({ message: 'Nenhum arquivo enviado' });
-            }
-
-            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+            const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             const data: any[] = xlsx.utils.sheet_to_json(worksheet);
@@ -22,6 +18,15 @@ export class ImportController {
             if (data.length === 0) {
                 return res.status(400).json({ message: 'Planilha vazia' });
             }
+
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'PACIENTES',
+                    fileName: (req as any).file.originalname,
+                    recordCount: 0
+                }
+            });
 
             let importCount = 0;
 
@@ -81,12 +86,18 @@ export class ImportController {
                     await prisma.patient.create({
                         data: {
                             ...patientData,
-                            email: email || null
+                            email: email || null,
+                            importBatchId: batch.id
                         }
                     });
                 }
                 importCount++;
             }
+
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: importCount }
+            });
 
             return res.json({ message: `${importCount} pacientes processados com sucesso!`, count: importCount });
 
@@ -103,17 +114,26 @@ export class ImportController {
                 return res.status(401).json({ message: 'Clínica não identificada' });
             }
 
-            if (!req.file) {
+            if (!(req as any).file) {
                 return res.status(400).json({ message: 'Nenhum arquivo enviado' });
             }
 
             // Ler o buffer do arquivo Excel
-            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+            const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
 
             // Converter para JSON as colunas
             const data: any[] = xlsx.utils.sheet_to_json(worksheet);
+
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'FATURAMENTO',
+                    fileName: (req as any).file.originalname,
+                    recordCount: 0
+                }
+            });
 
             const transactionsToCreate = data.map((row: any) => {
                 // Normalizar as chaves para evitar problemas com espaços extras (ex: " PREÇO DE VENDA")
@@ -198,7 +218,12 @@ export class ImportController {
 
             // Criar em lote
             const result = await prisma.transaction.createMany({
-                data: validTransactions
+                data: validTransactions.map(t => ({ ...t, importBatchId: batch.id }))
+            });
+
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: result.count }
             });
 
             return res.json({
@@ -219,7 +244,7 @@ export class ImportController {
                 return res.status(401).json({ message: 'Clínica não identificada' });
             }
 
-            if (!req.file) {
+            if (!(req as any).file) {
                 return res.status(400).json({ message: 'Nenhum arquivo enviado' });
             }
 
@@ -229,7 +254,7 @@ export class ImportController {
             }
 
             // Ler o buffer do arquivo Excel
-            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+            const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
             
             // Determinar qual aba usar baseado no tipo ou pegar a padrão
             let sheetName = '';
@@ -249,6 +274,21 @@ export class ImportController {
             if (data.length === 0) {
                 return res.status(400).json({ message: 'A planilha ou aba selecionada está vazia' });
             }
+
+            const moduleMap: Record<string, any> = {
+                'billing': 'FATURAMENTO',
+                'pricing': 'FATURAMENTO', // Ou talvez criar um módulo precificação? O pedido disse PACIENTES, FATURAMENTO, ESTOQUE.
+                'equipment': 'ESTOQUE'
+            };
+
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: moduleMap[type] || 'FATURAMENTO',
+                    fileName: (req as any).file.originalname,
+                    recordCount: 0
+                }
+            });
 
             let resultCount = 0;
             let updatedCount = 0;
@@ -327,7 +367,9 @@ export class ImportController {
                 const validTransactions = transactionsToCreate.filter(t => t.amount > 0);
 
                 if (validTransactions.length > 0) {
-                    const result = await prisma.transaction.createMany({ data: validTransactions });
+                    const result = await prisma.transaction.createMany({ 
+                        data: validTransactions.map(t => ({ ...t, importBatchId: batch.id })) 
+                    });
                     resultCount = result.count;
                 }
             } 
@@ -372,7 +414,7 @@ export class ImportController {
                         updatedCount++;
                     } else {
                         await prisma.procedurePricing.create({
-                            data: { name, currentPrice: price, totalCost: cost, durationMinutes: Number(duration), clinicId }
+                            data: { name, currentPrice: price, totalCost: cost, durationMinutes: Number(duration), clinicId, importBatchId: batch.id }
                         });
                         resultCount++;
                     }
@@ -397,7 +439,7 @@ export class ImportController {
 
                     if (!existing) {
                         await prisma.equipment.create({
-                            data: { name, status, clinicId }
+                            data: { name, status, clinicId, importBatchId: batch.id }
                         });
                         resultCount++;
                     } else {
@@ -405,6 +447,11 @@ export class ImportController {
                     }
                 }
             }
+
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: resultCount }
+            });
 
             return res.json({
                 message: 'Processamento concluído',
@@ -431,6 +478,57 @@ export class ImportController {
             });
         } catch (error: any) {
             return res.status(500).json({ error: error.message });
+        }
+    }
+
+    static async listImportBatches(req: Request, res: Response) {
+        try {
+            const clinicId = (req as any).user?.clinicId;
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+
+            const batches = await prisma.importBatch.findMany({
+                where: { clinicId },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            return res.json(batches);
+        } catch (error: any) {
+            console.error('Erro ao listar lotes:', error);
+            return res.status(500).json({ message: 'Erro ao listar histórico de importações' });
+        }
+    }
+
+    static async deleteImportBatch(req: Request, res: Response) {
+        try {
+            const clinicId = (req as any).user?.clinicId;
+            const { batchId } = req.params;
+
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+
+            const batch = await prisma.importBatch.findUnique({
+                where: { id: batchId, clinicId }
+            });
+
+            if (!batch) return res.status(404).json({ message: 'Lote não encontrado' });
+
+            // Rollback: Deletar todos os registros vinculados a este lote
+            // O onDelete: Cascade lidará com agendamentos/evoluções dos pacientes automaticamente no banco se configurado,
+            // ou podemos fazer manual se necessário. No schema configuramos Cascade para relations se possível.
+            
+            await prisma.$transaction([
+                prisma.patient.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.transaction.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.procedurePricing.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.equipment.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.inventoryItem.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.importBatch.delete({ where: { id: batchId } })
+            ]);
+
+            return res.json({ message: 'Rollback concluído com sucesso!' });
+
+        } catch (error: any) {
+            console.error('Erro no rollback:', error);
+            return res.status(500).json({ message: 'Erro ao processar rollback da importação' });
         }
     }
 }

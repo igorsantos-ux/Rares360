@@ -229,4 +229,15 @@ export const clinicApi = {
     }),
 };
 
+export const importApi = {
+    getBatches: () => api.get('import'),
+    rollbackBatch: (id: string) => api.delete(`import/${id}`),
+    importFinance: (formData: FormData) => api.post('import/finance', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    importPatients: (formData: FormData) => api.post('import/patients', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+};
+
 export default api;

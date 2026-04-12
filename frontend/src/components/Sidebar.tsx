@@ -16,7 +16,8 @@ import {
     CheckSquare,
     Calendar,
     ChevronDown,
-    Stethoscope
+    Stethoscope,
+    History
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -69,6 +70,7 @@ const Sidebar = () => {
             { icon: <FileText size={20} />, label: "Minha Clínica", path: "/my-clinic" },
             { icon: <Package size={20} />, label: "Estoque", path: "/inventory", id: "estoque-insumos" },
             { icon: <Target size={20} />, label: "Metas", path: "/goals" },
+            { icon: <History size={20} />, label: "Importações", path: "/imports" },
             { icon: <FolderOpen size={20} />, label: "Documentos", path: "/documents", id: "documentos-compliance" },
         ]}
     ];
