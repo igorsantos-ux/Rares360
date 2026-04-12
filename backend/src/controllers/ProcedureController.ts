@@ -10,7 +10,7 @@ export class ProcedureController {
             const { page, limit, category, search } = req.query;
             const result = await ProcedureService.list(clinicId, {
                 page: Number(page) || 1,
-                limit: Number(limit) || 10,
+                limit: Number(limit) || 1000,
                 category: category as string,
                 search: search as string
             });

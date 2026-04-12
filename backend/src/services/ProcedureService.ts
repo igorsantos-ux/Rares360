@@ -30,7 +30,7 @@ export class ProcedureService {
         category?: string;
         search?: string;
     }) {
-        const { page = 1, limit = 10, category, search } = params;
+        const { page = 1, limit = 1000, category, search } = params;
         const skip = (page - 1) * limit;
 
         const where: any = { clinicId };
