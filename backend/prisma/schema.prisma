@@ -490,9 +490,10 @@ model Procedure {
   currentPrice    Float           @default(0) // Preço praticado hoje
   targetMargin    Float           @default(50)
   
-  // Novos Campos Operacionais
+  // Novos Campos Operacionais e CRM
   productName     String?
   taskCount       Int             @default(0)
+  followUpDays    Int?            // Gatilho para CRM (ex: 120 dias)
 
   clinicId        String
   createdAt       DateTime        @default(now())
@@ -539,7 +540,7 @@ model ProcedureExecution {
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   clinic        Clinic       @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  patient       Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patient      Patient      @relation(fields: [patientId], references: [id], onDelete: Cascade)
   transaction   Transaction? @relation(fields: [transactionId], references: [id])
   tasks         Task[]
 
@@ -551,10 +552,13 @@ model Task {
   clinicId    String
   patientId   String
   executionId String?
+  assignedTo  String?             // ID do usuário comercial
   title       String
+  description String?
   dueDate     DateTime
-  status      String              @default("ABERTA")
+  status      String              @default("TODO") // TODO, IN_PROGRESS, DONE, LOST
   type        String              @default("FOLLOW_UP")
+  priority    String              @default("MEDIUM") // LOW, MEDIUM, HIGH
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   clinic      Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
@@ -562,6 +566,7 @@ model Task {
   patient     Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
   @@index([clinicId, dueDate])
+  @@index([clinicId, status])
 }
 
 enum MovementType {

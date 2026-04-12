@@ -200,6 +200,8 @@ export const proceduresApi = {
 export const tasksApi = {
     getDaily: () => api.get('tasks/daily'),
     getSummary: () => api.get('tasks/summary'),
+    getCRM: () => api.get('tasks/crm'),
+    updateStatus: (id: string, status: string) => api.patch(`tasks/${id}/status`, { status }),
     complete: (id: string) => api.patch(`tasks/${id}/complete`),
 };
 

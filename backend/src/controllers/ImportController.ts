@@ -1,6 +1,6 @@
-import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import * as xlsx from 'xlsx';
+import { TaskService } from '../services/TaskService.js';
 
 export class ImportController {
     static async bulkImportPatients(req: Request, res: Response) {
@@ -378,6 +378,7 @@ export class ImportController {
                         centerOfCost: 'Operacional',
                         procedureName: procedimento,
                         doctorName: medico,
+                        patientName: paciente, // Facilitar trigger pós-importação
                         date: date,
                         clinicId: clinicId
                     };
@@ -390,6 +391,28 @@ export class ImportController {
                         data: validTransactions.map(t => ({ ...t, importBatchId: batch.id })) 
                     });
                     resultCount = result.count;
+
+                    // GATILHO CRM: Tenta gerar tarefas de follow-up para cada transação
+                    console.log(`DEBUG: Disparando triggers de CRM para ${validTransactions.length} transações...`);
+                    for (const t of validTransactions) {
+                        if (t.patientName && t.procedureName) {
+                            // Buscar paciente pelo nome para vincular a tarefa
+                            const patient = await prisma.patient.findFirst({
+                                where: { 
+                                    clinicId,
+                                    fullName: { equals: t.patientName, mode: 'insensitive' }
+                                }
+                            });
+
+                            if (patient) {
+                                await TaskService.triggerFollowUp(clinicId, {
+                                    patientId: patient.id,
+                                    procedureName: t.procedureName,
+                                    transactionDate: t.date
+                                });
+                            }
+                        }
+                    }
                 }
             } 
             else if (type === 'pricing') {
@@ -425,6 +448,7 @@ export class ImportController {
                         durationMinutes: isNaN(duration) ? 30 : duration,
                         productName,
                         taskCount: isNaN(taskCount) ? 0 : taskCount,
+                        followUpDays: isNaN(taskCount) ? null : taskCount, // O usuário confirmou que TAREFA = Dias de Retorno
                         clinicId
                     };
 

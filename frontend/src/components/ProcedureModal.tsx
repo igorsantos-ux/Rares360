@@ -24,6 +24,7 @@ const procedureSchema = z.object({
     durationMinutes: z.number().min(0),
     productName: z.string().optional(),
     taskCount: z.number().min(0),
+    followUpDays: z.number().min(0).optional(),
 });
 
 type ProcedureFormValues = z.infer<typeof procedureSchema>;
@@ -52,6 +53,7 @@ const ProcedureModal = ({ isOpen, onClose, procedureId }: ProcedureModalProps) =
             durationMinutes: 30,
             productName: '',
             taskCount: 0,
+            followUpDays: 0,
         }
     });
 
@@ -65,6 +67,7 @@ const ProcedureModal = ({ isOpen, onClose, procedureId }: ProcedureModalProps) =
               durationMinutes: 30,
               productName: '',
               taskCount: 0,
+              followUpDays: 0,
             });
         }
     }, [procedureId, isOpen]);
@@ -169,10 +172,16 @@ const ProcedureModal = ({ isOpen, onClose, procedureId }: ProcedureModalProps) =
                                 <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Prazo de Retorno (Dias)</label>
                                 <input 
                                     type="number"
-                                    {...register('taskCount', { valueAsNumber: true })}
+                                    {...register('followUpDays', { valueAsNumber: true })}
                                     className="w-full px-4 py-3 rounded-2xl border bg-white border-gray-200 focus:ring-2 focus:ring-olive-600/20 transition-all outline-none font-medium"
                                     placeholder="0"
+                                    onChange={(e) => {
+                                        // Sincroniza com taskCount para legado
+                                        const val = Number(e.target.value);
+                                        reset((prev) => ({ ...prev, taskCount: val }));
+                                    }}
                                 />
+                                <p className="text-[10px] text-gray-400 ml-1">Usado para gerar tarefas automáticas no CRM.</p>
                             </div>
                         </div>
 

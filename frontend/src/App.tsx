@@ -21,7 +21,7 @@ import Goals from './pages/Goals';
 import DocumentsPage from './pages/Documents';
 import Pricing from './pages/Pricing';
 import Contact from './pages/Contact';
-import TasksPage from './pages/Tarefas';
+import CRMPage from './pages/CRM';
 import Agenda from './pages/Agenda';
 import MyClinic from './pages/MyClinic';
 import DoctorsPage from './pages/DoctorsPage';
@@ -100,7 +100,7 @@ function App() {
                 <Route path="/dfc" element={<DFCPage />} />
                 <Route path="/pricing" element={<Pricing />} />
                 <Route path="/procedures" element={<Procedures />} />
-                <Route path="/tasks" element={<TasksPage />} />
+                <Route path="/tasks" element={<CRMPage />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/inventory" element={<Inventory />} />
                 <Route path="/agenda" element={<Agenda />} />
