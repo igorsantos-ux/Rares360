@@ -253,17 +253,26 @@ export class ImportController {
                 return res.status(400).json({ message: 'Tipo de importação não especificado' });
             }
 
+            // Helper de normalização agressiva de chaves (Upper + Sem Acentos)
+            const normalizeKey = (str: string) => {
+                return str.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            };
+
             // Ler o buffer do arquivo Excel
             const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
             
             // Determinar qual aba usar baseado no tipo ou pegar a padrão
             let sheetName = '';
             if (type === 'billing') {
-                sheetName = workbook.SheetNames.find(n => n.includes('FATURAMENTO DIARIO')) || workbook.SheetNames[0];
+                sheetName = workbook.SheetNames.find(n => normalizeKey(n).includes('FATURAMENTO DIARIO')) || workbook.SheetNames[0];
             } else if (type === 'pricing') {
-                sheetName = workbook.SheetNames.find(n => n.includes('PREÇO PROCEDIMENTOS')) || workbook.SheetNames[0];
+                // Tenta nomes comuns como PROCEDIMENTOS, PRECO, PLANILHA1
+                sheetName = workbook.SheetNames.find(n => {
+                    const norm = normalizeKey(n);
+                    return norm.includes('PROCEDIMENTO') || norm.includes('PRECO') || norm.includes('PLANILHA1') || norm.includes('PLANILHA 1');
+                }) || workbook.SheetNames[0];
             } else if (type === 'equipment') {
-                sheetName = workbook.SheetNames.find(n => n.includes('TECNOLOGIAS')) || workbook.SheetNames[0];
+                sheetName = workbook.SheetNames.find(n => normalizeKey(n).includes('TECNOLOGIA')) || workbook.SheetNames[0];
             } else {
                 sheetName = workbook.SheetNames[0];
             }
@@ -395,7 +404,8 @@ export class ImportController {
                     };
 
                     const category = cleanRow['TIPO'] || cleanRow['CATEGORIA'] || cleanRow['GRUPO'] || 'Geral';
-                    const duration = Number(cleanRow['DURAÇÃO'] || cleanRow['DURACAO'] || 30);
+                    const durationRaw = cleanRow['DURACAO'] || cleanRow['DURACAO'] || cleanRow['TEMPO'] || 30;
+                    const duration = Number(durationRaw);
                     const productName = String(cleanRow['PRODUTO'] || '');
                     const taskCount = Number(cleanRow['TAREFA'] || 0);
 
@@ -467,8 +477,12 @@ export class ImportController {
             });
 
         } catch (error: any) {
-            console.error('Erro na importação financeira:', error);
-            return res.status(500).json({ message: 'Erro ao processar planilha financeira', error: error.message });
+            console.error('❌ ERRO CRÍTICO NA IMPORTAÇÃO:', error);
+            // Retorna o erro detalhado se disponível para ajudar no debug
+            return res.status(500).json({ 
+                message: 'Erro ao processar planilha: ' + (error.message || 'Erro interno'),
+                details: error.stack
+            });
         }
     }
 
@@ -524,7 +538,7 @@ export class ImportController {
             await prisma.$transaction([
                 prisma.patient.deleteMany({ where: { importBatchId: batchId, clinicId } }),
                 prisma.transaction.deleteMany({ where: { importBatchId: batchId, clinicId } }),
-                prisma.procedurePricing.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.procedure.deleteMany({ where: { importBatchId: batchId, clinicId } }),
                 prisma.equipment.deleteMany({ where: { importBatchId: batchId, clinicId } }),
                 prisma.inventoryItem.deleteMany({ where: { importBatchId: batchId, clinicId } }),
                 prisma.importBatch.delete({ where: { id: batchId } })
