@@ -45,15 +45,15 @@ export function ImportProceduresModal({ isOpen, onClose, onSuccess }: Props) {
             setProgress(10);
 
             const formData = new FormData();
+            formData.append('type', 'pricing'); // Tipo Procedimento/Catálogo - ENVIAR ANTES DO ARQUIVO
             formData.append('file', file);
-            formData.append('type', 'pricing'); // Tipo Procedimento/Catálogo
 
             // Simulação de progresso enquanto o backend processa
             const progressInterval = setInterval(() => {
                 setProgress(prev => (prev < 90 ? prev + 5 : prev));
             }, 1000);
 
-            const response = await api.post('imports/finance', formData, {
+            const response = await api.post('import/finance', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
 
@@ -65,7 +65,8 @@ export function ImportProceduresModal({ isOpen, onClose, onSuccess }: Props) {
             onSuccess();
         } catch (error: any) {
             console.error('Erro na importação:', error);
-            toast.error(error.response?.data?.message || 'Erro ao importar procedimentos. Verifique o formato do arquivo.');
+            const msg = error.response?.data?.message || error.response?.data?.details || error.message;
+            toast.error(`Falha na Importação: ${msg}`);
         } finally {
             setIsProcessing(false);
         }

@@ -249,8 +249,18 @@ export class ImportController {
             }
 
             const { type } = req.body;
+            console.log('DEBUG: Iniciando importação financeira:', {
+                type,
+                fileName: (req as any).file?.originalname,
+                fileSize: (req as any).file?.size,
+                bodyKeys: Object.keys(req.body)
+            });
+
             if (!type) {
-                return res.status(400).json({ message: 'Tipo de importação não especificado' });
+                return res.status(400).json({ 
+                    message: 'Tipo de importação não especificado no payload (req.body.type)',
+                    debug_body: req.body 
+                });
             }
 
             // Helper de normalização agressiva de chaves (Upper + Sem Acentos)
@@ -478,10 +488,11 @@ export class ImportController {
 
         } catch (error: any) {
             console.error('❌ ERRO CRÍTICO NA IMPORTAÇÃO:', error);
-            // Retorna o erro detalhado se disponível para ajudar no debug
+            // Retorna o erro detalhado para o frontend capturar
             return res.status(500).json({ 
-                message: 'Erro ao processar planilha: ' + (error.message || 'Erro interno'),
-                details: error.stack
+                message: error.message || 'Erro interno no processamento da planilha',
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+                details: error.toString()
             });
         }
     }
