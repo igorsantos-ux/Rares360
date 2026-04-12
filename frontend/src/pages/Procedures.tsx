@@ -17,7 +17,7 @@ const Procedures = () => {
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedProcedure, setSelectedProcedure] = useState<any>(null);
+    const [selectedProcedureId, setSelectedProcedureId] = useState<string | null>(null);
 
     const queryClient = useQueryClient();
 
@@ -37,8 +37,8 @@ const Procedures = () => {
         }
     };
 
-    const handleEdit = (procedure: any) => {
-        setSelectedProcedure(procedure);
+    const handleEdit = (id: string) => {
+        setSelectedProcedureId(id);
         setIsModalOpen(true);
     };
 
@@ -77,7 +77,7 @@ const Procedures = () => {
                     <p className="text-slate-500 font-medium mt-1">Gestão de procedimentos e análise de margem de lucro.</p>
                 </div>
                 <button 
-                    onClick={() => { setSelectedProcedure(null); setIsModalOpen(true); }}
+                    onClick={() => { setSelectedProcedureId(null); setIsModalOpen(true); }}
                     className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
                 >
                     <Plus size={20} />
@@ -202,7 +202,7 @@ const Procedures = () => {
                                     <td className="px-8 py-6 text-right">
                                         <div className="flex items-center justify-end gap-2">
                                             <button 
-                                                onClick={() => handleEdit(p)}
+                                                onClick={() => handleEdit(p.id)}
                                                 className="p-2.5 bg-white rounded-xl shadow-sm border border-[#8A9A5B]/10 text-[#8A9A5B] hover:bg-[#8A9A5B] hover:text-white transition-all"
                                             >
                                                 <TrendingUp size={18} />
@@ -213,7 +213,7 @@ const Procedures = () => {
                                                 </button>
                                                 <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all">
                                                     <button 
-                                                        onClick={() => handleEdit(p)}
+                                                        onClick={() => handleEdit(p.id)}
                                                         className="w-full text-left px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
                                                     >
                                                         Detalhes e Preço
@@ -244,8 +244,7 @@ const Procedures = () => {
             <ProcedureModal 
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
-                procedure={selectedProcedure}
-                onSave={() => queryClient.invalidateQueries({ queryKey: ['procedures'] })}
+                procedureId={selectedProcedureId}
             />
         </div>
     );
