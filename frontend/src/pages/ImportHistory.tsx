@@ -11,7 +11,8 @@ import {
     FileSpreadsheet,
     Package,
     Users,
-    TrendingUp
+    TrendingUp,
+    Calculator
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -50,6 +51,8 @@ const ImportHistory = () => {
                 return { label: 'Faturamento', color: 'bg-green-50 text-green-600 border-green-200', icon: <TrendingUp size={14} /> };
             case 'ESTOQUE':
                 return { label: 'Estoque', color: 'bg-purple-50 text-purple-600 border-purple-200', icon: <Package size={14} /> };
+            case 'PROCEDIMENTOS':
+                return { label: 'Procedimentos', color: 'bg-orange-50 text-orange-600 border-orange-200', icon: <Calculator size={14} /> };
             default:
                 return { label: module, color: 'bg-slate-50 text-slate-600 border-slate-200', icon: <FileText size={14} /> };
         }

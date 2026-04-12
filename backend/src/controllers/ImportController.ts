@@ -296,7 +296,7 @@ export class ImportController {
 
             const moduleMap: Record<string, any> = {
                 'billing': 'FATURAMENTO',
-                'pricing': 'FATURAMENTO', // Ou talvez criar um módulo precificação? O pedido disse PACIENTES, FATURAMENTO, ESTOQUE.
+                'pricing': 'PROCEDIMENTOS',
                 'equipment': 'ESTOQUE'
             };
 
