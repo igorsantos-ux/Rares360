@@ -103,27 +103,30 @@ const Goals = () => {
                     goalsList.map((goal: any) => (
                         <div key={goal.id} className="bg-white p-8 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm hover:shadow-xl transition-all group">
                             <div className="flex justify-between items-start mb-8">
-                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${goal.type === 'finance' ? 'bg-[#8A9A5B]/10 text-[#8A9A5B]' :
-                                    goal.type === 'growth' ? 'bg-[#DEB587]/10 text-[#DEB587]' :
-                                        'bg-slate-100 text-slate-500'
+                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+                                    goal.type === 'COMERCIAL' ? 'bg-[#8A9A5B]/10 text-[#8A9A5B]' :
+                                    goal.type === 'ESTOQUE' ? 'bg-[#DEB587]/10 text-[#DEB587]' :
+                                    'bg-slate-100 text-slate-500'
                                     }`}>
-                                    {goal.type === 'finance' ? <BarChart3 size={28} /> : goal.type === 'growth' ? <TrendingUp size={28} /> : <Target size={28} />}
+                                    {goal.type === 'COMERCIAL' ? <BarChart3 size={28} /> : 
+                                     goal.type === 'ESTOQUE' ? <TrendingUp size={28} /> : 
+                                     <Target size={28} />}
                                 </div>
                                 <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                                    <Clock size={12} /> {goal.month}/{goal.year}
+                                    <Clock size={12} /> {goal.monthYear?.replace('-', '/')}
                                 </span>
                             </div>
 
-                            <h4 className="text-xl font-black text-[#697D58] mb-2">{goal.title || (goal.type === 'PROFIT' ? 'Meta de Lucro' : 'Objetivo')}</h4>
+                            <h4 className="text-xl font-black text-[#697D58] mb-2">{goal.title}</h4>
 
                                 <div className="mb-6">
                                     <div className="flex justify-between items-end mb-3">
                                         <span className="text-2xl font-black text-slate-800">
-                                            {goal.type === 'finance' || goal.type === 'PROFIT' || goal.type.toUpperCase() === 'FATURAMENTO' ? `R$ ${(goal.current || goal.achieved || 0).toLocaleString('pt-BR')}` : goal.type === 'efficiency' ? `${goal.current}%` : goal.current}
+                                            {goal.type === 'COMERCIAL' ? `R$ ${(goal.current || 0).toLocaleString('pt-BR')}` : goal.current}
                                         </span>
-                                        <span className="text-xs font-bold text-slate-400">Objetivo: {goal.type === 'finance' || goal.type === 'PROFIT' || goal.type.toUpperCase() === 'FATURAMENTO' ? `R$ ${goal.target.toLocaleString('pt-BR')}` : goal.type === 'efficiency' ? `${goal.target}%` : goal.target}</span>
+                                        <span className="text-xs font-bold text-slate-400">Objetivo: {goal.type === 'COMERCIAL' ? `R$ ${goal.target.toLocaleString('pt-BR')}` : goal.target}</span>
                                     </div>
-                                    <Progress value={Math.min(((goal.current || goal.achieved || 0) / goal.target) * 100, 100)} />
+                                    <Progress value={goal.progress} />
                                 </div>
 
                             <div className="flex gap-2 mt-auto">

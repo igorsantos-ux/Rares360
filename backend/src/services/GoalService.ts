@@ -208,5 +208,60 @@ export class GoalService {
         if (goal.isPrimary) throw new Error('Não é possível excluir a meta principal do ciclo');
 
         return await prisma.monthlyGoal.delete({ where: { id: goalId } });
+
+    static async getGoalsReport(clinicId: string) {
+        const now = new Date();
+        const monthYear = this.getMonthYearKey(now);
+        const [month, year] = monthYear.split('-').map(Number);
+
+        const goals = await prisma.monthlyGoal.findMany({
+            where: { clinicId },
+            orderBy: [{ monthYear: 'desc' }, { isPrimary: 'desc' }]
+        });
+
+        const currentMonthFaturamento = await prisma.transaction.aggregate({
+            where: {
+                clinicId,
+                type: 'INCOME',
+                status: 'PAID',
+                date: {
+                    gte: new Date(year, month - 1, 1),
+                    lte: new Date(year, month, 0, 23, 59, 59)
+                }
+            },
+            _sum: { amount: true }
+        });
+
+        const actualFaturamento = currentMonthFaturamento._sum.amount || 0;
+        
+        const lastDayOfMonth = new Date(year, month, 0).getDate();
+        let businessDaysRemaining = 0;
+        for (let d = now.getDate() + 1; d <= lastDayOfMonth; d++) {
+            const date = new Date(year, month - 1, d);
+            const dayOfWeek = date.getDay();
+            if (dayOfWeek !== 0 && dayOfWeek !== 6) businessDaysRemaining++;
+        }
+
+        return goals.map(goal => {
+            const isCurrentMonth = goal.monthYear === monthYear;
+            const isComercial = goal.type === 'COMERCIAL';
+            
+            const current = (isCurrentMonth && isComercial) ? actualFaturamento : 0;
+            const target = goal.targetValue;
+            const progress = target > 0 ? (current / target) * 100 : 0;
+
+            return {
+                id: goal.id,
+                title: goal.name || (goal.isPrimary ? 'Meta Principal' : 'Objetivo'),
+                type: goal.type,
+                target: target,
+                current: current,
+                progress: Math.min(progress, 100),
+                isPrimary: goal.isPrimary,
+                monthYear: goal.monthYear,
+                status: progress >= 100 ? 'CONCLUIDA' : 'EM_ANDAMENTO',
+                remainingBusinessDays: isCurrentMonth ? businessDaysRemaining : 0
+            };
+        });
     }
 }
