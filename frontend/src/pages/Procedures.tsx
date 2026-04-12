@@ -12,11 +12,13 @@ import {
 import { proceduresApi } from '../services/api';
 import { toast, Toaster } from 'react-hot-toast';
 import ProcedureModal from '../components/ProcedureModal';
+import { ImportProceduresModal } from '../components/ImportProceduresModal';
 
 const Procedures = () => {
     const [search, setSearch] = useState('');
     const [category, setCategory] = useState('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedProcedureId, setSelectedProcedureId] = useState<string | null>(null);
 
     const queryClient = useQueryClient();
@@ -72,13 +74,22 @@ const Procedures = () => {
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Procedimentos</h2>
                     <p className="text-slate-500 font-medium mt-1">Catálogo operacional e gestão de tarefas clínicas.</p>
                 </div>
-                <button 
-                    onClick={() => { setSelectedProcedureId(null); setIsModalOpen(true); }}
-                    className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
-                >
-                    <Plus size={20} />
-                    Novo Procedimento
-                </button>
+                <div className="flex items-center gap-3">
+                    <button 
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-white text-slate-600 border border-slate-200 rounded-2xl font-bold text-sm shadow-sm hover:bg-slate-50 active:scale-95 transition-all w-fit"
+                    >
+                        <Upload size={18} />
+                        Importar Planilha
+                    </button>
+                    <button 
+                        onClick={() => { setSelectedProcedureId(null); setIsModalOpen(true); }}
+                        className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
+                    >
+                        <Plus size={20} />
+                        Novo Procedimento
+                    </button>
+                </div>
             </div>
 
             {/* Stats Overview Simplificado */}
@@ -233,6 +244,12 @@ const Procedures = () => {
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)} 
                 procedureId={selectedProcedureId}
+            />
+
+            <ImportProceduresModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onSuccess={() => queryClient.invalidateQueries({ queryKey: ['procedures'] })}
             />
         </div>
     );
