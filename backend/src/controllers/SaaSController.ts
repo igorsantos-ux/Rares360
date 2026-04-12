@@ -258,11 +258,13 @@ export class SaaSController {
                 basePrisma.document.deleteMany({ where: { clinicId: id } }),
                 basePrisma.clinicDocument.deleteMany({ where: { clinicId: id } }),
                 basePrisma.pricingSimulation.deleteMany({ where: { clinicId: id } }),
-                basePrisma.procedurePricing.deleteMany({ where: { clinicId: id } }),
                 basePrisma.procedureExecution.deleteMany({ where: { clinicId: id } }),
+                basePrisma.procedure.deleteMany({ where: { clinicId: id } }),
                 basePrisma.task.deleteMany({ where: { clinicId: id } }),
                 basePrisma.doctor.deleteMany({ where: { clinicId: id } }),
                 basePrisma.patient.deleteMany({ where: { clinicId: id } }),
+                basePrisma.importBatch.deleteMany({ where: { clinicId: id } }),
+                basePrisma.appointment.deleteMany({ where: { clinicId: id } }),
                 basePrisma.user.deleteMany({ where: { clinicId: id } }),
                 basePrisma.clinic.delete({ where: { id } })
             ]);

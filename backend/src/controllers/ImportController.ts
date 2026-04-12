@@ -345,10 +345,10 @@ export class ImportController {
                         return isNaN(parsed) ? 0 : parsed;
                     };
 
-                    const valorRaw = cleanRow['PREÇO DE VENDA'] || cleanRow['PREÇO- TABELA'] || 0;
+                    const valorRaw = cleanRow['PREÇO DE VENDA'] || cleanRow['PREÇO- TABELA'] || cleanRow['PREÇO'] || cleanRow['VALOR'] || 0;
                     const valor = Math.abs(parseCurrency(valorRaw));
                     
-                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['VALOR LÍQUIDO'] || valorRaw;
+                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['VALOR LÍQUIDO'] || cleanRow['LIQUIDO'] || valorRaw;
                     const valorLiquido = Math.abs(parseCurrency(valorLiquidoRaw));
 
                     let date = new Date();
@@ -392,25 +392,36 @@ export class ImportController {
                     });
                     resultCount = result.count;
 
-                    // GATILHO CRM: Tenta gerar tarefas de follow-up para cada transação
-                    console.log(`DEBUG: Disparando triggers de CRM para ${validTransactions.length} transações...`);
-                    for (const t of validTransactions) {
-                        if (t.patientName && t.procedureName) {
-                            // Buscar paciente pelo nome para vincular a tarefa
-                            const patient = await prisma.patient.findFirst({
-                                where: { 
-                                    clinicId,
-                                    fullName: { equals: t.patientName, mode: 'insensitive' }
-                                }
-                            });
+                    // Atualizar o lote IMEDIATAMENTE no banco para o usuário ver progresso
+                    await prisma.importBatch.update({
+                        where: { id: batch.id },
+                        data: { recordCount: resultCount }
+                    });
 
-                            if (patient) {
-                                await TaskService.triggerFollowUp(clinicId, {
-                                    patientId: patient.id,
-                                    procedureName: t.procedureName,
-                                    transactionDate: t.date
+                    // GATILHO CRM: Tenta gerar tarefas de follow-up de forma resiliente
+                    console.log(`DEBUG: Processando triggers de CRM para ${validTransactions.length} transações...`);
+                    for (const t of validTransactions) {
+                        try {
+                            if (t.patientName && t.procedureName) {
+                                // Buscar paciente pelo nome para vincular a tarefa
+                                const patient = await prisma.patient.findFirst({
+                                    where: { 
+                                        clinicId,
+                                        fullName: { equals: t.patientName, mode: 'insensitive' }
+                                    }
                                 });
+
+                                if (patient) {
+                                    await TaskService.triggerFollowUp(clinicId, {
+                                        patientId: patient.id,
+                                        procedureName: t.procedureName,
+                                        transactionDate: t.date
+                                    });
+                                }
                             }
+                        } catch (crmError) {
+                            // Erro no CRM não deve travar a importação financeira
+                            console.error(`ERROR: Falha ao processar trigger de CRM para linha:`, t, crmError);
                         }
                     }
                 }
