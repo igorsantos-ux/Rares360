@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
     Plus, 
     Search, 
-    Filter, 
     MoreHorizontal, 
     TrendingUp, 
     Package,
