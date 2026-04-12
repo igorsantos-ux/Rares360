@@ -655,7 +655,7 @@ model MonthlyGoal {
   name          String?  @default("Meta de Faturamento")
   type          GoalType @default(COMERCIAL)
   isPrimary     Boolean  @default(false)
-  targetValue   Float
+  targetValue   Float    @default(0)
   workingDays   Int      @default(22)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
