@@ -1,5 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
-import { useForm, useWatch } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
@@ -12,17 +12,10 @@ import {
 import { 
     Save, 
     Loader2, 
-    TrendingUp, 
-    DollarSign, 
-    Percent, 
-    Calculator,
-    AlertCircle,
-    Info,
-    Receipt
+    Calculator
 } from 'lucide-react';
 import { proceduresApi } from '../services/api';
 import { useQueryClient } from '@tanstack/react-query';
-import CurrencyInput from 'react-currency-input-field';
 import { toast } from 'react-hot-toast';
 
 const procedureSchema = z.object({

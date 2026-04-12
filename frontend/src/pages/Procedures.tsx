@@ -42,14 +42,10 @@ const Procedures = () => {
         setIsModalOpen(true);
     };
 
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('pt-BR', {
-            style: 'currency',
-            currency: 'BRL'
-        }).format(value);
-    };
-
-    const categories = Array.from(new Set(procedures?.items?.map((p: any) => p.category) || []));
+    const categories = useMemo(() => {
+        if (!procedures?.items) return [];
+        return Array.from(new Set(procedures.items.map((p: any) => p.category)));
+    }, [procedures]);
 
     const filteredProcedures = procedures?.items?.filter((p: any) => {
         const matchesSearch = p.name.toLowerCase().includes(search.toLowerCase());
