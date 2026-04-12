@@ -187,7 +187,12 @@ export const complianceApi = {
 };
 
 export const proceduresApi = {
-    getPending: () => api.get('procedures/pending'),
+    list: (params: any) => api.get('procedures', { params }),
+    getById: (id: string) => api.get(`procedures/${id}`),
+    create: (data: any) => api.post('procedures', data),
+    update: (id: string, data: any) => api.put(`procedures/${id}`, data),
+    delete: (id: string) => api.delete(`procedures/${id}`),
+    listPending: () => api.get('procedures/pending'),
     getByPatient: (patientId: string) => api.get(`procedures/patient/${patientId}`),
     execute: (id: string) => api.post(`procedures/${id}/execute`),
 };
@@ -238,16 +243,6 @@ export const importApi = {
     importPatients: (formData: FormData) => api.post('import/patients', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     })
-};
-
-export const proceduresApi = {
-    list: (params: any) => api.get('procedures', { params }),
-    getById: (id: string) => api.get(`procedures/${id}`),
-    create: (data: any) => api.post('procedures', data),
-    update: (id: string, data: any) => api.put(`procedures/${id}`, data),
-    delete: (id: string) => api.delete(`procedures/${id}`),
-    listPending: () => api.get('procedures/pending'),
-    execute: (id: string) => api.post(`procedures/${id}/execute`)
 };
 
 export default api;

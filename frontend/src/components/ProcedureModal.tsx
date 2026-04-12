@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -8,7 +8,7 @@ import {
     DialogHeader, 
     DialogTitle, 
     DialogFooter 
-} from './ui/dialog';
+} from './ui/Dialog';
 import { 
     Save, 
     Loader2, 
