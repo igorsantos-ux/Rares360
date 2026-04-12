@@ -29,6 +29,8 @@ import { Switch } from "./ui/Switch";
 interface GoalModalProps {
     isOpen: boolean;
     onClose: () => void;
+    initialGoalId?: string | null;
+    initialMonthYear?: string | null;
 }
 
 const months = [
@@ -64,7 +66,7 @@ interface Goal {
     monthYear: string;
 }
 
-const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose }) => {
+const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose, initialGoalId, initialMonthYear }) => {
     const now = new Date();
     const [month, setMonth] = useState((now.getMonth() + 1).toString().padStart(2, '0'));
     const [year, setYear] = useState(now.getFullYear().toString());
@@ -104,10 +106,41 @@ const GoalModal: React.FC<GoalModalProps> = ({ isOpen, onClose }) => {
     };
 
     useEffect(() => {
-        if (isOpen) {
-            fetchGoals();
+        if (isOpen && initialMonthYear) {
+            const [m, y] = initialMonthYear.split('-');
+            setMonth(m);
+            setYear(y);
+        } else if (isOpen && !initialGoalId) {
+            const current = new Date();
+            setMonth((current.getMonth() + 1).toString().padStart(2, '0'));
+            setYear(current.getFullYear().toString());
         }
-    }, [isOpen, month, year]);
+    }, [isOpen, initialMonthYear, initialGoalId]);
+
+    useEffect(() => {
+        const loadInitial = async () => {
+            if (isOpen) {
+                await fetchGoals();
+                
+                // Se um ID inicial foi passado, tentar selecioná-lo na lista carregada
+                if (initialGoalId && monthlyGoals.length > 0) {
+                    const goal = monthlyGoals.find(g => g.id === initialGoalId);
+                    if (goal) {
+                        handleEdit(goal);
+                    }
+                }
+            }
+        };
+        
+        loadInitial();
+    }, [isOpen, month, year, initialGoalId]);
+
+    // Efeito para sincronizar mês/ano se o initialGoalId mudar e já tivermos os dados (ou for o caso de abrir o modal)
+    useEffect(() => {
+        if (isOpen && !initialGoalId) {
+            resetForm();
+        }
+    }, [isOpen, initialGoalId]);
 
     const resetForm = () => {
         setGoalId(null);

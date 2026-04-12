@@ -25,6 +25,20 @@ const Goals = () => {
 
 
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
+    const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
+    const [selectedMonthYear, setSelectedMonthYear] = useState<string | null>(null);
+
+    const handleEditGoal = (goal: any) => {
+        setSelectedGoalId(goal.id);
+        setSelectedMonthYear(goal.monthYear);
+        setIsGoalModalOpen(true);
+    };
+
+    const handleNewGoal = () => {
+        setSelectedGoalId(null);
+        setSelectedMonthYear(null);
+        setIsGoalModalOpen(true);
+    };
 
     // A API retorna um array direto de metas [FinancialGoal]
     const goalsList = Array.isArray(response?.data) ? response.data : [];
@@ -57,7 +71,7 @@ const Goals = () => {
                 </div>
                 <div className="flex items-center gap-3">
                     <button 
-                        onClick={() => setIsGoalModalOpen(true)}
+                        onClick={handleNewGoal}
                         className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all"
                     >
                         <PlusIcon />
@@ -130,10 +144,16 @@ const Goals = () => {
                                 </div>
 
                             <div className="flex gap-2 mt-auto">
-                                <button className="flex-1 py-4 bg-slate-50 text-slate-400 group-hover:bg-[#8A9A5B] group-hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2">
+                                <button 
+                                    onClick={() => handleEditGoal(goal)}
+                                    className="flex-1 py-4 bg-slate-50 text-slate-400 group-hover:bg-[#8A9A5B] group-hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-2"
+                                >
                                     Ver Detalhes <ArrowUpRight size={16} />
                                 </button>
-                                <button className="px-4 py-4 bg-slate-50 text-slate-400 hover:bg-[#DEB587] hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center shadow-inner">
+                                <button 
+                                    onClick={() => handleEditGoal(goal)}
+                                    className="px-4 py-4 bg-slate-50 text-slate-400 hover:bg-[#DEB587] hover:text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center shadow-inner"
+                                >
                                     Editar
                                 </button>
                             </div>
@@ -144,7 +164,13 @@ const Goals = () => {
 
             <GoalModal 
                 isOpen={isGoalModalOpen}
-                onClose={() => setIsGoalModalOpen(false)}
+                onClose={() => {
+                    setIsGoalModalOpen(false);
+                    setSelectedGoalId(null);
+                    setSelectedMonthYear(null);
+                }}
+                initialGoalId={selectedGoalId}
+                initialMonthYear={selectedMonthYear}
             />
         </div>
     );
