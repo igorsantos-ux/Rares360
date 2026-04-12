@@ -56,6 +56,12 @@ const Procedures = () => {
         return matchesSearch && matchesCategory;
     });
 
+    const aveReturnDays = useMemo(() => {
+        if (!filteredProcedures || filteredProcedures.length === 0) return 0;
+        const total = filteredProcedures.reduce((acc: number, p: any) => acc + (p.taskCount || 0), 0);
+        return Math.round(total / filteredProcedures.length);
+    }, [filteredProcedures]);
+
     if (isLoading) {
         return (
             <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
@@ -117,12 +123,12 @@ const Procedures = () => {
                 </div>
                 <div className="bg-white p-7 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex items-center gap-6 group hover:translate-y-[-4px] transition-all duration-300">
                     <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600 group-hover:scale-110 transition-transform">
-                        <Filter size={20} />
+                        <TrendingUp size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Tarefas Vinculadas</p>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Média de Retorno</p>
                         <h5 className="text-2xl font-black text-[#1A202C]">
-                             {filteredProcedures?.reduce((acc: number, p: any) => acc + (p.taskCount || 0), 0) || 0}
+                             {aveReturnDays} dias
                         </h5>
                     </div>
                 </div>
@@ -168,7 +174,7 @@ const Procedures = () => {
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Procedimento</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Duração</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Produto</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Tarefa</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Retorno (Dias)</th>
                                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ações</th>
                             </tr>
                         </thead>
@@ -194,9 +200,9 @@ const Procedures = () => {
                                     <td className="px-8 py-6 text-center text-[10px] font-black text-slate-400 uppercase tracking-tight">
                                         {p.productName || 'N/A'}
                                     </td>
-                                    <td className="px-8 py-6 text-center">
-                                        <span className="px-2.5 py-1 bg-[#8A9A5B]/10 text-[#8A9A5B] rounded-lg text-[10px] font-black border border-[#8A9A5B]/20">
-                                            {p.taskCount || 0}
+                                    <td className="px-8 py-5 text-center">
+                                        <span className="px-5 py-1.5 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-wider">
+                                            {p.taskCount || 0} dias
                                         </span>
                                     </td>
                                     <td className="px-8 py-6 text-right">

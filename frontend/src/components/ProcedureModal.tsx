@@ -166,7 +166,7 @@ const ProcedureModal = ({ isOpen, onClose, procedureId }: ProcedureModalProps) =
                             </div>
 
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Quantidade de Tarefas</label>
+                                <label className="text-xs font-bold text-gray-700 ml-1 uppercase tracking-wider">Prazo de Retorno (Dias)</label>
                                 <input 
                                     type="number"
                                     {...register('taskCount', { valueAsNumber: true })}
