@@ -75,7 +75,7 @@ model Clinic {
   patients              Patient[]
   pricingSimulations    PricingSimulation[]
   procedureExecutions   ProcedureExecution[]
-  procedurePricings     ProcedurePricing[]
+  procedures            Procedure[]
   stockMovements        StockMovement[]
   tasks                 Task[]
   transactions          Transaction[]
@@ -467,18 +467,29 @@ model PricingSupply {
   quantity            Float
   cost                Float
   pricingSimulationId String?
-  procedurePricingId  String?
+  procedureId         String?
   pricingSimulation   PricingSimulation? @relation(fields: [pricingSimulationId], references: [id], onDelete: Cascade)
-  procedurePricing    ProcedurePricing?  @relation(fields: [procedurePricingId], references: [id], onDelete: Cascade)
+  procedure           Procedure?         @relation(fields: [procedureId], references: [id], onDelete: Cascade)
 }
 
-model ProcedurePricing {
-  id              String          @id @default(uuid())
+model Procedure {
+  id              String          @id @default(cuid())
   name            String
+  category        String          @default("Geral")
   durationMinutes Int             @default(0)
-  totalCost       Float
-  currentPrice    Float
+  
+  // Detalhes Financeiros
+  fixedCost       Float           @default(0)
+  variableCost    Float           @default(0)
+  taxes           Float           @default(0)
+  commission      Float           @default(0)
+  basePrice       Float           @default(0)
+  
+  // Campos Legados / Agregações
+  totalCost       Float           @default(0) // (fixedCost + variableCost + impostos + comissao)
+  currentPrice    Float           @default(0) // Preço praticado hoje
   targetMargin    Float           @default(50)
+
   clinicId        String
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
@@ -629,7 +640,7 @@ model Appointment {
   professional    Doctor            @relation(fields: [professionalId], references: [id], onDelete: Cascade)
   room            Room?             @relation(fields: [roomId], references: [id])
   equipment       Equipment?        @relation(fields: [equipmentId], references: [id])
-  procedure       ProcedurePricing? @relation(fields: [procedureId], references: [id])
+  procedure       Procedure?        @relation(fields: [procedureId], references: [id])
   inventoryUsages InventoryUsage[]
 
   createdAt DateTime @default(now())
@@ -697,6 +708,7 @@ enum ImportModule {
   PACIENTES
   FATURAMENTO
   ESTOQUE
+  PROCEDIMENTOS
 }
 
 model ImportBatch {
@@ -712,7 +724,7 @@ model ImportBatch {
   patients           Patient[]
   transactions       Transaction[]
   inventoryItems     InventoryItem[]
-  procedurePricings  ProcedurePricing[]
+  procedures         Procedure[]
   equipments         Equipment[]
 
   @@index([clinicId])

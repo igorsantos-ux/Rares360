@@ -374,47 +374,68 @@ export class ImportController {
                 }
             } 
             else if (type === 'pricing') {
-                // Lógica de Precificação (ProcedurePricing)
+                // Lógica de Precificação (Procedure)
+                const { ProcedureService } = await import('../services/ProcedureService.js');
+                
                 for (const row of data) {
                     const cleanRow: any = {};
                     for (const key in row) {
                         cleanRow[key.trim().toUpperCase()] = row[key];
                     }
 
-                    const name = cleanRow['PROCEDIMENTO'];
+                    const name = cleanRow['PROCEDIMENTO'] || cleanRow['NOME'];
                     if (!name) continue;
 
-                    const parseCurrency = (val: any) => {
+                    const parseNumber = (val: any) => {
                         if (typeof val === 'number') return val;
                         if (!val || typeof val !== 'string') return 0;
-                        let clean = val.replace(/R\$\s?/, '').trim();
+                        let clean = val.replace(/R\$\s?/, '').replace('%', '').trim();
                         if (clean.includes(',') && clean.includes('.')) clean = clean.replace(/\./g, '').replace(',', '.');
                         else if (clean.includes(',')) clean = clean.replace(',', '.');
                         const parsed = parseFloat(clean);
                         return isNaN(parsed) ? 0 : parsed;
                     };
 
-                    const priceRaw = cleanRow['PREÇO- TABELA'] || cleanRow['PREÇO - TABELA'] || cleanRow['PRECO TABELA'] || 0;
-                    const price = Math.abs(parseCurrency(priceRaw));
+                    const basePrice = Math.abs(parseNumber(cleanRow['PREÇO- TABELA'] || cleanRow['PREÇO - TABELA'] || cleanRow['PRECO TABELA'] || cleanRow['VALOR'] || cleanRow['PREÇO DE VENDA'] || 0));
+                    const fixedCost = Math.abs(parseNumber(cleanRow['CUSTO FIXO'] || cleanRow['FIXED']) || 0);
+                    const variableCost = Math.abs(parseNumber(cleanRow['CUSTO VARIAVEL'] || cleanRow['CUSTO VARIÁVEL'] || cleanRow['TOTAL - CUSTO OPERACIONAL'] || cleanRow['CUSTO OPERACIONAL']) || 0);
+                    const taxes = Math.abs(parseNumber(cleanRow['IMPOSTOS'] || cleanRow['TAXAS'] || cleanRow['TAXES']) || 0);
+                    const commission = Math.abs(parseNumber(cleanRow['COMISSAO'] || cleanRow['COMISSÃO'] || cleanRow['COMMISSION']) || 0);
                     
-                    const costRaw = cleanRow['TOTAL - CUSTO OPERACIONAL'] || cleanRow['CUSTO OPERACIONAL'] || 0;
-                    const cost = Math.abs(parseCurrency(costRaw));
+                    const category = cleanRow['CATEGORIA'] || cleanRow['GRUPO'] || 'Geral';
+                    const duration = Number(cleanRow['DURAÇÃO'] || cleanRow['DURACAO'] || 60);
 
-                    const duration = cleanRow['DURAÇÃO'] || cleanRow['DURACAO'] || 60;
+                    const finance = ProcedureService.calculateFinance({ 
+                        fixedCost, variableCost, taxes, commission, basePrice 
+                    });
 
-                    const existing = await prisma.procedurePricing.findFirst({
+                    const procedureData = {
+                        name,
+                        category,
+                        durationMinutes: duration,
+                        fixedCost,
+                        variableCost,
+                        taxes,
+                        commission,
+                        basePrice,
+                        currentPrice: basePrice,
+                        totalCost: finance.totalCost,
+                        clinicId
+                    };
+
+                    const existing = await prisma.procedure.findFirst({
                         where: { name, clinicId }
                     });
 
                     if (existing) {
-                        await prisma.procedurePricing.update({
+                        await prisma.procedure.update({
                             where: { id: existing.id },
-                            data: { currentPrice: price, totalCost: cost, durationMinutes: Number(duration) }
+                            data: procedureData
                         });
                         updatedCount++;
                     } else {
-                        await prisma.procedurePricing.create({
-                            data: { name, currentPrice: price, totalCost: cost, durationMinutes: Number(duration), clinicId, importBatchId: batch.id }
+                        await prisma.procedure.create({
+                            data: { ...procedureData, importBatchId: batch.id }
                         });
                         resultCount++;
                     }

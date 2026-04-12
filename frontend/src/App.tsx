@@ -26,6 +26,7 @@ import Agenda from './pages/Agenda';
 import MyClinic from './pages/MyClinic';
 import DoctorsPage from './pages/DoctorsPage';
 import ImportHistory from './pages/ImportHistory';
+import Procedures from './pages/Procedures';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -98,6 +99,7 @@ function App() {
                 <Route path="/fechamento-caixa" element={<DailyClosure />} />
                 <Route path="/dfc" element={<DFCPage />} />
                 <Route path="/pricing" element={<Pricing />} />
+                <Route path="/procedures" element={<Procedures />} />
                 <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/inventory" element={<Inventory />} />

@@ -240,4 +240,14 @@ export const importApi = {
     })
 };
 
+export const proceduresApi = {
+    list: (params: any) => api.get('procedures', { params }),
+    getById: (id: string) => api.get(`procedures/${id}`),
+    create: (data: any) => api.post('procedures', data),
+    update: (id: string, data: any) => api.put(`procedures/${id}`, data),
+    delete: (id: string) => api.delete(`procedures/${id}`),
+    listPending: () => api.get('procedures/pending'),
+    execute: (id: string) => api.post(`procedures/${id}/execute`)
+};
+
 export default api;

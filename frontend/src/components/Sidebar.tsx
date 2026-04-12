@@ -64,7 +64,7 @@ const Sidebar = () => {
             { icon: <TrendingUp size={20} />, label: "Fluxo de Caixa", path: "/cash-flow" },
         ]},
         { label: "Gestão", items: [
-            { icon: <Calculator size={20} />, label: "Precificação", path: "/pricing" },
+            { icon: <Calculator size={20} />, label: "Serviços e Preços", path: "/procedures" },
             { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
             { icon: <Stethoscope size={20} />, label: "Médicos", path: "/medicos" },
             { icon: <FileText size={20} />, label: "Minha Clínica", path: "/my-clinic" },
