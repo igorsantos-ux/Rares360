@@ -413,6 +413,13 @@ model AccountPayable {
   isInstallment       Boolean                     @default(false)
   installmentsCount   Int                         @default(1)
   installmentInterval String?
+  dueDate             DateTime?                   // Campo para importação simplificada/flat
+  paymentDate         DateTime?                   // Campo para importação simplificada/flat
+  expenseType         String?                     // Mapeado de "TIPO DE DESPESA"
+  category            String?                     // Mapeado de "CLASSIFICAÇÃO"
+  payee               String?                     // Mapeado de "FAVORECIDO/BENEFICIÁRIO"
+  notes               String?                     // Mapeado de "OBSERVAÇÃO NF - BOLETO"
+  
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
   clinicId            String
@@ -426,10 +433,15 @@ model AccountPayable {
   costCenter          String?
   costType            String?
   status              String                      @default("PENDENTE")
+  
+  importBatchId       String?
+  importBatch         ImportBatch?                @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
   clinic              Clinic                      @relation(fields: [clinicId], references: [id])
   installments        AccountPayableInstallment[]
 
   @@index([clinicId, status])
+  @@index([importBatchId])
 }
 
 model AccountPayableInstallment {
@@ -720,6 +732,7 @@ enum ImportModule {
   FATURAMENTO
   ESTOQUE
   PROCEDIMENTOS
+  CONTAS_A_PAGAR
 }
 
 model ImportBatch {
@@ -737,8 +750,22 @@ model ImportBatch {
   inventoryItems     InventoryItem[]
   procedures         Procedure[]
   equipments         Equipment[]
+  accountPayables    AccountPayable[]
+  errors             ImportErrorLog[]
 
   @@index([clinicId])
+}
+
+model ImportErrorLog {
+  id            String      @id @default(cuid())
+  importBatchId String
+  importBatch   ImportBatch @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  rowNumber     Int
+  rowData       Json
+  errorMessage  String
+  createdAt     DateTime    @default(now())
+
+  @@index([importBatchId])
 }
 
 model AdminAuditLog {

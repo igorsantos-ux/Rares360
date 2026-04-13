@@ -13,17 +13,19 @@ import {
     CheckCircle2,
     MoreVertical,
     Paperclip,
-    Lock as LockIcon
+    Lock as LockIcon,
+    Upload
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { DeleteConfirmationModal } from '../../components/Financial/DeleteConfirmationModal';
+import { ImportPayablesModal } from '../../components/Financial/ImportPayablesModal';
 import DateFilter from '../../components/DateFilter';
-import { 
-    PieChart, 
-    Pie, 
-    Cell, 
-    ResponsiveContainer, 
-    Tooltip, 
+import {
+    PieChart,
+    Pie,
+    Cell,
+    ResponsiveContainer,
+    Tooltip,
     Legend,
     BarChart,
     Bar,
@@ -37,13 +39,13 @@ const StatusBadge = ({ status, dueDate }: { status: string; dueDate: string }) =
     // mas normalizada para 00:00:00 para comparar apenas o 'dia'.
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Convertemos a data do banco (UTC 00:00) para um objeto Date.
     // Como o banco envia YYYY-MM-DDTHH:mm:ss.sssZ, o JS lê como UTC.
     // Para evitar que o fuso local subtraia horas (ex: 12/03 virar 11/03), 
     // criamos o objeto e ignoramos o fuso local na lógica de exibição/comparação.
     const date = dueDate ? new Date(dueDate) : new Date();
-    
+
     // Se a data do banco é "2026-03-12T00:00:00Z", queremos compará-la como "12/03".
     // Criamos um objeto local representando o "Dia UTC" para comparar com o "Hoje Local".
     const normalizedDate = new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
@@ -97,10 +99,10 @@ const CostCenterChart = ({ data }: { data: any[] }) => {
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
-                        <Tooltip 
-                            contentStyle={{ 
-                                borderRadius: '1.5rem', 
-                                border: 'none', 
+                        <Tooltip
+                            contentStyle={{
+                                borderRadius: '1.5rem',
+                                border: 'none',
                                 boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
                                 fontWeight: '900',
                                 fontSize: '10px',
@@ -109,7 +111,7 @@ const CostCenterChart = ({ data }: { data: any[] }) => {
                             }}
                             formatter={(value: any) => [`R$ ${Number(value || 0).toLocaleString('pt-BR')}`, 'Total']}
                         />
-                        <Legend 
+                        <Legend
                             layout="vertical"
                             align="right"
                             verticalAlign="middle"
@@ -159,23 +161,23 @@ const MonthlyComparisonChart = ({ data }: { data: any[] }) => {
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={data}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8A9A5B20" />
-                        <XAxis 
-                            dataKey="month" 
-                            axisLine={false} 
-                            tickLine={false} 
+                        <XAxis
+                            dataKey="month"
+                            axisLine={false}
+                            tickLine={false}
                             tick={{ fontSize: 9, fontWeight: 900, fill: '#94A3B8' }}
                         />
-                        <YAxis 
-                            axisLine={false} 
-                            tickLine={false} 
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
                             tick={{ fontSize: 9, fontWeight: 900, fill: '#94A3B8' }}
-                            tickFormatter={(value) => `R$${value >= 1000 ? (value/1000).toFixed(0)+'k' : value}`}
+                            tickFormatter={(value) => `R$${value >= 1000 ? (value / 1000).toFixed(0) + 'k' : value}`}
                         />
-                        <Tooltip 
+                        <Tooltip
                             cursor={{ fill: '#8A9A5B05' }}
-                            contentStyle={{ 
-                                borderRadius: '1.5rem', 
-                                border: 'none', 
+                            contentStyle={{
+                                borderRadius: '1.5rem',
+                                border: 'none',
                                 boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
                                 fontWeight: '900',
                                 fontSize: '10px',
@@ -185,11 +187,11 @@ const MonthlyComparisonChart = ({ data }: { data: any[] }) => {
                         />
                         <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
                         {costCenters.map((center, index) => (
-                            <Bar 
-                                key={center} 
-                                dataKey={center} 
-                                stackId="a" 
-                                fill={COLORS[index % COLORS.length]} 
+                            <Bar
+                                key={center}
+                                dataKey={center}
+                                stackId="a"
+                                fill={COLORS[index % COLORS.length]}
                                 radius={index === costCenters.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                             />
                         ))}
@@ -233,7 +235,8 @@ const PayablesPage = () => {
     const queryClient = useQueryClient();
     const [searchTerm, setSearchTerm] = useState('');
     const [isSheetOpen, setIsSheetOpen] = useState(false);
-    
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
     // Estados para Paginação e Filtros
     const [currentPage, setCurrentPage] = useState(1);
     const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -243,12 +246,12 @@ const PayablesPage = () => {
     const isLocked = closureStatus?.status === 'CLOSED';
 
     // Estado para Modal de Exclusão
-    const [deleteModal, setDeleteModal] = useState<{ 
-        open: boolean; 
+    const [deleteModal, setDeleteModal] = useState<{
+        open: boolean;
         item: any | null;
         isSeries: boolean;
-    }>({ 
-        open: false, 
+    }>({
+        open: false,
         item: null,
         isSeries: false
     });
@@ -272,7 +275,7 @@ const PayablesPage = () => {
 
     // Mutação para excluir
     const deleteMutation = useMutation({
-        mutationFn: ({ id, isSeries }: { id: string; isSeries: boolean }) => 
+        mutationFn: ({ id, isSeries }: { id: string; isSeries: boolean }) =>
             isSeries ? payablesApi.deletePayableSeries(id) : payablesApi.deletePayable(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payables-list-v4'] });
@@ -313,24 +316,24 @@ const PayablesPage = () => {
     const displayPayables = useMemo(() => {
         try {
             const rawItems = Array.isArray(payablesResponse?.items) ? payablesResponse.items : [];
-            
+
             // O backend agora já retorna parcelas individuais com accountPayable incluso
             return rawItems.map((inst: any) => {
                 if (!inst) return null;
                 const account = inst.accountPayable || {};
                 const status = String(inst.status || 'PENDENTE').toUpperCase();
-                
+
                 return {
                     id: inst.id,
                     accountPayableId: account.id, // ID da conta pai
-                    description: String(account.description || 'Despesa') + 
+                    description: String(account.description || 'Despesa') +
                         (account.isInstallment ? ` (Parcela ${inst.installmentNumber}/${account.installmentsCount})` : ''),
                     category: String(account.documentNumber ? `NF: ${account.documentNumber}` : (account.supplierName ? `${account.supplierName}` : 'Despesa')),
                     amount: Number(inst.amount || 0),
                     date: inst.dueDate || new Date().toISOString(),
                     dueDate: inst.dueDate, // Mantemos o campo original para o StatusBadge
                     status: status === 'PENDING' ? 'PENDENTE' : status,
-                    fileUrl: account.fileUrl, 
+                    fileUrl: account.fileUrl,
                     supplierName: account.supplierName,
                     costCenter: account.costCenter,
                     costType: account.costType,
@@ -358,9 +361,9 @@ const PayablesPage = () => {
             const d = new Date(dateStr);
             if (isNaN(d.getTime())) return 'Data Inválida';
             // Ignoramos fuso local e usamos UTC para garantir que o 'Dia' lido seja o 'Dia' salvo.
-            return d.getUTCDate().toString().padStart(2, '0') + '/' + 
-                   (d.getUTCMonth() + 1).toString().padStart(2, '0') + '/' + 
-                   d.getUTCFullYear();
+            return d.getUTCDate().toString().padStart(2, '0') + '/' +
+                (d.getUTCMonth() + 1).toString().padStart(2, '0') + '/' +
+                d.getUTCFullYear();
         } catch {
             return 'Data Inválida';
         }
@@ -374,14 +377,14 @@ const PayablesPage = () => {
     return (
         <div className="space-y-10 pb-12 animate-in fade-in duration-500">
             <Toaster position="top-right" />
-            
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Contas a Pagar</h2>
                     <p className="text-slate-500 font-medium mt-1">Gestão de fornecedores e compromissos financeiros.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <DateFilter 
+                    <DateFilter
                         selectedPeriod={selectedPeriod}
                         setSelectedPeriod={setSelectedPeriod}
                         customStartDate={customStartDate}
@@ -390,11 +393,17 @@ const PayablesPage = () => {
                         setCustomEndDate={setCustomEndDate}
                         onApply={() => queryClient.invalidateQueries({ queryKey: ['payables-list-v4'] })}
                     />
-                    <button 
+                    <button
                         onClick={() => setIsSheetOpen(true)}
                         className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
                         <Plus size={20} />
                         Nova Conta
+                    </button>
+                    <button
+                        onClick={() => setIsImportModalOpen(true)}
+                        className="flex items-center gap-2 px-6 py-3 bg-white text-[#DEB587] border-2 border-[#DEB587]/30 rounded-2xl font-bold text-sm shadow-sm hover:bg-[#DEB587]/5 hover:border-[#DEB587]/50 transition-all">
+                        <Upload size={18} />
+                        Importar
                     </button>
                 </div>
             </div>
@@ -403,24 +412,24 @@ const PayablesPage = () => {
             <div className="space-y-6 mb-10">
                 {/* Linha 1: KPIs Principais (3 Colunas) */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <StatCard 
-                        title="Total Pendente" 
-                        value={`R$ ${Number(payablesSummary.totalPending).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
-                        icon={<DollarSign size={20} />} 
-                        color="moss" 
+                    <StatCard
+                        title="Total Pendente"
+                        value={`R$ ${Number(payablesSummary.totalPending).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                        icon={<DollarSign size={20} />}
+                        color="moss"
                     />
-                    <StatCard 
-                        title="Vencendo Hoje" 
-                        value={`R$ ${Number(payablesSummary.totalDueToday).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
-                        icon={<Calendar size={20} />} 
-                        color="moss" 
+                    <StatCard
+                        title="Vencendo Hoje"
+                        value={`R$ ${Number(payablesSummary.totalDueToday).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                        icon={<Calendar size={20} />}
+                        color="moss"
                     />
-                    <StatCard 
-                        title="Atrasados" 
-                        value={`R$ ${Number(payablesSummary.totalOverdue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
-                        icon={<AlertCircle size={20} />} 
-                        color="dun" 
-                        alert={payablesSummary.totalOverdue > 0} 
+                    <StatCard
+                        title="Atrasados"
+                        value={`R$ ${Number(payablesSummary.totalOverdue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                        icon={<AlertCircle size={20} />}
+                        color="dun"
+                        alert={payablesSummary.totalOverdue > 0}
                     />
                 </div>
 
@@ -499,22 +508,21 @@ const PayablesPage = () => {
                                     <tr key={item.id} className="hover:bg-[#8A9A5B]/5 transition-colors group">
                                         <td className="px-8 py-6">
                                             <div className="flex items-center gap-4">
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                                                    (item.status === 'ATRASADO' || (item.status !== 'PAGO' && new Date(item.dueDate) < new Date(new Date().setHours(0,0,0,0)))) 
-                                                    ? 'bg-[#DEB587]/20 text-[#DEB587]' 
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${(item.status === 'ATRASADO' || (item.status !== 'PAGO' && new Date(item.dueDate) < new Date(new Date().setHours(0, 0, 0, 0))))
+                                                    ? 'bg-[#DEB587]/20 text-[#DEB587]'
                                                     : 'bg-[#8A9A5B]/10 text-[#697D58]'
-                                                }`}>
+                                                    }`}>
                                                     <ArrowDownCircle size={20} />
                                                 </div>
                                                 <div>
                                                     <p className="font-black text-slate-700 text-sm leading-tight">{item.description}</p>
                                                     <div className="flex items-center gap-2 mt-1">
-                                                       <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.category}</span>
-                                                       {(item.costCenter || item.costType) && (
-                                                           <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-black uppercase tracking-tighter">
-                                                               {item.costCenter || 'Geral'} • {item.costType || 'Variável'}
-                                                           </span>
-                                                       )}
+                                                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.category}</span>
+                                                        {(item.costCenter || item.costType) && (
+                                                            <span className="text-[9px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md font-black uppercase tracking-tighter">
+                                                                {item.costCenter || 'Geral'} • {item.costType || 'Variável'}
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -529,7 +537,7 @@ const PayablesPage = () => {
                                             <div className="flex items-center justify-end gap-2">
                                                 {/* Ação Rápida: Dar Baixa (Check) - Agora posicionado primeiro */}
                                                 {item.status !== 'PAGO' && (
-                                                    <button 
+                                                    <button
                                                         onClick={() => updateStatusMutation.mutate({ id: item.id, status: 'PAGO' })}
                                                         disabled={updateStatusMutation.isPending || isLocked}
                                                         className="p-2.5 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all disabled:opacity-30 border border-transparent hover:border-emerald-100"
@@ -541,37 +549,37 @@ const PayablesPage = () => {
 
                                                 {/* Ação Rápida: Visualizar Anexo (Clipe de Papel) */}
                                                 {item.fileUrl && (
-                                                    <a 
-                                                        href={item.fileUrl} 
-                                                        target="_blank" 
-                                                        rel="noopener noreferrer" 
+                                                    <a
+                                                        href={item.fileUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
                                                         className="p-2.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                                         title="Visualizar Anexo"
                                                     >
                                                         <Paperclip size={18} />
                                                     </a>
                                                 )}
-                                                
+
                                                 <div className="relative group/menu">
-                                                    <button 
+                                                    <button
                                                         disabled={isLocked}
                                                         className="p-2.5 text-slate-400 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-20"
                                                         title={isLocked ? "Dia Fechado" : ""}
                                                     >
                                                         {isLocked ? <LockIcon size={18} className="text-slate-300" /> : <MoreVertical size={18} />}
                                                     </button>
-                                                    
+
                                                     {/* Custom DropdownMenu */}
                                                     <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all pointer-events-none group-hover/menu:pointer-events-auto">
                                                         {item.status !== 'PAGO' && (
-                                                            <button 
+                                                            <button
                                                                 onClick={() => updateStatusMutation.mutate({ id: item.id, status: 'PAGO' })}
                                                                 className="w-full text-left px-5 py-2.5 text-xs font-bold text-emerald-600 hover:bg-emerald-50 transition-colors"
                                                             >
                                                                 Marcar como Pago
                                                             </button>
                                                         )}
-                                                        <button 
+                                                        <button
                                                             onClick={() => setDeleteModal({ open: true, item, isSeries: false })}
                                                             className="w-full text-left px-5 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
                                                         >
@@ -614,13 +622,13 @@ const PayablesPage = () => {
                 )}
             </div>
 
-            <AccountPayableSheet 
+            <AccountPayableSheet
                 isOpen={isSheetOpen}
                 onClose={() => setIsSheetOpen(false)}
                 onSave={handleSaveAccount}
             />
 
-            <DeleteConfirmationModal 
+            <DeleteConfirmationModal
                 isOpen={deleteModal.open}
                 onClose={() => setDeleteModal({ open: false, item: null, isSeries: false })}
                 description={deleteModal.item?.description}
@@ -628,6 +636,14 @@ const PayablesPage = () => {
                 isDeleting={deleteMutation.isPending}
                 onConfirmSingle={() => deleteMutation.mutate({ id: deleteModal.item.id, isSeries: false })}
                 onConfirmSeries={() => deleteMutation.mutate({ id: deleteModal.item.accountPayableId, isSeries: true })}
+            />
+
+            <ImportPayablesModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
+                onSuccess={() => {
+                    queryClient.invalidateQueries({ queryKey: ['payables-list-v4'] });
+                }}
             />
         </div>
     );

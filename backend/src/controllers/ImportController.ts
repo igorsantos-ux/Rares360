@@ -599,4 +599,145 @@ export class ImportController {
             return res.status(500).json({ message: 'Erro ao processar rollback da importação' });
         }
     }
+
+    static async importPayables(req: Request, res: Response) {
+        try {
+            const clinicId = (req as any).user?.clinicId;
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+
+            if (!(req as any).file) return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+
+            const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const data: any[] = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+            if (data.length === 0) return res.status(400).json({ message: 'Planilha vazia' });
+
+            // 1. Criar Lote de Importação
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'CONTAS_A_PAGAR' as any,
+                    fileName: (req as any).file.originalname,
+                    recordCount: 0
+                }
+            });
+
+            // 2. Buscar Dados da Clínica para Validação de Segurança
+            const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+            const clinicCNPJ = clinic?.cnpj?.replace(/\D/g, '');
+
+            let successCount = 0;
+            const errorLogs: any[] = [];
+
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const cleanRow: any = {};
+
+                // Limpeza agressiva de chaves (Trim + Upper)
+                for (const key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+
+                try {
+                    // Validação de Segurança (CNPJ / Empresa)
+                    const rowCNPJ = String(cleanRow['CNPJ'] || '').replace(/\D/g, '');
+                    const rowEmpresa = String(cleanRow['EMPRESA'] || '').trim().toUpperCase();
+                    const clinicName = clinic?.name.trim().toUpperCase();
+
+                    // Se houver CNPJ na planilha e ele não bater com o da clínica, bloqueia (ponto 3.1)
+                    if (rowCNPJ && clinicCNPJ && rowCNPJ !== clinicCNPJ) {
+                        throw new Error(`Segurança: O CNPJ da linha (${rowCNPJ}) não coincide com o CNPJ da clínica (${clinicCNPJ}).`);
+                    }
+
+                    // Mapeamento de Status
+                    let status = 'PENDENTE';
+                    const statusRaw = String(cleanRow['STATUS'] || '').toUpperCase().trim();
+                    if (statusRaw === 'EFETUADO' || statusRaw === 'PAGO') status = 'PAGO';
+                    else if (statusRaw === 'A LANÇAR') status = 'PENDENTE';
+
+                    // Parse de Datas
+                    const dueDateRaw = cleanRow['VENCIMENTO'];
+                    const paymentDateRaw = cleanRow['DATA DO PAGAMENTO'];
+
+                    const parseDate = (val: any) => {
+                        if (!val) return null;
+                        const d = new Date(val);
+                        return isNaN(d.getTime()) ? null : d;
+                    };
+
+                    const dueDate = parseDate(dueDateRaw);
+                    if (!dueDate) throw new Error('Data de Vencimento inválida ou ausente.');
+
+                    const paymentDate = parseDate(paymentDateRaw);
+
+                    // Parse de Valor
+                    const parseCurrency = (val: any) => {
+                        if (typeof val === 'number') return val;
+                        if (!val || typeof val !== 'string') return 0;
+                        let clean = val.replace(/R\$\s?/, '').replace(/\./g, '').replace(',', '.').trim();
+                        const parsed = parseFloat(clean);
+                        return isNaN(parsed) ? 0 : parsed;
+                    };
+
+                    const amountRaw = cleanRow['VALOR (R$)'] || cleanRow['VALOR'] || 0;
+                    const amount = parseCurrency(amountRaw);
+                    if (amount <= 0) throw new Error('O valor da conta deve ser maior que zero.');
+
+                    // Criar Contas a Pagar
+                    await prisma.accountPayable.create({
+                        data: {
+                            clinicId,
+                            importBatchId: batch.id,
+                            description: String(cleanRow['DESCRIÇÃO'] || cleanRow['DESCRICAO'] || 'Importação Contas a Pagar').trim(),
+                            totalAmount: amount,
+                            status,
+                            dueDate,
+                            paymentDate,
+                            paymentMethod: String(cleanRow['TIPO DO PAGAMENTO'] || cleanRow['FORMA DE PAGAMENTO'] || 'Outros').trim(),
+                            expenseType: String(cleanRow['TIPO DE DESPESA'] || 'FIXA').trim().toUpperCase(),
+                            category: String(cleanRow['CLASSIFICAÇÃO'] || cleanRow['CLASSIFICACAO'] || 'Geral').trim(),
+                            payee: String(cleanRow['FAVORECIDO/BENEFICIÁRIO'] || cleanRow['FAVORECIDO'] || cleanRow['BENEFICIARIO'] || 'Não informado').trim(),
+                            notes: String(cleanRow['OBSERVAÇÃO NF - BOLETO'] || cleanRow['OBSERVACAO'] || '').trim(),
+                            costCenter: String(cleanRow['CLASSIFICAÇÃO'] || 'Operacional').trim(),
+                            costType: String(cleanRow['TIPO DE DESPESA'] || 'FIXA').trim().toUpperCase(),
+                        }
+                    });
+
+                    successCount++;
+                } catch (err: any) {
+                    errorLogs.push({
+                        importBatchId: batch.id,
+                        rowNumber: i + 1,
+                        rowData: row,
+                        errorMessage: err.message || 'Erro desconhecido ao processar linha'
+                    });
+                }
+            }
+
+            // 3. Registrar Log de Erros (se houver)
+            if (errorLogs.length > 0) {
+                await prisma.importErrorLog.createMany({ data: errorLogs });
+            }
+
+            // 4. Atualizar Contagem de Sucesso no Lote
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: successCount }
+            });
+
+            return res.json({
+                message: 'Processamento concluído',
+                totalRows: data.length,
+                successCount,
+                errorCount: errorLogs.length,
+                batchId: batch.id
+            });
+
+        } catch (error: any) {
+            console.error('Erro na importação de Contas a Pagar:', error);
+            return res.status(500).json({ message: 'Erro interno ao processar planilha', error: error.message });
+        }
+    }
 }

@@ -24,4 +24,7 @@ router.post('/transactions', upload.single('file'), ImportController.importTrans
 // Nova rota de importação financeira unificada (Billing, Pricing, Equipment)
 router.post('/finance', upload.single('file'), ImportController.importFinancialData);
 
+// Nova rota de importação de Contas a Pagar
+router.post('/payables', upload.single('file'), ImportController.importPayables);
+
 export default router;
