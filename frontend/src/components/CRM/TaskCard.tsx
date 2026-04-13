@@ -31,13 +31,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     .slice(0, 1);
 
   // Calcular a última visita (maior transactionDate)
-  const lastVisitDate = procedures.reduce((latest, proc) => {
-    const procDate = new Date(proc.transactionDate);
-    return procDate > latest ? procDate : latest;
-  }, new Date(procedures[0]?.transactionDate || task.createdAt));
+  const lastVisitDate = procedures.length > 0
+    ? new Date(procedures[0].transactionDate)
+    : new Date(task.createdAt);
 
   // A data principal do card para fins de "Atrasado" global é a mais antiga
-  const isOverdue = isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate));
+  const taskDueDate = new Date(task.dueDate);
+  const now = new Date();
+
+  // Se a última visita foi DEPOIS do vencimento da tarefa, ela não está tecnicamente "atrasada" 
+  // para este ciclo, mesmo que o banco de dados não tenha sido atualizado.
+  const isActuallyOverdue = isBefore(taskDueDate, now) && !isToday(taskDueDate) && isBefore(lastVisitDate, taskDueDate);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -113,13 +117,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         <div className="flex flex-wrap gap-2">
           {procedures.length > 0 ? (
             procedures.map((proc, idx) => {
-              const procDate = new Date(proc.dueDate || proc.transactionDate);
-              const procOverdue = isBefore(procDate, new Date()) && !isToday(procDate);
+              // Crucial: Usar transactionDate para o badge de "Última Visita"
+              const procDate = new Date(proc.transactionDate);
               return (
-                <div key={idx} className={`px-2.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 border ${procOverdue
-                  ? 'bg-rose-50 text-rose-600 border-rose-100'
-                  : 'bg-slate-50 text-slate-600 border-slate-100'
-                  }`}>
+                <div key={idx} className="px-2.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 border bg-slate-50 text-slate-600 border-slate-100">
                   <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
                   {proc.name}
                   <span className="opacity-50 font-bold lowercase">
@@ -143,9 +144,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
               <Clock size={12} className="text-slate-300" />
               <span>Última visita: {format(lastVisitDate, 'dd/MM/yyyy')}</span>
             </div>
-            <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-tighter ${isOverdue ? 'text-rose-500' : 'text-[#8A9A5B]'}`}>
-              {isOverdue ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
-              {isToday(new Date(task.dueDate)) ? 'Vence Hoje' : `Vence ${formatDistanceToNow(new Date(task.dueDate), { addSuffix: true, locale: ptBR })}`}
+            <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-tighter ${isActuallyOverdue ? 'text-rose-500' : 'text-[#8A9A5B]'}`}>
+              {isActuallyOverdue ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
+              {isActuallyOverdue
+                ? (isToday(taskDueDate) ? 'Vence Hoje' : `Vence ${formatDistanceToNow(taskDueDate, { addSuffix: true, locale: ptBR })}`)
+                : 'Aguardando Próximo Ciclo'
+              }
             </div>
           </div>
 
