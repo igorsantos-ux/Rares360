@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useMemo } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { coreApi } from '../../services/api';
 import { PatientSheet } from '../../components/Patients/PatientSheet';
+import { PatientFilterSheet } from '../../components/Patients/PatientFilterSheet';
 import { ImportPatientsModal } from '../../components/Patients/ImportPatientsModal';
 import {
     Users,
@@ -20,7 +21,8 @@ import {
     Medal,
     ChevronRight,
     Cake,
-    Mail
+    Mail,
+    Download
 } from 'lucide-react';
 
 const getClassificationConfig = (classification: string) => {
@@ -41,18 +43,33 @@ const getClassificationConfig = (classification: string) => {
 const PatientsPage = () => {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchParams] = useSearchParams();
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
 
+    // Calculate active filters count
+    const activeFiltersCount = useMemo(() => {
+        let count = 0;
+        const filterKeys = ['status', 'aniversario', 'ltvMin', 'ltvMax', 'lastVisit', 'origem'];
+        filterKeys.forEach(key => {
+            const val = searchParams.get(key);
+            if (val && val !== 'todos') count++;
+        });
+        return count;
+    }, [searchParams]);
+
     const { data, isLoading } = useQuery({
-        queryKey: ['patients'],
+        queryKey: ['patients', Object.fromEntries(searchParams.entries())],
         queryFn: async () => {
-            const response = await coreApi.getPatients();
+            const params = Object.fromEntries(searchParams.entries());
+            const response = await coreApi.getPatients(params);
             return response.data;
         }
     });
+
+    const [searchTerm, setSearchTerm] = useState('');
 
     const patients = data?.data || [];
     const summary = data?.summary || { totalPatients: 0, monthlyBirthdays: 0, averageClinicTicket: 0 };
@@ -73,6 +90,35 @@ const PatientsPage = () => {
         setIsSheetOpen(true);
     };
 
+    const handleExportCSV = () => {
+        if (!displayPatients.length) return;
+
+        const headers = ["Nome", "Celular", "E-mail", "Classificacao", "LTV", "Ultima Visita"];
+        const rows = displayPatients.map((p: any) => [
+            p.fullName,
+            p.phone || '',
+            p.email || '',
+            p.classification,
+            p.totalSpent,
+            p.lastVisit ? new Date(p.lastVisit).toLocaleDateString() : ''
+        ]);
+
+        const csvContent = [
+            headers.join(","),
+            ...rows.map((row: any[]) => row.join(","))
+        ].join("\n");
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", `pacientes_export_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     if (isLoading) {
         return (
             <div className="h-[60vh] w-full flex flex-col items-center justify-center gap-4 py-20">
@@ -91,14 +137,14 @@ const PatientsPage = () => {
                     <p className="text-slate-500 font-medium mt-1">Gestão inteligente e análise de LTV da base de clientes.</p>
                 </div>
                 <div className="flex gap-3">
-                    <button 
+                    <button
                         onClick={() => setIsImportModalOpen(true)}
                         className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-[#8A9A5B]/20 text-[#697D58] rounded-2xl font-bold text-sm shadow-sm hover:bg-[#8A9A5B]/5 transition-all w-fit"
                     >
                         <TrendingUp size={20} className="rotate-90" />
                         Importar Planilha
                     </button>
-                    <button 
+                    <button
                         onClick={handleNewPatient}
                         className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all w-fit"
                     >
@@ -148,9 +194,27 @@ const PatientsPage = () => {
                         />
                     </div>
                     <div className="flex gap-2">
-                        <button className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-all">
+                        <button
+                            onClick={() => setIsFilterSheetOpen(true)}
+                            className={`flex items-center gap-2 px-5 py-3 bg-white border rounded-2xl font-bold text-xs transition-all relative ${activeFiltersCount > 0
+                                ? 'border-[#8A9A5B] text-[#697D58] bg-[#8A9A5B]/5'
+                                : 'border-[#8A9A5B]/10 text-slate-600 hover:bg-slate-50'
+                                }`}
+                        >
                             <Filter size={16} />
                             Filtros Avançados
+                            {activeFiltersCount > 0 && (
+                                <span className="absolute -top-2 -right-2 w-5 h-5 bg-[#8A9A5B] text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black animate-in zoom-in duration-300">
+                                    {activeFiltersCount}
+                                </span>
+                            )}
+                        </button>
+                        <button
+                            onClick={handleExportCSV}
+                            className="flex items-center gap-2 px-5 py-3 bg-white border border-[#8A9A5B]/10 rounded-2xl font-bold text-xs text-slate-600 hover:bg-slate-50 transition-all"
+                        >
+                            <Download size={16} />
+                            Exportar CSV
                         </button>
                     </div>
                 </div>
@@ -177,7 +241,7 @@ const PatientsPage = () => {
                                 <h3 className="text-2xl font-black text-[#697D58]">Bem-vindo ao Patient Concierge</h3>
                                 <p className="text-slate-500 font-medium text-sm">Sua clínica ainda não possui pacientes cadastrados. Cadastre seu primeiro paciente para ativar a análise de **Rentabilidade em Tempo Real** e o **Prontuário Inteligente (PEP)**.</p>
                             </div>
-                            <button 
+                            <button
                                 onClick={handleNewPatient}
                                 className="group flex items-center gap-3 px-8 py-4 bg-[#8A9A5B] text-white rounded-[2rem] font-black text-sm shadow-2xl shadow-[#8A9A5B]/20 hover:scale-[1.05] active:scale-95 transition-all"
                             >
@@ -191,7 +255,7 @@ const PatientsPage = () => {
                                 {displayPatients.map((patient: any) => {
                                     const config = getClassificationConfig(patient.classification);
                                     return (
-                                        <tr key={patient.id} 
+                                        <tr key={patient.id}
                                             onClick={() => handleViewPEP(patient)}
                                             className="hover:bg-[#8A9A5B]/5 transition-colors group cursor-pointer"
                                         >
@@ -285,16 +349,21 @@ const PatientsPage = () => {
                 )}
             </div>
 
-            <PatientSheet 
-                isOpen={isSheetOpen} 
-                onClose={() => setIsSheetOpen(false)} 
+            <PatientFilterSheet
+                open={isFilterSheetOpen}
+                onClose={() => setIsFilterSheetOpen(false)}
+            />
+
+            <PatientSheet
+                isOpen={isSheetOpen}
+                onClose={() => setIsSheetOpen(false)}
                 onSave={() => queryClient.invalidateQueries({ queryKey: ['patients'] })}
                 patient={selectedPatient}
             />
 
-            <ImportPatientsModal 
-                isOpen={isImportModalOpen} 
-                onClose={() => setIsImportModalOpen(false)} 
+            <ImportPatientsModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
                 onSuccess={() => queryClient.invalidateQueries({ queryKey: ['patients'] })}
             />
         </div>

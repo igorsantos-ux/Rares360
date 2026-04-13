@@ -1,9 +1,11 @@
-import prisma from './lib/prisma.js';
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
 
-async function listAll() {
+async function listClinics() {
   const clinics = await prisma.clinic.findMany();
-  console.log('--- CLINICAS NO SISTEMA ---');
-  clinics.forEach(c => console.log(`ID: ${c.id} | NOME: ${c.name}`));
+  console.log('--- CLINICAS ---');
+  clinics.forEach(c => console.log(`- ${c.name} | ID: ${c.id}`));
+  await prisma.$disconnect();
 }
 
-listAll();
+listClinics();

@@ -225,6 +225,9 @@ model Patient {
   healthInsurance           String?
   leadSource                String?
   photoUrl                  String?
+  isActive                  Boolean              @default(true)
+  cachedLtv                 Float                @default(0)
+  lastVisit                 DateTime?
   createdAt                 DateTime             @default(now())
   clinicId                  String
   

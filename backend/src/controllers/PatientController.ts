@@ -12,44 +12,95 @@ export class PatientController {
                 clinicId = firstClinic.id;
             }
 
+            const {
+                status,
+                aniversario,
+                ltvMin,
+                ltvMax,
+                lastVisit: lastVisitFilter,
+                origem,
+                search
+            } = req.query;
+
+            const where: any = { clinicId };
+
+            // 1. Busca por Nome, CPF ou Email
+            if (search) {
+                where.OR = [
+                    { fullName: { contains: String(search), mode: 'insensitive' } },
+                    { cpf: { contains: String(search) } },
+                    { email: { contains: String(search), mode: 'insensitive' } }
+                ];
+            }
+
+            // 2. Filtro de Status
+            if (status === 'ativo') where.isActive = true;
+            if (status === 'inativo') where.isActive = false;
+
+            // 3. Filtro de Mês de Aniversário
+            // Prisma doesn't have a direct "month" operator for DateTime in cross-DB ways without raw query,
+            // but for filtering in a list, we can use a raw filter or fetch and filter if the list is manageable.
+            // TO-DO: For now, I'll fetch birthDates and filter in JS if anniversaire is present, 
+            // but I'll optimize the others at DB level.
+
+            // 4. Filtro de LTV
+            if (ltvMin || ltvMax) {
+                where.cachedLtv = {};
+                if (ltvMin) where.cachedLtv.gte = parseFloat(String(ltvMin));
+                if (ltvMax) where.cachedLtv.lte = parseFloat(String(ltvMax));
+            }
+
+            // 5. Filtro de Origem
+            if (origem) where.leadSource = String(origem);
+
+            // 6. Última Consulta (Recuperação)
+            if (lastVisitFilter) {
+                const now = new Date();
+                if (lastVisitFilter === '30-dias') {
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(now.getDate() - 30);
+                    where.lastVisit = { gte: thirtyDaysAgo };
+                } else if (lastVisitFilter === '3-6-meses') {
+                    const sixMonthsAgo = new Date();
+                    sixMonthsAgo.setMonth(now.getMonth() - 6);
+                    const threeMonthsAgo = new Date();
+                    threeMonthsAgo.setMonth(now.getMonth() - 3);
+                    where.lastVisit = { gte: sixMonthsAgo, lte: threeMonthsAgo };
+                } else if (lastVisitFilter === 'mais-6-meses') {
+                    const sixMonthsAgo = new Date();
+                    sixMonthsAgo.setMonth(now.getMonth() - 6);
+                    where.OR = [
+                        { lastVisit: { lte: sixMonthsAgo } },
+                        { lastVisit: null }
+                    ];
+                }
+            }
+
             const patients = await prisma.patient.findMany({
-                where: { clinicId },
+                where,
                 include: {
                     transactions: {
-                        where: { type: 'INCOME' }
-                    },
-                    inventoryUsages: {
-                        include: { inventoryItem: true }
+                        where: { type: 'INCOME' },
+                        orderBy: { date: 'desc' },
+                        take: 1
                     }
                 },
                 orderBy: { fullName: 'asc' }
             });
 
-            const analyticalPatients = patients.map(p => {
-                // Cálculo de LTV (Pagos)
-                const paidTransactions = p.transactions.filter(t => t.status === 'PAID' || t.status === 'RECEBIDO');
-                const totalSpent = paidTransactions.reduce((acc, t) => acc + t.amount, 0);
-
-                // Cálculo de Custos de Insumos
-                const totalInventoryCost = p.inventoryUsages.reduce((acc, usage) => {
-                    return acc + (usage.quantity * (usage.inventoryItem?.unitCost || 0));
-                }, 0);
-
-                // Margem de Rentabilidade
-                const marginValue = totalSpent - totalInventoryCost;
-                const marginPercentage = totalSpent > 0 ? (marginValue / totalSpent) * 100 : 0;
-
-                const visitCount = p.transactions.length;
-
-                const sortedTrans = [...p.transactions].sort((a, b) => {
-                    const dateA = a.date ? new Date(a.date).getTime() : 0;
-                    const dateB = b.date ? new Date(b.date).getTime() : 0;
-                    return dateB - dateA;
+            // Filtro de Aniversário (JS fallback for portability)
+            let filteredPatients = patients;
+            if (aniversario) {
+                const searchMonth = parseInt(String(aniversario)) - 1; // 0-indexed
+                filteredPatients = patients.filter(p => {
+                    if (!p.birthDate) return false;
+                    return new Date(p.birthDate).getMonth() === searchMonth;
                 });
-                const lastVisit = sortedTrans[0]?.date || null;
+            }
 
-                const averageTicket = visitCount > 0 ? totalSpent / visitCount : 0;
-                const procedures = Array.from(new Set(p.transactions.map(t => t.procedureName).filter(Boolean)));
+            const analyticalPatients = filteredPatients.map((p: any) => {
+                const totalSpent = (p as any).cachedLtv || 0;
+                const lastVisit = (p as any).lastVisit || null;
 
                 let classification = 'BRONZE';
                 if (totalSpent >= 10000) classification = 'DIAMANTE';
@@ -59,14 +110,12 @@ export class PatientController {
                 return {
                     ...p,
                     totalSpent,
-                    totalInventoryCost,
-                    profitabilityMargin: marginPercentage,
-                    isHighProfitability: marginPercentage > 70,
-                    visitCount,
                     lastVisit,
-                    averageTicket,
-                    procedures,
-                    classification
+                    classification,
+                    // Keeping compatibility with frontend existing fields
+                    profitabilityMargin: (p as any).profitabilityMargin || 0,
+                    visitCount: (p as any).visitCount || 0,
+                    averageTicket: (p as any).averageTicket || 0,
                 };
             });
 

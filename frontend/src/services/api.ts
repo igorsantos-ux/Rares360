@@ -101,7 +101,7 @@ export const receivablesApi = {
 };
 
 export const coreApi = {
-    getPatients: () => api.get('core/patients'),
+    getPatients: (params?: any) => api.get('core/patients', { params }),
     getPatientById: (id: string) => api.get(`core/patients/${id}`),
     getPatientDashboard: (id: string) => api.get(`core/patients/${id}/dashboard`),
     getPatientHistory: (id: string) => api.get(`core/patients/${id}/history`),
