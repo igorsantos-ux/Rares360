@@ -7,10 +7,10 @@ import PatientHeader from '../../components/Patients/PEP/PatientHeader';
 import PatientSidebar from '../../components/Patients/PEP/PatientSidebar';
 import EvolutionModule from '../../components/Patients/PEP/Modules/EvolutionModule';
 import { MainDataModule } from '../../components/Patients/PEP/Modules/MainDataModule';
+import { HistoryModule } from '../../components/Patients/PEP/Modules/HistoryModule';
 import {
     PrescriptionModule,
     InventoryModule,
-    HistoryModule,
     FinancialModule,
     DocumentsModule
 } from '../../components/Patients/PEP/Modules/Placeholders';

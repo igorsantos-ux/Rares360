@@ -222,6 +222,38 @@ export class PatientController {
         }
     }
 
+    static async getHistory(req: Request, res: Response) {
+        try {
+            const { id } = req.params;
+            const clinicId = (req as any).clinicId || (req as any).user?.clinicId;
+
+            const history = await prisma.transaction.findMany({
+                where: {
+                    patientId: id,
+                    clinicId,
+                    status: { in: ['PAID', 'RECEBIDO', 'PAGO'] }
+                },
+                orderBy: {
+                    date: 'desc'
+                },
+                select: {
+                    id: true,
+                    date: true,
+                    description: true,
+                    procedureName: true,
+                    amount: true,
+                    paymentMethod: true,
+                    category: true
+                }
+            });
+
+            res.json(history);
+        } catch (error: any) {
+            console.error('Error getting patient history:', error);
+            res.status(500).json({ error: 'Erro ao buscar histórico do paciente' });
+        }
+    }
+
     static async create(req: any, res: Response) {
         try {
             const clinicId = req.clinicId || (req as any).user?.clinicId;

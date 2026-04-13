@@ -104,6 +104,7 @@ export const coreApi = {
     getPatients: () => api.get('core/patients'),
     getPatientById: (id: string) => api.get(`core/patients/${id}`),
     getPatientDashboard: (id: string) => api.get(`core/patients/${id}/dashboard`),
+    getPatientHistory: (id: string) => api.get(`core/patients/${id}/history`),
     createPatient: (data: any) => api.post('core/patients', data),
     updatePatient: (id: string, data: any) => api.patch(`core/patients/${id}`, data),
     deletePatient: (id: string) => api.delete(`core/patients/${id}`),

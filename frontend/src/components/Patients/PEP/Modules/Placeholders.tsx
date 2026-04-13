@@ -16,11 +16,10 @@ const PlaceholderModule = ({ title, icon: Icon }: any) => (
     </div>
 );
 
-import { UserCheck, FileSignature, PackageSearch, History, WalletCards, Files } from 'lucide-react';
+import { UserCheck, FileSignature, PackageSearch, WalletCards, Files } from 'lucide-react';
 
 export const MainDataModule = ({ patient: _patient }: { patient: any }) => <PlaceholderModule title="Dados Cadastrais" icon={UserCheck} />;
 export const PrescriptionModule = ({ patient: _patient }: { patient: any }) => <PlaceholderModule title="Receituário Digital" icon={FileSignature} />;
 export const InventoryModule = ({ patient: _patient }: { patient: any }) => <PlaceholderModule title="Estoque & Insumos" icon={PackageSearch} />;
-export const HistoryModule = ({ patient: _patient }: { patient: any }) => <PlaceholderModule title="Histórico de Consultas" icon={History} />;
 export const FinancialModule = ({ patient: _patient }: { patient: any }) => <PlaceholderModule title="Propostas & Orçamentos" icon={WalletCards} />;
 export const DocumentsModule = ({ patient: _patient }: { patient: any }) => <PlaceholderModule title="Documentos & Exames" icon={Files} />;
