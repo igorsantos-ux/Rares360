@@ -335,14 +335,14 @@ export class ImportController {
                         return isNaN(parsed) ? 0 : parsed;
                     };
 
-                    const valorRaw = cleanRow['PRECO DE VENDA'] || cleanRow['PRECO- TABELA'] || cleanRow['PRECO'] || cleanRow['VALOR'] || cleanRow['VALOR TOTAL'] || 0;
+                    const valorRaw = cleanRow['PRECO DE VENDA'] || cleanRow['PRECO- TABELA'] || cleanRow['PRECO'] || cleanRow['VALOR'] || cleanRow['VALOR TOTAL'] || cleanRow['VALOR BRUTO'] || 0;
                     const valor = Math.abs(parseCurrency(valorRaw));
                     if (valor <= 0) continue;
 
-                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['LIQUIDO'] || valorRaw;
+                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['LIQUIDO'] || cleanRow['VALOR RECEBIDO'] || valorRaw;
                     const valorLiquido = Math.abs(parseCurrency(valorLiquidoRaw));
 
-                    const pacienteNome = (cleanRow['PACIENTE'] || cleanRow['NOME'] || cleanRow['CLIENTE'] || '').trim();
+                    const pacienteNome = (cleanRow['PACIENTE'] || cleanRow['NOME'] || cleanRow['CLIENTE'] || cleanRow['NOME DO PACIENTE'] || '').trim();
                     if (!pacienteNome) continue;
 
                     // 1. Vincular ou Criar Paciente antes da Transação
@@ -380,8 +380,8 @@ export class ImportController {
                         }
                     }
 
-                    const procedimento = cleanRow['PROCEDIMENTO'] || 'Procedimento não informado';
-                    const medico = cleanRow['MEDICO SOLICITANTE'] || cleanRow['MEDICO'] || '';
+                    const procedimento = cleanRow['PROCEDIMENTO'] || cleanRow['SERVICO'] || cleanRow['DESCRICAO'] || 'Procedimento não informado';
+                    const medico = cleanRow['MEDICO SOLICITANTE'] || cleanRow['MEDICO'] || cleanRow['DOUTOR'] || cleanRow['PROFISSIONAL'] || '';
                     const descricao = `${procedimento} - ${pacienteNome}${medico ? ` (${medico})` : ''}`;
 
                     validTransactions.push({
