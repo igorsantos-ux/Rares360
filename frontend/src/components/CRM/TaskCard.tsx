@@ -166,61 +166,61 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             transition={{ duration: 0.3, ease: 'easeInOut' }}
             className="border-t border-slate-100 overflow-hidden"
           >
-            {/* 1. Container Principal (Respiro inegociável p-6) */}
-            <div className="w-full bg-[#FAFBFC] p-6 flex flex-col md:flex-row justify-between items-start gap-6 border-b border-slate-100">
+            {/* 1. Container Principal (Otimizado para Kanban estreito) */}
+            <div className="w-full bg-[#FAFBFC] p-5 flex flex-col gap-5 rounded-b-[2.5rem]">
 
-              {/* 2. Bloco da Esquerda (Observações) */}
-              <div className="flex-1 flex flex-col gap-2 min-w-0">
-                <p className="text-sm font-semibold text-slate-700">
+              {/* 2. Bloco de Observações (Ocupa largura total) */}
+              <div className="space-y-2">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 ml-1">
                   Observações:
                 </p>
-                <p className="text-sm text-slate-500 leading-relaxed italic">
+                <p className="text-xs text-slate-500 font-medium leading-relaxed italic px-1">
                   {task.notes || "Nenhuma observação interna registrada."}
                 </p>
               </div>
 
-              {/* 3. Bloco da Direita (Botões de Ação) */}
-              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto md:justify-end shrink-0">
+              {/* 3. Bloco de Ações (Grid 2 colunas estável) */}
+              <div className="grid grid-cols-2 gap-2 w-full">
                 <a
                   href={generateWhatsAppLink()}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all transform active:scale-95 shadow-sm"
+                  className="flex items-center justify-center gap-2 px-2 py-3 bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/20 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-[#25D366] hover:text-white transition-all transform active:scale-95 shadow-sm"
                 >
                   <Phone size={14} />
                   WhatsApp
                 </a>
 
-                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl font-bold text-xs hover:border-[#8A9A5B] hover:text-[#8A9A5B] transition-all transform active:scale-95 shadow-sm group">
+                <button className="flex items-center justify-center gap-2 px-2 py-3 bg-white text-slate-600 border border-slate-200 rounded-xl font-black text-[9px] uppercase tracking-widest hover:border-[#8A9A5B] hover:text-[#8A9A5B] transition-all transform active:scale-95 shadow-sm group">
                   <Edit2 size={14} className="opacity-40 group-hover:opacity-100" />
                   Editar
                 </button>
 
-                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all transform active:scale-95 shadow-sm group">
+                <button className="flex items-center justify-center gap-2 px-2 py-3 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all transform active:scale-95 shadow-sm group">
                   <CheckCircle2 size={14} className="opacity-40 group-hover:opacity-100" />
                   Confirmar
                 </button>
 
-                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-rose-500 border border-slate-100 rounded-xl font-bold text-xs hover:bg-rose-500 hover:text-white transition-all transform active:scale-95 shadow-sm group">
+                <button className="flex items-center justify-center gap-2 px-2 py-3 bg-white text-rose-500 border border-slate-100 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all transform active:scale-95 shadow-sm group">
                   <XCircle size={14} className="opacity-40 group-hover:opacity-100" />
                   Cancelar
                 </button>
               </div>
-            </div>
 
-            {/* Rodapé Interno / Link Prontuário */}
-            <div className="px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-white/50 rounded-b-[2.5rem]">
-              <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                <Clock size={12} />
-                Criado {formatDistanceToNow(new Date(task.createdAt), { locale: ptBR, addSuffix: true })}
+              {/* 4. Rodapé Interno (Link e Info) */}
+              <div className="flex flex-col gap-3 pt-3 border-t border-slate-100/50">
+                <button
+                  onClick={() => navigate(`/patients/${task.patientId}`)}
+                  className="flex items-center justify-center gap-2 py-3 w-full text-[9px] font-black text-[#8A9A5B] uppercase tracking-widest bg-white border border-[#8A9A5B]/20 rounded-xl hover:bg-[#8A9A5B] hover:text-white transition-all group shadow-sm"
+                >
+                  Acessar Prontuário Completo
+                  <ExternalLink size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                </button>
+                <div className="flex items-center justify-center gap-2 text-[8px] text-slate-400 font-bold uppercase tracking-widest">
+                  <Clock size={10} />
+                  Criado há {formatDistanceToNow(new Date(task.createdAt), { locale: ptBR })}
+                </div>
               </div>
-              <button
-                onClick={() => navigate(`/patients/${task.patientId}`)}
-                className="flex items-center gap-2 text-[10px] font-black text-[#8A9A5B] uppercase tracking-widest hover:underline group"
-              >
-                Acessar Prontuário Completo
-                <ExternalLink size={12} className="group-hover:translate-x-0.5 transition-transform" />
-              </button>
             </div>
           </motion.div>
         )}
