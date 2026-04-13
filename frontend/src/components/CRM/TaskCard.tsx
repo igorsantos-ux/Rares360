@@ -29,8 +29,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   };
 
   const generateWhatsAppLink = () => {
-    const phone = task.patient?.phone?.replace(/\D/g, '');
-    const name = task.patient?.fullName?.split(' ')[0];
+    const patient = task.patient || {};
+    const phone = patient.phone?.replace(/\D/g, '') || '';
+    const name = patient.fullName?.split(' ')[0] || 'Paciente';
     const message = encodeURIComponent(`Olá ${name}, tudo bem? Esperamos que esteja tendo um ótimo dia! Notamos que faz algum tempo desde o seu último procedimento conosco. Gostaríamos de saber como você está e se deseja agendar um novo horário para mantermos seus resultados sempre impecáveis! ✨`);
     return `https://wa.me/55${phone}?text=${message}`;
   };
@@ -57,9 +58,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
               )}
             </div>
             <div>
-              <h4 className="font-black text-slate-700 text-sm leading-tight group-hover:text-[#8A9A5B] transition-colors">{task.patient?.fullName}</h4>
+              <h4 className="font-black text-slate-700 text-sm leading-tight group-hover:text-[#8A9A5B] transition-colors">
+                {task.patient?.fullName || 'Paciente não identificado'}
+              </h4>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[120px]">
-                {task.title.replace('Follow-up: ', '')}
+                {task.title?.replace('Follow-up: ', '') || 'Follow-up'}
               </p>
             </div>
           </div>

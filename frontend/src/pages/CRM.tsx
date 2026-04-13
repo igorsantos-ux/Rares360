@@ -44,10 +44,14 @@ const CRMPage = () => {
         }
     });
 
-    const filteredTasks = (tasks || []).filter((task: any) => 
-        task.patient?.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        task.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTasks = (tasks || []).filter((task: any) => {
+        const searchLower = searchTerm.toLowerCase();
+        const patientName = task.patient?.fullName || '';
+        const taskTitle = task.title || '';
+        
+        return patientName.toLowerCase().includes(searchLower) ||
+               taskTitle.toLowerCase().includes(searchLower);
+    });
 
     if (isLoading) {
         return (
