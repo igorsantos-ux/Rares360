@@ -27,6 +27,7 @@ import MyClinic from './pages/MyClinic';
 import DoctorsPage from './pages/DoctorsPage';
 import ImportHistory from './pages/ImportHistory';
 import Procedures from './pages/Procedures';
+import TeamPage from './pages/Management/Team';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -55,7 +56,7 @@ function App() {
     <div className={`flex min-h-screen ${isPublicPage ? 'bg-white' : 'bg-[#F0EAD6]'}`}>
       <Toaster position="top-right" />
       <OnboardingTour />
-      
+
       {/* Sidebar Fixa para Desktop */}
       {showHeader && (
         <div className="hidden lg:block w-72 shrink-0 h-screen sticky top-0">
@@ -65,7 +66,7 @@ function App() {
 
       <div className="flex-1 flex flex-col min-w-0">
         {showHeader && <Header />}
-        
+
         <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'p-0' : (showHeader ? (location.pathname.startsWith('/patients/') ? 'p-4 lg:p-6' : 'p-8 lg:p-12') : 'p-0')}`}>
           <div className={isPublicPage ? '' : (showHeader ? (location.pathname === '/agenda' || location.pathname.startsWith('/patients/') ? 'max-w-[98%] mx-auto' : 'max-w-7xl mx-auto') : '')}>
             <Routes>
@@ -85,11 +86,12 @@ function App() {
               </Route>
 
               {/* Clinic Private Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['CLINIC_ADMIN', 'USER']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'DOCTOR', 'RECEPTIONIST', 'CLINIC_ADMIN', 'USER']} />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/billing" element={<BillingPage />} />
                 <Route path="/patients" element={<PatientsPage />} />
                 <Route path="/patients/:id" element={<PatientPEP />} />
+                <Route path="/equipe-acessos" element={<TeamPage />} />
                 <Route path="/despesas-faturamento" element={<ExpensesBilling />} />
                 <Route path="/cash-flow" element={<CashFlow />} />
                 <Route path="/pendenciais" element={<PendenciaisPage />} />

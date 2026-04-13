@@ -5,7 +5,8 @@ interface User {
     id: string;
     name: string;
     email: string;
-    role: 'ADMIN_GLOBAL' | 'CLINIC_ADMIN' | 'USER';
+    role: 'ADMIN_GLOBAL' | 'CLINIC_ADMIN' | 'USER' | 'OWNER' | 'ADMIN' | 'DOCTOR' | 'RECEPTIONIST';
+    permissions?: any;
     clinicId?: string;
     hasSeenOnboarding?: boolean;
     clinic?: {
@@ -70,13 +71,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     return (
-        <AuthContext.Provider value={{ 
-            user, 
-            token, 
-            login, 
-            logout, 
-            completeOnboarding, 
-            loading 
+        <AuthContext.Provider value={{
+            user,
+            token,
+            login,
+            logout,
+            completeOnboarding,
+            loading
         }}>
             {children}
         </AuthContext.Provider>

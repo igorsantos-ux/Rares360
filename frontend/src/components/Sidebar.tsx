@@ -17,7 +17,8 @@ import {
     Calendar,
     ChevronDown,
     Stethoscope,
-    History
+    History,
+    Shield
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -48,32 +49,44 @@ const Sidebar = () => {
         ? Math.round(goals.reduce((acc: number, g: any) => acc + (Math.min(((g.current || g.achieved || 0) / g.target) * 100, 100)), 0) / goals.length)
         : 0;
 
+    const { user } = useAuth();
+
     const navItems = [
-        { label: "Principal", items: [
-            { icon: <LayoutDashboard size={20} />, label: "Painel Financeiro", path: "/dashboard" },
-            { icon: <CheckSquare size={20} />, label: "CRM / Tarefas", path: "/tasks", id: "tarefas-dia" },
-            { icon: <Calendar size={20} />, label: "Agenda", path: "/agenda", id: "agenda-inteligente" },
-            { icon: <LockIcon size={20} />, label: "Caixa", path: "/fechamento-caixa", id: "fechamento-caixa" },
-            { icon: <FileText size={20} />, label: "DRE", path: "/dre" },
-            { icon: <Activity size={20} />, label: "DFC", path: "/dfc" },
-        ]},
-        { label: "Financeiro", items: [
-            { icon: <BarChart3 size={20} />, label: "Faturamento", path: "/billing" },
-            { icon: <ArrowUpCircle size={20} />, label: "Contas a Receber (Pendências)", path: "/pendenciais" },
-            { icon: <ArrowDownCircle size={20} />, label: "Contas a Pagar", path: "/payables" },
-            { icon: <TrendingUp size={20} />, label: "Fluxo de Caixa", path: "/cash-flow" },
-        ]},
-        { label: "Gestão", items: [
-            { icon: <Calculator size={20} />, label: "Procedimentos", path: "/procedures" },
-            { icon: <TrendingUp size={20} />, label: "Precificação", path: "/pricing" },
-            { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
-            { icon: <Stethoscope size={20} />, label: "Médicos", path: "/medicos" },
-            { icon: <FileText size={20} />, label: "Minha Clínica", path: "/my-clinic" },
-            { icon: <Package size={20} />, label: "Estoque", path: "/inventory", id: "estoque-insumos" },
-            { icon: <Target size={20} />, label: "Metas", path: "/goals" },
-            { icon: <History size={20} />, label: "Importações", path: "/imports" },
-            { icon: <FolderOpen size={20} />, label: "Documentos", path: "/documents", id: "documentos-compliance" },
-        ]}
+        {
+            label: "Principal", items: [
+                { icon: <LayoutDashboard size={20} />, label: "Painel Financeiro", path: "/dashboard" },
+                { icon: <CheckSquare size={20} />, label: "CRM / Tarefas", path: "/tasks", id: "tarefas-dia" },
+                { icon: <Calendar size={20} />, label: "Agenda", path: "/agenda", id: "agenda-inteligente" },
+                { icon: <LockIcon size={20} />, label: "Caixa", path: "/fechamento-caixa", id: "fechamento-caixa" },
+                { icon: <FileText size={20} />, label: "DRE", path: "/dre" },
+                { icon: <Activity size={20} />, label: "DFC", path: "/dfc" },
+            ]
+        },
+        {
+            label: "Financeiro", items: [
+                { icon: <BarChart3 size={20} />, label: "Faturamento", path: "/billing" },
+                { icon: <ArrowUpCircle size={20} />, label: "Contas a Receber (Pendências)", path: "/pendenciais" },
+                { icon: <ArrowDownCircle size={20} />, label: "Contas a Pagar", path: "/payables" },
+                { icon: <TrendingUp size={20} />, label: "Fluxo de Caixa", path: "/cash-flow" },
+            ]
+        },
+        {
+            label: "Gestão", items: [
+                { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
+                { icon: <Calculator size={20} />, label: "Procedimentos", path: "/procedures" },
+                { icon: <TrendingUp size={20} />, label: "Precificação", path: "/pricing" },
+                { icon: <Package size={20} />, label: "Estoque", path: "/inventory", id: "estoque-insumos" },
+                { icon: <Target size={20} />, label: "Metas", path: "/goals" },
+                { icon: <History size={20} />, label: "Importações", path: "/imports" },
+                { icon: <FolderOpen size={20} />, label: "Documentos", path: "/documents", id: "documentos-compliance" },
+                { icon: <Stethoscope size={20} />, label: "Médicos", path: "/medicos" },
+                { icon: <FileText size={20} />, label: "Minha Clínica", path: "/my-clinic" },
+                // Apenas para OWNER ou ADMIN
+                ...(user?.role === 'OWNER' || user?.role === 'ADMIN' || user?.role === 'CLINIC_ADMIN' ? [
+                    { icon: <Shield size={20} />, label: "Equipe e Acessos", path: "/equipe-acessos" }
+                ] : []),
+            ]
+        }
     ];
 
     const [openSection, setOpenSection] = useState<string | null>(null);
@@ -81,7 +94,7 @@ const Sidebar = () => {
     // Efeito para abrir a seção correta inicialmente
     useEffect(() => {
         const currentPath = location.pathname;
-        const activeGroup = navItems.find(group => 
+        const activeGroup = navItems.find(group =>
             group.items.some(item => item.path === currentPath)
         );
         if (activeGroup) {
@@ -104,17 +117,17 @@ const Sidebar = () => {
                     const isOpen = openSection === group.label;
                     return (
                         <div key={group.label} className="space-y-1">
-                            <button 
+                            <button
                                 onClick={() => toggleSection(group.label)}
                                 className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-black text-[#8A9A5B] uppercase tracking-[0.2em] group transition-all duration-200 hover:bg-[#8A9A5B]/5 rounded-lg"
                             >
                                 <span className="opacity-60 group-hover:opacity-100 transition-opacity">{group.label}</span>
-                                <ChevronDown 
-                                    size={14} 
-                                    className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} opacity-40 group-hover:opacity-100`} 
+                                <ChevronDown
+                                    size={14}
+                                    className={`transition-transform duration-300 ${isOpen ? 'rotate-180' : ''} opacity-40 group-hover:opacity-100`}
                                 />
                             </button>
-                            
+
                             <AnimatePresence initial={false}>
                                 {isOpen && (
                                     <motion.div
@@ -173,7 +186,7 @@ const SidebarLink = ({ item, active }: { item: any; active: boolean }) => (
             }`}
     >
         {active && (
-            <motion.div 
+            <motion.div
                 layoutId="active-nav-indicator"
                 className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#697D58]"
                 initial={false}

@@ -97,7 +97,8 @@ model User {
   email             String            @unique
   password          String
   name              String
-  role              String
+  role              String            // Templates: OWNER, ADMIN, DOCTOR, RECEPTIONIST
+  permissions       Json?             // Granular access: { patients: "WRITE", finance: "NONE", etc }
   clinicId          String?
   createdAt         DateTime          @default(now())
   isActive          Boolean           @default(true)
