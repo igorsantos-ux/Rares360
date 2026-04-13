@@ -349,10 +349,12 @@ const PatientsPage = () => {
                 )}
             </div>
 
-            <PatientFilterSheet
-                open={isFilterSheetOpen}
-                onClose={() => setIsFilterSheetOpen(false)}
-            />
+            {isFilterSheetOpen && (
+                <PatientFilterSheet
+                    open={isFilterSheetOpen}
+                    onClose={() => setIsFilterSheetOpen(false)}
+                />
+            )}
 
             <PatientSheet
                 isOpen={isSheetOpen}
