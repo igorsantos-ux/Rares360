@@ -229,6 +229,13 @@ export const goalsApi = {
     delete: (id: string) => api.delete(`goals/${id}`),
 };
 
+export const managementApi = {
+    getUsers: () => api.get('management/users'),
+    createUser: (data: any) => api.post('management/users', data),
+    updateUser: (id: string, data: any) => api.put(`management/users/${id}`, data),
+    deleteUser: (id: string) => api.delete(`management/users/${id}`),
+};
+
 export const clinicApi = {
     getMe: () => api.get('clinic/me'),
     getAll: () => api.get('clinic/all'),

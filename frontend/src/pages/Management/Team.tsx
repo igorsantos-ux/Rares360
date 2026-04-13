@@ -1,18 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { coreApi } from '../../services/api';
+import { managementApi } from '../../services/api';
 import {
     Users,
     UserPlus,
     Shield,
     MoreHorizontal,
-    Check,
     X,
     Building2,
-    Mail,
     Lock,
-    Eye,
-    EyeOff
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -46,16 +42,16 @@ const TeamPage = () => {
         { id: 'management', label: 'Gestão de Equipe', icon: Shield, warning: 'Acesso Administrativo' }
     ];
 
-    const { data: users, isLoading } = useQuery({
+    const { data: users } = useQuery({
         queryKey: ['management-users'],
         queryFn: async () => {
-            const res = await coreApi.get('/management/users');
+            const res = await managementApi.getUsers();
             return res.data;
         }
     });
 
     const createUserMutation = useMutation({
-        mutationFn: (data: any) => coreApi.post('/management/users', data),
+        mutationFn: (data: any) => managementApi.createUser(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['management-users'] });
             toast.success('Novo integrante convidado com sucesso!');
@@ -65,7 +61,7 @@ const TeamPage = () => {
     });
 
     const updateUserMutation = useMutation({
-        mutationFn: (data: any) => coreApi.put(`/management/users/${data.id}`, data),
+        mutationFn: (data: any) => managementApi.updateUser(data.id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['management-users'] });
             toast.success('Permissões atualizadas!');
