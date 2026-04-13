@@ -297,6 +297,19 @@ export class PatientController {
     static async delete(req: any, res: Response) {
         try {
             const { id } = req.params;
+
+            // Check for financial records before deleting
+            const transactionCount = await prisma.transaction.count({
+                where: { patientId: id }
+            });
+
+            if (transactionCount > 0) {
+                return res.status(400).json({
+                    error: 'Não é possível excluir um paciente com histórico financeiro.',
+                    details: 'Este paciente possui faturas atreladas. Recomenda-se apenas desativar o cadastro.'
+                });
+            }
+
             await prisma.patient.delete({ where: { id } });
             res.json({ message: 'Paciente excluído com sucesso' });
         } catch (error: any) {

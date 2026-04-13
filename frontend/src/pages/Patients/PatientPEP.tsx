@@ -6,8 +6,8 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import PatientHeader from '../../components/Patients/PEP/PatientHeader';
 import PatientSidebar from '../../components/Patients/PEP/PatientSidebar';
 import EvolutionModule from '../../components/Patients/PEP/Modules/EvolutionModule';
+import { MainDataModule } from '../../components/Patients/PEP/Modules/MainDataModule';
 import {
-    MainDataModule,
     PrescriptionModule,
     InventoryModule,
     HistoryModule,
