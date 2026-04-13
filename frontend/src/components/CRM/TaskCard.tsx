@@ -26,22 +26,26 @@ interface TaskCardProps {
 export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = React.useState(false);
-  const procedures = ((task.pendingProcedures as any[]) || [])
+  // Filtrar apenas se tivermos procedimentos reais (não apenas o fallback do backend se ele existir)
+  const rawProcedures = (task.pendingProcedures as any[]) || [];
+
+  const procedures = rawProcedures
+    .filter(p => p.transactionDate && p.transactionDate !== task.createdAt) // Tentar filtrar o fallback do backend se possível
     .sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime())
     .slice(0, 1);
 
-  // Calcular a última visita (maior transactionDate)
-  const lastVisitDate = procedures.length > 0
-    ? new Date(procedures[0].transactionDate)
-    : new Date(task.createdAt);
+  // Se não houver procedimentos reais, tentamos usar o primeiro disponível mesmo assim, mas marcamos como fallback
+  const displayProcedure = procedures.length > 0 ? procedures[0] : (rawProcedures[0] || null);
+  const isFallbackDate = !procedures.length && displayProcedure;
 
-  // A data principal do card para fins de "Atrasado" global é a mais antiga
+  // Calcular a última visita (Apenas se houver um procedimento real)
+  const lastVisitDate = procedures.length > 0 ? new Date(procedures[0].transactionDate) : null;
+
+  // Vencimento da tarefa (O que define o Kanban)
   const taskDueDate = new Date(task.dueDate);
   const now = new Date();
 
-  // Se a última visita foi DEPOIS do vencimento da tarefa, ela não está tecnicamente "atrasada" 
-  // para este ciclo, mesmo que o banco de dados não tenha sido atualizado.
-  const isActuallyOverdue = isBefore(taskDueDate, now) && !isToday(taskDueDate) && isBefore(lastVisitDate, taskDueDate);
+  const isActuallyOverdue = isBefore(taskDueDate, now) && !isToday(taskDueDate) && (!lastVisitDate || isBefore(lastVisitDate, taskDueDate));
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -57,13 +61,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
     const phone = patient.phone?.replace(/\D/g, '') || '';
     const name = patient.fullName?.split(' ')[0] || 'Paciente';
 
-    let procedureList = '';
-    if (procedures.length > 0) {
-      procedureList = procedures.map(p => p.name).join(' e ');
-    } else {
-      procedureList = task.title?.replace('Follow-up: ', '') || 'seu procedimento';
-    }
-
+    let procedureList = displayProcedure?.name || task.title?.replace('Follow-up: ', '').replace('Oportunidade: ', '') || 'seu procedimento';
     const message = encodeURIComponent(`Olá ${name}, tudo bem? Esperamos que esteja tendo um ótimo dia! Notamos que faz algum tempo desde a sua última visita para ${procedureList}. Gostaríamos de saber como você está e se deseja agendar um novo horário para mantermos seus resultados sempre impecáveis! ✨`);
     return `https://wa.me/55${phone}?text=${message}`;
   };
@@ -113,26 +111,22 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           </button>
         </div>
 
-        {/* Lista de Procedimentos (Badges) */}
+        {/* Procedimento Principal (Badge única) */}
         <div className="flex flex-wrap gap-2">
-          {procedures.length > 0 ? (
-            procedures.map((proc, idx) => {
-              // Crucial: Usar transactionDate para o badge de "Última Visita"
-              const procDate = new Date(proc.transactionDate);
-              return (
-                <div key={idx} className="px-2.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 border bg-slate-50 text-slate-600 border-slate-100">
-                  <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
-                  {proc.name}
-                  <span className="opacity-50 font-bold lowercase">
-                    ({formatDistanceToNow(procDate, { addSuffix: true, locale: ptBR })})
-                  </span>
-                </div>
-              );
-            })
+          {displayProcedure ? (
+            <div className="px-2.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 border bg-slate-50 text-slate-600 border-slate-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
+              {displayProcedure.name}
+              {!isFallbackDate && (
+                <span className="opacity-50 font-bold lowercase">
+                  ({formatDistanceToNow(new Date(displayProcedure.transactionDate), { addSuffix: true, locale: ptBR })})
+                </span>
+              )}
+            </div>
           ) : (
             <div className="px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-500 text-[9px] font-black uppercase tracking-wider border border-slate-100 flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
-              {task.title?.replace('Follow-up: ', '')}
+              {task.title?.replace('Follow-up: ', '').replace('Oportunidade: ', '')}
             </div>
           )}
         </div>
@@ -142,7 +136,11 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
           <div className="space-y-1">
             <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-black uppercase tracking-widest">
               <Clock size={12} className="text-slate-300" />
-              <span>Última visita: {format(lastVisitDate, 'dd/MM/yyyy')}</span>
+              <span>
+                {lastVisitDate
+                  ? `Última visita: ${format(lastVisitDate, 'dd/MM/yyyy')}`
+                  : 'Sem registro de visita'}
+              </span>
             </div>
             <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-tighter ${isActuallyOverdue ? 'text-rose-500' : 'text-[#8A9A5B]'}`}>
               {isActuallyOverdue ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
