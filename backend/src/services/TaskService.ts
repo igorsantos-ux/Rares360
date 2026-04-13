@@ -62,6 +62,7 @@ export class TaskService {
         transactionDate: Date
     }) {
         const { patientId, procedureName, transactionDate } = data;
+        const DEFAULT_FOLLOWUP_DAYS = 60; // Padrão sugerido para quando não há config específica
 
         // 1. Buscar o procedimento no catálogo para ver se tem followUpDays
         const procedure = await prisma.procedure.findFirst({
@@ -74,35 +75,39 @@ export class TaskService {
             }
         });
 
-        if (!procedure || !procedure.followUpDays || procedure.followUpDays <= 0) {
-            return null;
-        }
+        // Determinar dias de retorno (prioridade: Procedimento > Padrão 60 dias)
+        const daysToReturn = (procedure && procedure.followUpDays && procedure.followUpDays > 0) 
+            ? procedure.followUpDays 
+            : DEFAULT_FOLLOWUP_DAYS;
 
         // 2. Calcular data de vencimento
-        const dueDate = addDays(new Date(transactionDate), procedure.followUpDays);
+        const dueDate = addDays(new Date(transactionDate), daysToReturn);
 
         // 3. Criar a tarefa se não existir uma idêntica pendente
+        const taskTitle = `Follow-up: ${procedureName}`;
         const existingTask = await prisma.task.findFirst({
             where: {
                 clinicId,
                 patientId,
-                title: `Follow-up: ${procedure.name}`,
+                title: taskTitle,
                 status: { in: ['TODO', 'IN_PROGRESS'] }
             }
         });
 
         if (existingTask) return null;
 
+        console.log(`DEBUG: Criando tarefa de CRM para ${procedureName} com retorno em ${daysToReturn} dias.`);
+
         return await prisma.task.create({
             data: {
                 clinicId,
                 patientId,
-                title: `Follow-up: ${procedure.name}`,
-                description: `Retorno automático baseado no procedimento realizado em ${transactionDate.toLocaleDateString('pt-BR')}.`,
+                title: taskTitle,
+                description: `Retorno automático baseado no procedimento "${procedureName}" realizado em ${new Date(transactionDate).toLocaleDateString('pt-BR')}.`,
                 dueDate,
                 status: 'TODO',
                 type: 'FOLLOW_UP',
-                priority: 'MEDIUM'
+                priority: (daysToReturn <= 30) ? 'HIGH' : 'MEDIUM'
             }
         });
     }

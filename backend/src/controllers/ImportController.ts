@@ -407,12 +407,24 @@ export class ImportController {
                     for (const t of validTransactions) {
                         try {
                             if (t.patientName && t.procedureName) {
-                                const patient = await prisma.patient.findFirst({
+                                let patient = await prisma.patient.findFirst({
                                     where: { 
                                         clinicId,
                                         fullName: { equals: t.patientName, mode: 'insensitive' }
                                     }
                                 });
+
+                                // Se o paciente não existir, criamos ele automaticamente
+                                if (!patient) {
+                                    console.log(`DEBUG: Criando paciente novo durante importação: ${t.patientName}`);
+                                    patient = await prisma.patient.create({
+                                        data: {
+                                            fullName: t.patientName,
+                                            clinicId,
+                                            status: 'ACTIVE'
+                                        }
+                                    });
+                                }
 
                                 if (patient) {
                                     await TaskService.triggerFollowUp(clinicId, {
