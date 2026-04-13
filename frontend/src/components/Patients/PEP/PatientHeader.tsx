@@ -3,29 +3,29 @@ import { differenceInYears } from 'date-fns';
 
 const PatientHeader = ({ patient }: { patient: any }) => {
     const age = patient.birthDate ? differenceInYears(new Date(), new Date(patient.birthDate)) : 'N/A';
-    
+
     return (
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-            {/* Perfil Principal */}
-            <div className="flex items-center gap-6">
-                <div className="w-24 h-24 bg-[#F5F5DC] border-2 border-[#8A9A5B]/30 rounded-full flex items-center justify-center p-1 shadow-lg overflow-hidden">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-6 w-full">
+            {/* Perfil Principal - Lado Esquerdo */}
+            <div className="flex items-center gap-6 flex-1">
+                <div className="w-20 h-20 bg-[#F5F5DC] border-2 border-[#8A9A5B]/30 rounded-full flex items-center justify-center p-1 shadow-md overflow-hidden shrink-0">
                     {patient.photoUrl ? (
                         <img src={patient.photoUrl} alt="" className="w-full h-full object-cover rounded-full" />
                     ) : (
-                        <User size={40} className="text-[#8A9A5B]" />
+                        <User size={32} className="text-[#8A9A5B]" />
                     )}
                 </div>
-                <div className="space-y-1">
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-3xl font-black text-[#697D58] tracking-tight truncate max-w-md">{patient.fullName}</h1>
+                <div className="space-y-1.5 min-w-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <h1 className="text-2xl font-black text-[#697D58] tracking-tight truncate">{patient.fullName}</h1>
                         {patient.analytics?.isHighProfitability && (
-                            <span className="px-3 py-1 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1.5 animate-pulse">
+                            <span className="px-3 py-0.5 bg-amber-50 text-amber-600 border border-amber-200 rounded-full text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-sm">
                                 <Activity size={10} />
-                                Paciente de Alta Rentabilidade
+                                VIP
                             </span>
                         )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-slate-500 font-bold">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500 font-bold">
                         <div className="flex items-center gap-1.5">
                             <CalendarDays size={14} className="text-[#8A9A5B]" />
                             {age} anos
@@ -34,7 +34,7 @@ const PatientHeader = ({ patient }: { patient: any }) => {
                             <CreditCard size={14} className="text-[#8A9A5B]" />
                             {patient.cpf || 'CPF não informado'}
                         </div>
-                        <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-50 rounded-lg border border-slate-100 italic">
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-50 rounded-lg border border-slate-100">
                             <Shield size={14} className="text-blue-500" />
                             {patient.insurance || 'Particular'}
                         </div>
@@ -42,19 +42,19 @@ const PatientHeader = ({ patient }: { patient: any }) => {
                 </div>
             </div>
 
-            {/* Ações Rápidas */}
-            <div className="flex flex-wrap items-center gap-3">
-                <button className="flex items-center gap-2 px-5 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-lg shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all outline-none">
-                    <Plus size={18} />
-                    Nova Evolução
-                </button>
-                <button className="flex items-center gap-2 px-5 py-3 bg-white border-2 border-[#8A9A5B]/10 text-[#8A9A5B] rounded-2xl font-bold text-sm hover:bg-[#F5F5DC]/50 transition-all shadow-sm">
-                    <FileText size={18} />
+            {/* Ações Rápidas - Lado Direito */}
+            <div className="flex flex-wrap items-center justify-end gap-3 shrink-0">
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-white border-2 border-[#8A9A5B]/10 text-[#8A9A5B] rounded-xl font-bold text-xs hover:bg-[#F5F5DC]/50 transition-all shadow-sm">
+                    <FileText size={16} />
                     + Receita
                 </button>
-                <button className="flex items-center gap-2 px-5 py-3 bg-[#697D58] text-white rounded-2xl font-bold text-sm shadow-lg shadow-[#697D58]/20 hover:scale-[1.02] active:scale-95 transition-all outline-none">
-                    <Syringe size={18} />
+                <button className="flex items-center gap-2 px-4 py-2.5 bg-[#697D58] text-white rounded-xl font-bold text-xs shadow-lg shadow-[#697D58]/20 hover:scale-[1.02] active:scale-95 transition-all outline-none">
+                    <Syringe size={16} />
                     Reg. Procedimento
+                </button>
+                <button className="flex items-center gap-2 px-5 py-3 bg-[#8A9A5B] text-white rounded-xl font-black text-xs uppercase tracking-widest shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all outline-none">
+                    <Plus size={18} />
+                    Nova Evolução
                 </button>
             </div>
         </div>
