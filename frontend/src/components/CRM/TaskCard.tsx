@@ -166,55 +166,67 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="border-t border-slate-50 bg-slate-50/50"
+            className="border-t border-slate-100 bg-[#F8F9FA] rounded-b-[2.5rem]"
           >
-            <div className="p-6 space-y-6">
+            <div className="p-8 space-y-8">
               {/* Grid de Detalhes */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações Internas</p>
-                  <div className="p-4 bg-white rounded-2xl border border-slate-100 text-xs text-slate-500 font-medium leading-relaxed italic shadow-sm">
-                    {task.notes || "Nenhum detalhe adicional registrado para este follow-up. Paciente aguardando contato estratégico."}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações do Agendamento</p>
+                  <div className="p-5 bg-white rounded-3xl border border-slate-100 text-[13px] text-slate-600 font-medium leading-relaxed italic shadow-sm min-h-[100px]">
+                    {task.notes || "Nenhuma observação interna registrada. Paciente aguardando contato para acompanhamento de resultados."}
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ações Rápidas</p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-[#8A9A5B] hover:text-[#8A9A5B] transition-all group">
-                      <Edit2 size={14} className="opacity-40 group-hover:opacity-100" />
-                      Editar
-                    </button>
+                  <div className="flex flex-wrap items-center gap-3">
                     <a
                       href={generateWhatsAppLink()}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center justify-center gap-2 p-3 bg-[#25D366]/10 border border-[#25D366]/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#128C7E] hover:bg-[#25D366] hover:text-white transition-all"
+                      className="flex items-center justify-center gap-2 px-5 py-3 bg-[#25D366]/10 border border-[#25D366]/20 rounded-2xl text-[11px] font-black uppercase tracking-widest text-[#128C7E] hover:bg-[#25D366] hover:text-white transition-all shadow-sm active:scale-95"
                     >
-                      <MessageSquare size={14} />
+                      <MessageSquare size={16} />
                       WhatsApp
                     </a>
-                    <button className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all group">
-                      <CheckCircle2 size={14} className="opacity-40 group-hover:opacity-100" />
+
+                    <button className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest text-slate-600 hover:border-[#8A9A5B] hover:text-[#8A9A5B] transition-all shadow-sm active:scale-95 group">
+                      <Edit2 size={16} className="opacity-40 group-hover:opacity-100" />
+                      Editar
+                    </button>
+
+                    <button className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all shadow-sm active:scale-95 group">
+                      <CheckCircle2 size={16} className="opacity-40 group-hover:opacity-100" />
                       Confirmar
                     </button>
-                    <button className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all group">
-                      <XCircle size={14} className="opacity-40 group-hover:opacity-100" />
+
+                    <button className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all shadow-sm active:scale-95 group">
+                      <XCircle size={16} className="opacity-40 group-hover:opacity-100" />
                       Cancelar
+                    </button>
+                  </div>
+
+                  <div className="pt-2">
+                    <button className="text-[10px] font-black text-slate-400 hover:text-[#8A9A5B] uppercase tracking-widest flex items-center gap-2 transition-colors">
+                      <ExternalLink size={12} />
+                      Ver Prontuário Completo
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Status Global */}
-              <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-dashed border-slate-200">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full bg-amber-400 animate-pulse`} />
-                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Aguardando Resposta</span>
+              {/* Status Global / Linha do Tempo */}
+              <div className="flex items-center justify-between p-5 bg-white rounded-3xl border border-dashed border-slate-200 shadow-inner">
+                <div className="flex items-center gap-4">
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse ring-4 ring-amber-100" />
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Aguardando Resposta</p>
+                    <p className="text-[9px] font-bold text-slate-400">Tarefa criada há {formatDistanceToNow(new Date(task.createdAt), { locale: ptBR })}</p>
+                  </div>
                 </div>
-                <button className="text-[10px] font-black text-[#8A9A5B] uppercase tracking-widest hover:underline flex items-center gap-1">
-                  Ver Histórico Completo
-                  <ArrowRight size={12} />
+                <button className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-[#8A9A5B] hover:text-white transition-all shadow-sm group">
+                  <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                 </button>
               </div>
             </div>
