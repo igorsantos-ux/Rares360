@@ -1,12 +1,12 @@
 import React from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { TaskCard } from './TaskCard';
-import { 
-    Phone, 
-    MessageCircle, 
-    CheckCircle2, 
-    XCircle,
-    LayoutDashboard
+import {
+  Phone,
+  MessageCircle,
+  CheckCircle2,
+  XCircle,
+  LayoutDashboard
 } from 'lucide-react';
 
 interface KanbanBoardProps {
@@ -59,12 +59,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskMove }) =
                 <div
                   {...provided.droppableProps}
                   ref={provided.innerRef}
-                  className={`flex-1 space-y-4 min-h-[200px] transition-colors rounded-3xl ${
-                    snapshot.isDraggingOver ? 'bg-white/40' : ''
-                  }`}
+                  className={`flex-1 space-y-4 min-h-[200px] transition-colors rounded-3xl ${snapshot.isDraggingOver ? 'bg-white/40' : ''
+                    }`}
                 >
                   {getTasksByStatus(column.id).map((task, index) => (
-                    <Draggable key={task.id} draggableId={task.id} index={index}>
+                    <Draggable key={task.ids.join(',')} draggableId={task.ids.join(',')} index={index}>
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
@@ -72,20 +71,20 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onTaskMove }) =
                           {...provided.dragHandleProps}
                           className={`${snapshot.isDragging ? 'rotate-3 scale-105' : ''} transition-transform`}
                         >
-                          <TaskCard 
-                            task={task} 
-                            onStatusChange={(status) => onTaskMove(task.id, status)} 
+                          <TaskCard
+                            task={task}
+                            onStatusChange={(status) => onTaskMove(task.ids.join(','), status)}
                           />
                         </div>
                       )}
                     </Draggable>
                   ))}
                   {provided.placeholder}
-                  
+
                   {getTasksByStatus(column.id).length === 0 && !snapshot.isDraggingOver && (
                     <div className="h-32 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center opacity-40">
-                       <LayoutDashboard size={24} className="text-slate-300 mb-2" />
-                       <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 text-center px-4">Arraste para cá para mudar o status</span>
+                      <LayoutDashboard size={24} className="text-slate-300 mb-2" />
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 text-center px-4">Arraste para cá para mudar o status</span>
                     </div>
                   )}
                 </div>

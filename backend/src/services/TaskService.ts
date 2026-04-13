@@ -27,11 +27,10 @@ export class TaskService {
     }
 
     static async getCRMTasks(clinicId: string) {
-        // Puxar tarefas do CRM (Follow-up) da clínica
-        // Agora as tarefas já vêm consolidadas por paciente (1 Task por paciente aberta)
-        return await prisma.task.findMany({
+        const rawTasks = await prisma.task.findMany({
             where: {
                 clinicId,
+                status: { in: ['TODO', 'IN_PROGRESS'] } // Apenas abertas no Kanban
             },
             include: {
                 patient: {
@@ -42,14 +41,55 @@ export class TaskService {
                     }
                 }
             },
-            orderBy: { dueDate: 'asc' }, // Ordenação por vencimento (o mais antigo/atrasado primeiro)
-            take: 500
+            orderBy: { dueDate: 'asc' }
         });
+
+        // Agrupar por patientId
+        const consolidatedMap = new Map<string, any>();
+
+        for (const task of rawTasks) {
+            const patientId = task.patientId;
+
+            if (consolidatedMap.has(patientId)) {
+                const existing = consolidatedMap.get(patientId);
+
+                // Mesclar procedimentos
+                const taskProcs = (task.pendingProcedures as any[]) || [
+                    { name: task.title.replace('Follow-up: ', '').replace('Oportunidade: ', ''), dueDate: task.dueDate, transactionDate: task.createdAt }
+                ];
+
+                existing.pendingProcedures = [...existing.pendingProcedures, ...taskProcs];
+
+                // Manter a data de vencimento mais antiga como a principal do card
+                if (new Date(task.dueDate) < new Date(existing.dueDate)) {
+                    existing.dueDate = task.dueDate;
+                }
+
+                // Concatenar IDs para poder atualizar todos quando mover o card
+                existing.ids = [...existing.ids, task.id];
+            } else {
+                const pendingProcedures = (task.pendingProcedures as any[]) || [
+                    { name: task.title.replace('Follow-up: ', '').replace('Oportunidade: ', ''), dueDate: task.dueDate, transactionDate: task.createdAt }
+                ];
+
+                consolidatedMap.set(patientId, {
+                    ...task,
+                    ids: [task.id],
+                    pendingProcedures
+                });
+            }
+        }
+
+        return Array.from(consolidatedMap.values());
     }
 
-    static async updateTaskStatus(clinicId: string, taskId: string, status: string) {
-        return await prisma.task.update({
-            where: { id: taskId, clinicId },
+    static async updateTaskStatus(clinicId: string, idOrIds: string, status: string) {
+        const ids = idOrIds.split(',');
+        return await prisma.task.updateMany({
+            where: {
+                id: { in: ids },
+                clinicId
+            },
             data: {
                 status,
                 updatedAt: new Date()
@@ -143,9 +183,13 @@ export class TaskService {
         });
     }
 
-    static async completeTask(clinicId: string, taskId: string) {
-        return await prisma.task.update({
-            where: { id: taskId, clinicId },
+    static async completeTask(clinicId: string, idOrIds: string) {
+        const ids = idOrIds.split(',');
+        return await prisma.task.updateMany({
+            where: {
+                id: { in: ids },
+                clinicId
+            },
             data: { status: 'DONE' }
         });
     }

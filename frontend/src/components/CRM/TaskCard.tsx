@@ -7,7 +7,7 @@ import {
   User,
   ArrowRight
 } from 'lucide-react';
-import { formatDistanceToNow, isBefore, isToday } from 'date-fns';
+import { format, formatDistanceToNow, isBefore, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { motion } from 'framer-motion';
 
@@ -18,6 +18,12 @@ interface TaskCardProps {
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const procedures = (task.pendingProcedures as any[]) || [];
+
+  // Calcular a última visita (maior transactionDate)
+  const lastVisitDate = procedures.reduce((latest, proc) => {
+    const procDate = new Date(proc.transactionDate);
+    return procDate > latest ? procDate : latest;
+  }, new Date(procedures[0]?.transactionDate || task.createdAt));
 
   // A data principal do card para fins de "Atrasado" global é a mais antiga
   const isOverdue = isBefore(new Date(task.dueDate), new Date()) && !isToday(new Date(task.dueDate));
@@ -90,8 +96,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
               const procOverdue = isBefore(procDate, new Date()) && !isToday(procDate);
               return (
                 <div key={idx} className={`px-2 py-1 rounded-lg text-[9px] font-bold flex items-center gap-1 border ${procOverdue
-                    ? 'bg-rose-50 text-rose-600 border-rose-100'
-                    : 'bg-slate-50 text-slate-600 border-slate-100'
+                  ? 'bg-rose-50 text-rose-600 border-rose-100'
+                  : 'bg-slate-50 text-slate-600 border-slate-100'
                   }`}>
                   {proc.name}
                   <span className="opacity-60 font-medium">
@@ -108,17 +114,29 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         </div>
 
         {/* Rodapé do Card */}
-        <div className="flex items-center justify-between pt-1 border-t border-slate-50">
-          <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider ${isOverdue ? 'text-rose-600' : 'text-slate-400'
-            }`}>
-            {isOverdue ? <AlertCircle size={12} /> : <Clock size={12} />}
-            {isToday(new Date(task.dueDate)) ? 'Hoje' : formatDistanceToNow(new Date(task.dueDate), { addSuffix: true, locale: ptBR })}
+        <div className="pt-2 border-t border-slate-50 space-y-2">
+          <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            <div className="flex items-center gap-1">
+              <Clock size={12} />
+              <span>Última visita: {format(lastVisitDate, 'dd/MM/yyyy')}</span>
+            </div>
+            <div className={`flex items-center gap-1 ${isOverdue ? 'text-rose-600' : 'text-slate-500'}`}>
+              {isOverdue ? <AlertCircle size={12} /> : null}
+              {isToday(new Date(task.dueDate)) ? 'Hoje' : formatDistanceToNow(new Date(task.dueDate), { addSuffix: true, locale: ptBR })}
+            </div>
           </div>
 
-          <div className="flex -space-x-2">
-            <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-400">
-              {task.assignedTo?.substring(0, 2).toUpperCase() || <User size={10} />}
+          <div className="flex items-center justify-between">
+            <div className="flex -space-x-2">
+              <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-400">
+                {task.assignedTo?.substring(0, 2).toUpperCase() || <User size={10} />}
+              </div>
             </div>
+            {isOverdue && (
+              <span className="text-[9px] font-black text-rose-400 uppercase tracking-tighter animate-pulse">
+                Atrasado
+              </span>
+            )}
           </div>
         </div>
 
