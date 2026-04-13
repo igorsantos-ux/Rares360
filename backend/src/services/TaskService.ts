@@ -27,8 +27,8 @@ export class TaskService {
     }
 
     static async getCRMTasks(clinicId: string) {
-        // Puxar todas as tarefas do CRM (Follow-up) da clínica
-        // Removido filtro de data para garantir visibilidade de tarefas pendentes antigas
+        // Puxar tarefas do CRM (Follow-up) da clínica
+        // Adicionado limite de 500 para evitar travamento do browser com volume massivo
         return await prisma.task.findMany({
             where: {
                 clinicId,
@@ -42,7 +42,8 @@ export class TaskService {
                     }
                 }
             },
-            orderBy: { dueDate: 'asc' }
+            orderBy: { dueDate: 'asc' },
+            take: 500
         });
     }
 
