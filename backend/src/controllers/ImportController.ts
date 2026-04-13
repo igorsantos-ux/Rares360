@@ -317,11 +317,14 @@ export class ImportController {
                 const transactionsToCreate = data.map((row: any) => {
                     const cleanRow: any = {};
                     for (const key in row) {
-                        cleanRow[key.trim().toUpperCase()] = row[key];
+                        // Normalização agressiva de cabeçalhos
+                        const normalizedKey = normalizeKey(key);
+                        cleanRow[normalizedKey] = row[key];
                     }
+                    
                     // Log das chaves encontradas para depuração (apenas na primeira linha)
                     if (data.indexOf(row) === 0) {
-                        console.log('DEBUG: Chaves da planilha (norm):', Object.keys(cleanRow));
+                        console.log('DEBUG: Chaves da planilha (final-norm):', Object.keys(cleanRow));
                     }
 
                     // Helper para parse de valores monetários BR/US
@@ -329,14 +332,10 @@ export class ImportController {
                         if (typeof val === 'number') return val;
                         if (!val || typeof val !== 'string') return 0;
                         
-                        // Remover R$ e espaços
                         let clean = val.replace(/R\$\s?/, '').trim();
-                        
-                        // Se tiver vírgula e ponto (ex: 1.234,56), remover o ponto e trocar vírgula por ponto
                         if (clean.includes(',') && clean.includes('.')) {
                             clean = clean.replace(/\./g, '').replace(',', '.');
                         } 
-                        // Se tiver apenas vírgula (ex: 1234,56), trocar por ponto
                         else if (clean.includes(',')) {
                             clean = clean.replace(',', '.');
                         }
@@ -345,14 +344,14 @@ export class ImportController {
                         return isNaN(parsed) ? 0 : parsed;
                     };
 
-                    const valorRaw = cleanRow['PREÇO DE VENDA'] || cleanRow['PREÇO- TABELA'] || cleanRow['PREÇO'] || cleanRow['VALOR'] || 0;
+                    const valorRaw = cleanRow['PRECO DE VENDA'] || cleanRow['PRECO- TABELA'] || cleanRow['PRECO'] || cleanRow['VALOR'] || cleanRow['VALOR TOTAL'] || 0;
                     const valor = Math.abs(parseCurrency(valorRaw));
                     
-                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['VALOR LÍQUIDO'] || cleanRow['LIQUIDO'] || valorRaw;
+                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['LIQUIDO'] || valorRaw;
                     const valorLiquido = Math.abs(parseCurrency(valorLiquidoRaw));
 
                     let date = new Date();
-                    const dataRaw = cleanRow['DATA DA VENDA'];
+                    const dataRaw = cleanRow['DATA DA VENDA'] || cleanRow['DATA'] || cleanRow['DATA PROCEDIMENTO'];
                     if (dataRaw) {
                         if (typeof dataRaw === 'number') {
                             date = new Date(Math.round((dataRaw - 25569) * 86400 * 1000));
@@ -362,9 +361,9 @@ export class ImportController {
                         }
                     }
 
-                    const procedimento = cleanRow['PROCEDIMENTO'] || cleanRow['PROCEDIMENTO '] || 'Procedimento não informado';
-                    const medico = cleanRow['MEDICO SOLICITANTE'] || cleanRow['MÉDICO SOLICITANTE'] || '';
-                    const paciente = cleanRow['PACIENTE'] || '';
+                    const procedimento = cleanRow['PROCEDIMENTO'] || 'Procedimento não informado';
+                    const medico = cleanRow['MEDICO SOLICITANTE'] || cleanRow['MEDICO'] || '';
+                    const paciente = cleanRow['PACIENTE'] || cleanRow['NOME'] || cleanRow['CLIENTE'] || '';
                     const descricao = `${procedimento}${paciente ? ` - ${paciente}` : ''}${medico ? ` (${medico})` : ''}`;
 
                     return {
@@ -374,11 +373,11 @@ export class ImportController {
                         type: 'INCOME',
                         status: 'PAID',
                         category: cleanRow['TIPO'] || 'Faturamento',
-                        paymentMethod: cleanRow['FORMA DE PAGAMENTO'] || 'Outros',
+                        paymentMethod: cleanRow['FORMA DE PAGAMENTO'] || cleanRow['PAGAMENTO'] || 'Outros',
                         centerOfCost: 'Operacional',
                         procedureName: procedimento,
                         doctorName: medico,
-                        patientName: paciente, // Facilitar trigger pós-importação
+                        patientName: paciente,
                         date: date,
                         clinicId: clinicId
                     };
@@ -398,12 +397,16 @@ export class ImportController {
                         data: { recordCount: resultCount }
                     });
 
+                    // Log informativo das datas importadas
+                    const dates = validTransactions.map(t => t.date.getTime());
+                    const minDate = new Date(Math.min(...dates));
+                    const maxDate = new Date(Math.max(...dates));
+                    console.log(`SUCCESS: Importação concluída. ${resultCount} transações salvas. Range de datas: ${minDate.toLocaleDateString()} até ${maxDate.toLocaleDateString()}`);
+
                     // GATILHO CRM: Tenta gerar tarefas de follow-up de forma resiliente
-                    console.log(`DEBUG: Processando triggers de CRM para ${validTransactions.length} transações...`);
                     for (const t of validTransactions) {
                         try {
                             if (t.patientName && t.procedureName) {
-                                // Buscar paciente pelo nome para vincular a tarefa
                                 const patient = await prisma.patient.findFirst({
                                     where: { 
                                         clinicId,
@@ -420,7 +423,6 @@ export class ImportController {
                                 }
                             }
                         } catch (crmError) {
-                            // Erro no CRM não deve travar a importação financeira
                             console.error(`ERROR: Falha ao processar trigger de CRM para linha:`, t, crmError);
                         }
                     }
