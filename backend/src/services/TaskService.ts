@@ -27,18 +27,11 @@ export class TaskService {
     }
 
     static async getCRMTasks(clinicId: string) {
-        // Puxar tarefas do CRM (Follow-up)
-        // Filtramos para não poluir muito: tarefas de 60 dias atrás até 30 dias pra frente
-        const startDate = addDays(new Date(), -60);
-        const endDate = addDays(new Date(), 30);
-
+        // Puxar todas as tarefas do CRM (Follow-up) da clínica
+        // Removido filtro de data para garantir visibilidade de tarefas pendentes antigas
         return await prisma.task.findMany({
             where: {
                 clinicId,
-                dueDate: {
-                    gte: startDate,
-                    lte: endDate
-                }
             },
             include: {
                 patient: {
