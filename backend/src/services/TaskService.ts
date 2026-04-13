@@ -17,7 +17,7 @@ export class TaskService {
                 },
                 status: 'TODO'
             },
-            include: { 
+            include: {
                 patient: {
                     select: { fullName: true, phone: true }
                 }
@@ -28,21 +28,21 @@ export class TaskService {
 
     static async getCRMTasks(clinicId: string) {
         // Puxar tarefas do CRM (Follow-up) da clínica
-        // Adicionado limite de 500 para evitar travamento do browser com volume massivo
+        // Agora as tarefas já vêm consolidadas por paciente (1 Task por paciente aberta)
         return await prisma.task.findMany({
             where: {
                 clinicId,
             },
             include: {
                 patient: {
-                    select: { 
-                        fullName: true, 
-                        phone: true, 
-                        photoUrl: true 
+                    select: {
+                        fullName: true,
+                        phone: true,
+                        photoUrl: true
                     }
                 }
             },
-            orderBy: { dueDate: 'asc' },
+            orderBy: { dueDate: 'asc' }, // Ordenação por vencimento (o mais antigo/atrasado primeiro)
             take: 500
         });
     }
@@ -50,7 +50,7 @@ export class TaskService {
     static async updateTaskStatus(clinicId: string, taskId: string, status: string) {
         return await prisma.task.update({
             where: { id: taskId, clinicId },
-            data: { 
+            data: {
                 status,
                 updatedAt: new Date()
             }
@@ -63,52 +63,82 @@ export class TaskService {
         transactionDate: Date
     }) {
         const { patientId, procedureName, transactionDate } = data;
-        const DEFAULT_FOLLOWUP_DAYS = 60; // Padrão sugerido para quando não há config específica
+        const DEFAULT_FOLLOWUP_DAYS = 60;
 
-        // 1. Buscar o procedimento no catálogo para ver se tem followUpDays
         const procedure = await prisma.procedure.findFirst({
             where: {
                 clinicId,
-                name: {
-                    equals: procedureName,
-                    mode: 'insensitive'
-                }
+                name: { equals: procedureName, mode: 'insensitive' }
             }
         });
 
-        // Determinar dias de retorno (prioridade: Procedimento > Padrão 60 dias)
-        const daysToReturn = (procedure && procedure.followUpDays && procedure.followUpDays > 0) 
-            ? procedure.followUpDays 
+        const daysToReturn = (procedure && procedure.followUpDays && procedure.followUpDays > 0)
+            ? procedure.followUpDays
             : DEFAULT_FOLLOWUP_DAYS;
 
-        // 2. Calcular data de vencimento
         const dueDate = addDays(new Date(transactionDate), daysToReturn);
 
-        // 3. Criar a tarefa se não existir uma idêntica pendente
-        const taskTitle = `Follow-up: ${procedureName}`;
+        // 1. Verificar se já existe uma tarefa aberta para este paciente
         const existingTask = await prisma.task.findFirst({
             where: {
                 clinicId,
                 patientId,
-                title: taskTitle,
-                status: { in: ['TODO', 'IN_PROGRESS'] }
+                status: { in: ['TODO', 'IN_PROGRESS'] },
+                type: 'FOLLOW_UP'
             }
         });
 
-        if (existingTask) return null;
+        const newProcedureEntry = {
+            name: procedureName,
+            dueDate: dueDate.toISOString(),
+            transactionDate: new Date(transactionDate).toISOString()
+        };
 
-        console.log(`DEBUG: Criando tarefa de CRM para ${procedureName} com retorno em ${daysToReturn} dias.`);
+        if (existingTask) {
+            // 2. Consolidar na tarefa existente
+            const currentProcedures = (existingTask.pendingProcedures as any[]) || [];
+
+            // Verificar se o procedimento já está na lista para evitar duplicatas exatas
+            const alreadyExists = currentProcedures.find((p: any) =>
+                p.name === procedureName &&
+                new Date(p.transactionDate).toDateString() === new Date(transactionDate).toDateString()
+            );
+
+            if (alreadyExists) return existingTask;
+
+            const updatedProcedures = [...currentProcedures, newProcedureEntry];
+
+            // A data de vencimento da tarefa deve ser a do procedimento mais urgente (menor data)
+            const minDueDate = updatedProcedures.reduce((min, p) => {
+                const pDate = new Date(p.dueDate);
+                return pDate < min ? pDate : min;
+            }, new Date(updatedProcedures[0].dueDate));
+
+            return await prisma.task.update({
+                where: { id: existingTask.id },
+                data: {
+                    pendingProcedures: updatedProcedures,
+                    dueDate: minDueDate,
+                    updatedAt: new Date(),
+                    description: `Consolidado: ${updatedProcedures.length} procedimentos pendentes.`
+                }
+            });
+        }
+
+        // 3. Criar nova tarefa se não existir
+        console.log(`DEBUG: Criando nova oportunidade de CRM para ${procedureName}.`);
 
         return await prisma.task.create({
             data: {
                 clinicId,
                 patientId,
-                title: taskTitle,
-                description: `Retorno automático baseado no procedimento "${procedureName}" realizado em ${new Date(transactionDate).toLocaleDateString('pt-BR')}.`,
+                title: `Oportunidade: ${procedureName}`,
+                description: `Retorno automático baseado no procedimento "${procedureName}".`,
                 dueDate,
                 status: 'TODO',
                 type: 'FOLLOW_UP',
-                priority: (daysToReturn <= 30) ? 'HIGH' : 'MEDIUM'
+                priority: (daysToReturn <= 30) ? 'HIGH' : 'MEDIUM',
+                pendingProcedures: [newProcedureEntry]
             }
         });
     }
@@ -123,7 +153,7 @@ export class TaskService {
     static async getSummary(clinicId: string) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        
+
         const count = await prisma.task.count({
             where: {
                 clinicId,
