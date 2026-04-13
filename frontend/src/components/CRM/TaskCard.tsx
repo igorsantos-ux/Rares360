@@ -9,11 +9,16 @@ import {
   AlertCircle,
   User,
   ArrowRight,
-  ExternalLink
+  ExternalLink,
+  ChevronDown,
+  Edit2,
+  CheckCircle2,
+  XCircle,
+  Phone
 } from 'lucide-react';
 import { format, formatDistanceToNow, isBefore, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TaskCardProps {
   task: any;
@@ -22,6 +27,7 @@ interface TaskCardProps {
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const navigate = useNavigate();
+  const [isExpanded, setIsExpanded] = React.useState(false);
   const procedures = (task.pendingProcedures as any[]) || [];
 
   // Calcular a última visita (maior transactionDate)
@@ -63,20 +69,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+      className={`bg-white rounded-[2.5rem] border ${isExpanded ? 'border-[#8A9A5B]/30 shadow-xl shadow-[#8A9A5B]/5' : 'border-slate-100 shadow-sm'} transition-all group relative overflow-hidden`}
     >
       {/* Indicador de Prioridade */}
-      <div className={`absolute top-0 right-0 w-1 h-full ${getPriorityColor(task.priority)} opacity-40`} />
+      <div className={`absolute top-0 right-0 w-1.5 h-full ${getPriorityColor(task.priority)} opacity-40`} />
 
-      <div className="space-y-4">
+      <div className="p-5 space-y-4">
         {/* Header do Card */}
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
+            <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 shadow-inner">
               {task.patient?.photoUrl ? (
-                <img src={task.patient.photoUrl} alt="" className="w-full h-full object-cover rounded-xl" />
+                <img src={task.patient.photoUrl} alt="" className="w-full h-full object-cover rounded-2xl" />
               ) : (
-                <User size={18} />
+                <User size={20} />
               )}
             </div>
             <div className="flex-1 min-w-0">
@@ -87,18 +93,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 }}
                 className="group/name cursor-pointer flex items-center gap-1.5 transition-all w-fit"
               >
-                <h4 className="font-black text-slate-700 text-sm leading-tight group-hover/name:text-[#8A9A5B] group-hover/name:underline decoration-2 underline-offset-2 transition-all">
+                <h4 className="font-black text-slate-700 text-[14px] leading-tight group-hover/name:text-[#8A9A5B] transition-all">
                   {task.patient?.fullName || 'Paciente não identificado'}
                 </h4>
                 <ExternalLink size={12} className="text-[#8A9A5B] opacity-0 group-hover/name:opacity-100 transition-all transform -translate-y-0.5" />
               </div>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 flex items-center gap-1">
+                <Phone size={10} className="text-slate-300" />
                 {task.patient?.phone || 'Sem telefone'}
               </p>
             </div>
           </div>
-          <button className="text-slate-300 hover:text-slate-600 transition-colors">
-            <MoreHorizontal size={16} />
+          <button className="text-slate-200 hover:text-slate-400 transition-colors p-1">
+            <MoreHorizontal size={18} />
           </button>
         </div>
 
@@ -106,70 +113,114 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         <div className="flex flex-wrap gap-2">
           {procedures.length > 0 ? (
             procedures.map((proc, idx) => {
-              const procDate = new Date(proc.dueDate);
+              const procDate = new Date(proc.dueDate || proc.transactionDate);
               const procOverdue = isBefore(procDate, new Date()) && !isToday(procDate);
               return (
-                <div key={idx} className={`px-2 py-1 rounded-lg text-[9px] font-bold flex items-center gap-1 border ${procOverdue
+                <div key={idx} className={`px-2.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-wider flex items-center gap-1.5 border ${procOverdue
                   ? 'bg-rose-50 text-rose-600 border-rose-100'
                   : 'bg-slate-50 text-slate-600 border-slate-100'
                   }`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
                   {proc.name}
-                  <span className="opacity-60 font-medium">
+                  <span className="opacity-50 font-bold lowercase">
                     ({formatDistanceToNow(procDate, { addSuffix: true, locale: ptBR })})
                   </span>
                 </div>
               );
             })
           ) : (
-            <div className="px-2 py-1 rounded-lg bg-slate-50 text-slate-500 text-[9px] font-bold border border-slate-100">
+            <div className="px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-500 text-[9px] font-black uppercase tracking-wider border border-slate-100 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-current opacity-40" />
               {task.title?.replace('Follow-up: ', '')}
             </div>
           )}
         </div>
 
         {/* Rodapé do Card */}
-        <div className="pt-2 border-t border-slate-50 space-y-2">
-          <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-            <div className="flex items-center gap-1">
-              <Clock size={12} />
+        <div className="pt-3 border-t border-slate-50 flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-black uppercase tracking-widest">
+              <Clock size={12} className="text-slate-300" />
               <span>Última visita: {format(lastVisitDate, 'dd/MM/yyyy')}</span>
             </div>
-            <div className={`flex items-center gap-1 ${isOverdue ? 'text-rose-600' : 'text-slate-500'}`}>
-              {isOverdue ? <AlertCircle size={12} /> : null}
-              {isToday(new Date(task.dueDate)) ? 'Hoje' : formatDistanceToNow(new Date(task.dueDate), { addSuffix: true, locale: ptBR })}
+            <div className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-tighter ${isOverdue ? 'text-rose-500' : 'text-[#8A9A5B]'}`}>
+              {isOverdue ? <AlertCircle size={12} /> : <CheckCircle2 size={12} />}
+              {isToday(new Date(task.dueDate)) ? 'Vence Hoje' : `Vence ${formatDistanceToNow(new Date(task.dueDate), { addSuffix: true, locale: ptBR })}`}
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex -space-x-2">
-              <div className="w-6 h-6 rounded-full border-2 border-white bg-slate-100 flex items-center justify-center text-[8px] font-bold text-slate-400">
-                {task.assignedTo?.substring(0, 2).toUpperCase() || <User size={10} />}
-              </div>
-            </div>
-            {isOverdue && (
-              <span className="text-[9px] font-black text-rose-400 uppercase tracking-tighter animate-pulse">
-                Atrasado
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Ações Rápidas */}
-        <div className="flex items-center gap-2">
-          <a
-            href={generateWhatsAppLink()}
-            target="_blank"
-            rel="noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-[#25D366]/10 text-[#128C7E] border border-[#25D366]/20 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#25D366] hover:text-white transition-all transform active:scale-95"
+          <div
+            onClick={() => setIsExpanded(!isExpanded)}
+            className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all cursor-pointer border ${isExpanded ? 'bg-[#8A9A5B] text-white border-[#8A9A5B] shadow-lg shadow-[#8A9A5B]/20' : 'bg-slate-50 text-slate-400 border-slate-100 hover:bg-slate-100'}`}
           >
-            <MessageSquare size={14} />
-            WhatsApp
-          </a>
-          <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100 hover:bg-[#8A9A5B] hover:text-white transition-all cursor-pointer">
-            <ArrowRight size={16} />
+            <ChevronDown size={20} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
           </div>
         </div>
       </div>
+
+      {/* Área Expandida */}
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="border-t border-slate-50 bg-slate-50/50"
+          >
+            <div className="p-6 space-y-6">
+              {/* Grid de Detalhes */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações Internas</p>
+                  <div className="p-4 bg-white rounded-2xl border border-slate-100 text-xs text-slate-500 font-medium leading-relaxed italic shadow-sm">
+                    {task.notes || "Nenhum detalhe adicional registrado para este follow-up. Paciente aguardando contato estratégico."}
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ações Rápidas</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-[#8A9A5B] hover:text-[#8A9A5B] transition-all group">
+                      <Edit2 size={14} className="opacity-40 group-hover:opacity-100" />
+                      Editar
+                    </button>
+                    <a
+                      href={generateWhatsAppLink()}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-center gap-2 p-3 bg-[#25D366]/10 border border-[#25D366]/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-[#128C7E] hover:bg-[#25D366] hover:text-white transition-all"
+                    >
+                      <MessageSquare size={14} />
+                      WhatsApp
+                    </a>
+                    <button className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all group">
+                      <CheckCircle2 size={14} className="opacity-40 group-hover:opacity-100" />
+                      Confirmar
+                    </button>
+                    <button className="flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all group">
+                      <XCircle size={14} className="opacity-40 group-hover:opacity-100" />
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Global */}
+              <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-dashed border-slate-200">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full bg-amber-400 animate-pulse`} />
+                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Aguardando Resposta</span>
+                </div>
+                <button className="text-[10px] font-black text-[#8A9A5B] uppercase tracking-widest hover:underline flex items-center gap-1">
+                  Ver Histórico Completo
+                  <ArrowRight size={12} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
