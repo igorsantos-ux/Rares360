@@ -158,7 +158,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         </div>
       </div>
 
-      {/* Área Expandida */}
+      {/* Área Expandida (Drawer) */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -166,69 +166,63 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="border-t border-slate-100 bg-[#F8F9FA] rounded-b-[2.5rem]"
+            className="border-t border-slate-100 overflow-hidden"
           >
-            <div className="p-8 space-y-8">
-              {/* Grid de Detalhes */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-3">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Observações do Agendamento</p>
-                  <div className="p-5 bg-white rounded-3xl border border-slate-100 text-[13px] text-slate-600 font-medium leading-relaxed italic shadow-sm min-h-[100px]">
-                    {task.notes || "Nenhuma observação interna registrada. Paciente aguardando contato para acompanhamento de resultados."}
-                  </div>
-                </div>
+            {/* 1. Container Principal (Respiro inegociável p-6) */}
+            <div className="w-full bg-[#FAFBFC] p-6 flex flex-col md:flex-row justify-between items-start gap-6 border-b border-slate-100">
 
-                <div className="space-y-4">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Ações Rápidas</p>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <a
-                      href={generateWhatsAppLink()}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center justify-center gap-2 px-5 py-3 bg-[#25D366]/10 border border-[#25D366]/20 rounded-2xl text-[11px] font-black uppercase tracking-widest text-[#128C7E] hover:bg-[#25D366] hover:text-white transition-all shadow-sm active:scale-95"
-                    >
-                      <MessageSquare size={16} />
-                      WhatsApp
-                    </a>
-
-                    <button className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest text-slate-600 hover:border-[#8A9A5B] hover:text-[#8A9A5B] transition-all shadow-sm active:scale-95 group">
-                      <Edit2 size={16} className="opacity-40 group-hover:opacity-100" />
-                      Editar
-                    </button>
-
-                    <button className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest text-emerald-600 hover:bg-emerald-500 hover:text-white hover:border-emerald-500 transition-all shadow-sm active:scale-95 group">
-                      <CheckCircle2 size={16} className="opacity-40 group-hover:opacity-100" />
-                      Confirmar
-                    </button>
-
-                    <button className="flex items-center justify-center gap-2 px-5 py-3 bg-white border border-slate-200 rounded-2xl text-[11px] font-black uppercase tracking-widest text-rose-500 hover:bg-rose-500 hover:text-white hover:border-rose-500 transition-all shadow-sm active:scale-95 group">
-                      <XCircle size={16} className="opacity-40 group-hover:opacity-100" />
-                      Cancelar
-                    </button>
-                  </div>
-
-                  <div className="pt-2">
-                    <button className="text-[10px] font-black text-slate-400 hover:text-[#8A9A5B] uppercase tracking-widest flex items-center gap-2 transition-colors">
-                      <ExternalLink size={12} />
-                      Ver Prontuário Completo
-                    </button>
-                  </div>
-                </div>
+              {/* 2. Bloco da Esquerda (Observações) */}
+              <div className="flex-1 flex flex-col gap-2 min-w-0">
+                <p className="text-sm font-semibold text-slate-700">
+                  Observações:
+                </p>
+                <p className="text-sm text-slate-500 leading-relaxed italic">
+                  {task.notes || "Nenhuma observação interna registrada."}
+                </p>
               </div>
 
-              {/* Status Global / Linha do Tempo */}
-              <div className="flex items-center justify-between p-5 bg-white rounded-3xl border border-dashed border-slate-200 shadow-inner">
-                <div className="flex items-center gap-4">
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse ring-4 ring-amber-100" />
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Aguardando Resposta</p>
-                    <p className="text-[9px] font-bold text-slate-400">Tarefa criada há {formatDistanceToNow(new Date(task.createdAt), { locale: ptBR })}</p>
-                  </div>
-                </div>
-                <button className="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-[#8A9A5B] hover:text-white transition-all shadow-sm group">
-                  <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+              {/* 3. Bloco da Direita (Botões de Ação) */}
+              <div className="flex flex-wrap items-center gap-3 w-full md:w-auto md:justify-end shrink-0">
+                <a
+                  href={generateWhatsAppLink()}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all transform active:scale-95 shadow-sm"
+                >
+                  <Phone size={14} />
+                  WhatsApp
+                </a>
+
+                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-slate-600 border border-slate-200 rounded-xl font-bold text-xs hover:border-[#8A9A5B] hover:text-[#8A9A5B] transition-all transform active:scale-95 shadow-sm group">
+                  <Edit2 size={14} className="opacity-40 group-hover:opacity-100" />
+                  Editar
+                </button>
+
+                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-xl font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all transform active:scale-95 shadow-sm group">
+                  <CheckCircle2 size={14} className="opacity-40 group-hover:opacity-100" />
+                  Confirmar
+                </button>
+
+                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white text-rose-500 border border-slate-100 rounded-xl font-bold text-xs hover:bg-rose-500 hover:text-white transition-all transform active:scale-95 shadow-sm group">
+                  <XCircle size={14} className="opacity-40 group-hover:opacity-100" />
+                  Cancelar
                 </button>
               </div>
+            </div>
+
+            {/* Rodapé Interno / Link Prontuário */}
+            <div className="px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-4 bg-white/50 rounded-b-[2.5rem]">
+              <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                <Clock size={12} />
+                Criado {formatDistanceToNow(new Date(task.createdAt), { locale: ptBR, addSuffix: true })}
+              </div>
+              <button
+                onClick={() => navigate(`/patients/${task.patientId}`)}
+                className="flex items-center gap-2 text-[10px] font-black text-[#8A9A5B] uppercase tracking-widest hover:underline group"
+              >
+                Acessar Prontuário Completo
+                <ExternalLink size={12} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
             </div>
           </motion.div>
         )}
