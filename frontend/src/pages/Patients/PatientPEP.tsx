@@ -6,13 +6,13 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import PatientHeader from '../../components/Patients/PEP/PatientHeader';
 import PatientSidebar from '../../components/Patients/PEP/PatientSidebar';
 import EvolutionModule from '../../components/Patients/PEP/Modules/EvolutionModule';
-import { 
-    MainDataModule, 
-    PrescriptionModule, 
-    InventoryModule, 
-    HistoryModule, 
-    FinancialModule, 
-    DocumentsModule 
+import {
+    MainDataModule,
+    PrescriptionModule,
+    InventoryModule,
+    HistoryModule,
+    FinancialModule,
+    DocumentsModule
 } from '../../components/Patients/PEP/Modules/Placeholders';
 
 const PatientPEP = () => {
@@ -66,8 +66,8 @@ const PatientPEP = () => {
             <div className="bg-white border-b border-[#8A9A5B]/10 sticky top-0 z-30 shadow-sm">
                 <div className="max-w-[1800px] mx-auto px-6 py-4">
                     <div className="flex items-center gap-4 mb-4">
-                        <button 
-                            onClick={() => navigate('/patients')}
+                        <button
+                            onClick={() => navigate(-1)}
                             className="p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400"
                         >
                             <ArrowLeft size={20} />

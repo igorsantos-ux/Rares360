@@ -1,11 +1,15 @@
 import React from 'react';
 import {
+  useNavigate
+} from 'react-router-dom';
+import {
   Clock,
   MessageSquare,
   MoreHorizontal,
   AlertCircle,
   User,
-  ArrowRight
+  ArrowRight,
+  ExternalLink
 } from 'lucide-react';
 import { format, formatDistanceToNow, isBefore, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -17,6 +21,7 @@ interface TaskCardProps {
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
+  const navigate = useNavigate();
   const procedures = (task.pendingProcedures as any[]) || [];
 
   // Calcular a última visita (maior transactionDate)
@@ -74,11 +79,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
                 <User size={18} />
               )}
             </div>
-            <div>
-              <h4 className="font-black text-slate-700 text-sm leading-tight group-hover:text-[#8A9A5B] transition-colors">
-                {task.patient?.fullName || 'Paciente não identificado'}
-              </h4>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+            <div className="flex-1 min-w-0">
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/patients/${task.patientId}`);
+                }}
+                className="group/name cursor-pointer flex items-center gap-1.5 transition-all w-fit"
+              >
+                <h4 className="font-black text-slate-700 text-sm leading-tight group-hover/name:text-[#8A9A5B] group-hover/name:underline decoration-2 underline-offset-2 transition-all">
+                  {task.patient?.fullName || 'Paciente não identificado'}
+                </h4>
+                <ExternalLink size={12} className="text-[#8A9A5B] opacity-0 group-hover/name:opacity-100 transition-all transform -translate-y-0.5" />
+              </div>
+              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                 {task.patient?.phone || 'Sem telefone'}
               </p>
             </div>
