@@ -380,22 +380,31 @@ export class ImportController {
                         }
                     }
 
-                    const procedimento = cleanRow['PROCEDIMENTO'] || cleanRow['SERVICO'] || cleanRow['DESCRICAO'] || 'Procedimento não informado';
-                    const medico = cleanRow['MEDICO SOLICITANTE'] || cleanRow['MEDICO'] || cleanRow['DOUTOR'] || cleanRow['PROFISSIONAL'] || '';
-                    const descricao = `${procedimento} - ${pacienteNome}${medico ? ` (${medico})` : ''}`;
+                    const procedimento = String(cleanRow['PROCEDIMENTO'] || cleanRow['SERVICO'] || cleanRow['DESCRICAO'] || 'Procedimento não informado').trim();
+                    const medico = String(cleanRow['MEDICO SOLICITANTE'] || cleanRow['MEDICO'] || cleanRow['DOUTOR'] || cleanRow['PROFISSIONAL'] || cleanRow['MEDICO EXECUTOR'] || '').trim();
+                    const executor = String(cleanRow['MEDICO EXECUTOR'] || '').trim();
+                    const descricao = `${procedimento} - ${pacienteNome}${medico ? ` (Solic: ${medico})` : ''}${executor ? ` (Exec: ${executor})` : ''}`;
+
+                    const quantityRaw = cleanRow['QUANTIDADE'] || 1;
+                    const quantity = typeof quantityRaw === 'number' ? quantityRaw : (parseFloat(String(quantityRaw).replace(',', '.')) || 1);
+
+                    const comissao = parseCurrency(cleanRow['COMISSAO'] || 0);
+                    const custoTotal = parseCurrency(cleanRow['CUSTO TOTAL'] || 0);
 
                     validTransactions.push({
                         description: descricao,
                         amount: valor,
                         netAmount: valorLiquido,
                         type: 'INCOME',
-                        status: 'PAID', // Definido como PAID para entrar no LTV
-                        category: cleanRow['TIPO'] || 'Faturamento',
-                        paymentMethod: cleanRow['FORMA DE PAGAMENTO'] || cleanRow['PAGAMENTO'] || 'Outros',
+                        status: 'PAID',
+                        category: String(cleanRow['TIPO'] || 'Faturamento').trim(),
+                        paymentMethod: String(cleanRow['FORMA DE PAGAMENTO'] || cleanRow['PAGAMENTO'] || 'Outros').trim(),
                         centerOfCost: 'Operacional',
                         procedureName: procedimento,
-                        doctorName: medico,
-                        patientId, // Vínculo essencial para o LTV
+                        doctorName: medico || executor,
+                        patientId,
+                        quantity,
+                        cost: custoTotal,
                         date: date,
                         clinicId: clinicId,
                         importBatchId: batch.id
