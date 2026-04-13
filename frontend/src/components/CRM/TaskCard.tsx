@@ -4,11 +4,9 @@ import {
 } from 'react-router-dom';
 import {
   Clock,
-  MessageSquare,
   MoreHorizontal,
   AlertCircle,
   User,
-  ArrowRight,
   ExternalLink,
   ChevronDown,
   Edit2,
