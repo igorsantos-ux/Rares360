@@ -614,7 +614,7 @@ export class ImportController {
 
             console.log('📂 Arquivo recebido:', (req as any).file.originalname, 'Size:', (req as any).file.size);
 
-            const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
+            const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer', cellDates: true });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             const data: any[] = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
