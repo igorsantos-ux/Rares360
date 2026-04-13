@@ -17,13 +17,13 @@ import {
 } from 'lucide-react';
 import { ImportFinanceModal } from '../../components/Financial/ImportFinanceModal';
 import { DateRangePicker } from '../../components/ui/DateRangePicker';
-import { 
-    BarChart, 
-    Bar, 
-    XAxis, 
-    YAxis, 
-    CartesianGrid, 
-    Tooltip as RechartsTooltip, 
+import {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip as RechartsTooltip,
     ResponsiveContainer,
     PieChart,
     Pie,
@@ -38,7 +38,7 @@ const COLORS = ['#8A9A5B', '#DEB587', '#5B7C9A', '#9A5B7C', '#5B9A7C', '#c4c8b2'
 
 const BillingPage = () => {
     const [groupBy, setGroupBy] = useState<GroupBy>('month');
-    
+
     const today = new Date();
     const [dateRange, setDateRange] = useState({
         startDate: format(subDays(today, 30), 'yyyy-MM-dd'),
@@ -87,7 +87,7 @@ const BillingPage = () => {
     const rankings = safeData.rankings || {};
     const distributions = safeData.distributions || {};
 
-    const formatCurrency = (val: number) => 
+    const formatCurrency = (val: number) =>
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
 
     const CustomTooltip = ({ active, payload, label }: any) => {
@@ -116,7 +116,7 @@ const BillingPage = () => {
                     <p className="text-slate-500 font-medium mt-1">Análise de performance, evolução temporal e rankings estratégicos.</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-center gap-4">
-                    <DateRangePicker 
+                    <DateRangePicker
                         value={dateRange}
                         onChange={(newRange: { startDate: string; endDate: string }) => {
                             setDateRange(newRange);
@@ -124,7 +124,7 @@ const BillingPage = () => {
                             const start = new Date(newRange.startDate);
                             const end = new Date(newRange.endDate);
                             const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24));
-                            
+
                             if (diffDays <= 31) setGroupBy('day');
                             else if (diffDays <= 90) setGroupBy('week');
                             else setGroupBy('month');
@@ -179,38 +179,38 @@ const BillingPage = () => {
                         <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Comparativo de faturamento no período</p>
                     </div>
                 </div>
-                
+
                 <div className="h-[400px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={timeline} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                            <XAxis 
-                                dataKey="label" 
-                                axisLine={false} 
-                                tickLine={false} 
+                            <XAxis
+                                dataKey="label"
+                                axisLine={false}
+                                tickLine={false}
                                 tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }}
                                 dy={10}
                             />
-                            <YAxis 
-                                axisLine={false} 
-                                tickLine={false} 
+                            <YAxis
+                                axisLine={false}
+                                tickLine={false}
                                 tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 700 }}
                                 tickFormatter={(val) => `R$ ${(val / 1000).toFixed(0)}k`}
                                 dx={-10}
                             />
                             <RechartsTooltip cursor={{ fill: '#f8fafc' }} content={<CustomTooltip />} />
-                            <Bar 
-                                dataKey="total" 
-                                fill="#8A9A5B" 
-                                radius={[6, 6, 0, 0]} 
+                            <Bar
+                                dataKey="total"
+                                fill="#8A9A5B"
+                                radius={[6, 6, 0, 0]}
                                 barSize={40}
                                 animationDuration={1500}
                             >
-                                <LabelList 
-                                    dataKey="total" 
-                                    position="top" 
-                                    formatter={(val: any) => Number(val) > 0 ? `R$ ${(Number(val) / 1000).toFixed(1)}k` : ''} 
-                                    style={{ fill: '#697D58', fontSize: 11, fontWeight: 900 }} 
+                                <LabelList
+                                    dataKey="total"
+                                    position="top"
+                                    formatter={(val: any) => Number(val) > 0 ? `R$ ${(Number(val) / 1000).toFixed(1)}k` : ''}
+                                    style={{ fill: '#697D58', fontSize: 11, fontWeight: 900 }}
                                 />
                             </Bar>
                         </BarChart>
@@ -220,33 +220,33 @@ const BillingPage = () => {
 
             {/* Grid 3 Colunas: Rankings */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <RankingCard 
-                    title="Top Procedimentos" 
+                <RankingCard
+                    title="Top Procedimentos"
                     icon={<Tags size={20} />}
-                    data={rankings.procedures} 
+                    data={rankings.procedures}
                     total={kpis.totalBilling}
                     color="#DEB587"
                 />
-                <RankingCard 
-                    title="Top Médicos" 
+                <RankingCard
+                    title="Top Médicos"
                     icon={<Stethoscope size={20} />}
-                    data={rankings.doctors} 
+                    data={rankings.doctors}
                     total={kpis.totalBilling}
                     color="#8A9A5B"
                 />
-                <RankingCard 
-                    title="Top Avaliadores/Vendas (Categorias)" 
+                <RankingCard
+                    title="Top Avaliadores/Vendas (Categorias)"
                     icon={<Trophy size={20} />}
-                    data={rankings.categories} 
+                    data={rankings.categories}
                     total={kpis.totalBilling}
                     color="#5B7C9A"
                 />
             </div>
 
             {/* Ranking VIP de Pacientes */}
-            <PatientRankingCard 
-                data={rankings.patients} 
-                color="#c4c8b2" 
+            <PatientRankingCard
+                data={rankings.patients}
+                color="#c4c8b2"
             />
 
             {/* Rodapé Analítico: Distribuições */}
@@ -256,9 +256,9 @@ const BillingPage = () => {
             </div>
 
             {/* Modal de Importação */}
-            <ImportFinanceModal 
-                isOpen={isImportModalOpen} 
-                onClose={() => setIsImportModalOpen(false)} 
+            <ImportFinanceModal
+                isOpen={isImportModalOpen}
+                onClose={() => setIsImportModalOpen(false)}
                 onSuccess={() => refetch()}
             />
         </div>
@@ -273,7 +273,7 @@ const CustomPieTooltip = ({ active, payload }: any) => {
             <div className="bg-white/90 backdrop-blur-sm p-4 rounded-2xl shadow-xl border border-[#8A9A5B]/20">
                 <p className="font-black text-slate-700 mb-1">{payload[0].name}</p>
                 <p className="font-black text-[#DEB587] text-md">
-                    {payload[0].value.toLocaleString('pt-BR')} 
+                    {payload[0].value.toLocaleString('pt-BR')}
                     {payload[0].name === 'Instagram' || payload[0].name === 'Outros' ? ' Pacotes' : ' R$'}
                 </p>
             </div>
@@ -320,18 +320,28 @@ const RankingCard = ({ title, data = [], total = 0, icon, color }: any) => (
                     const percent = total > 0 ? (item.value / total) * 100 : 0;
                     return (
                         <div key={idx} className="group">
-                            <div className="flex justify-between items-center mb-2 text-sm">
-                                <span className="font-black text-slate-600 truncate max-w-[65%]">
-                                    <span className="text-slate-300 mr-2">#{idx + 1}</span>
-                                    {item.name}
-                                </span>
-                                <span className="font-bold text-slate-800">
+                            <div className="flex justify-between items-start mb-2 text-sm">
+                                <div className="flex flex-col gap-0.5 truncate max-w-[60%]">
+                                    <span className="font-black text-slate-600 truncate">
+                                        <span className="text-slate-300 mr-2">#{idx + 1}</span>
+                                        {item.name}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-bold text-[#8A9A5B] bg-[#8A9A5B]/5 px-2 py-0.5 rounded-md">
+                                            {item.count}x
+                                        </span>
+                                        <span className="text-[10px] font-medium text-slate-400">
+                                            Tkt: R$ {item.average?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </span>
+                                    </div>
+                                </div>
+                                <span className="font-black text-slate-800 text-right">
                                     R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                 </span>
                             </div>
-                            <div className="h-2.5 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
-                                <div 
-                                    className="h-full rounded-full transition-all duration-1000 opacity-80 group-hover:opacity-100" 
+                            <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                                <div
+                                    className="h-full rounded-full transition-all duration-1000 opacity-80 group-hover:opacity-100"
                                     style={{ width: `${Math.max(percent, 2)}%`, backgroundColor: color }}
                                 />
                             </div>
@@ -420,7 +430,7 @@ const PatientRankingCard = ({ data = [], color = "#c4c8b2" }: any) => {
                     <p className="text-xs font-bold text-slate-400 mt-0.5">Top clientes do período selecionado</p>
                 </div>
             </div>
-            
+
             <div className="overflow-x-auto w-full">
                 <table className="w-full text-left border-collapse min-w-[600px]">
                     <thead>
@@ -428,6 +438,7 @@ const PatientRankingCard = ({ data = [], color = "#c4c8b2" }: any) => {
                             <th className="pb-3 w-16 text-center">Pos</th>
                             <th className="pb-3">Paciente</th>
                             <th className="pb-3 text-center">Procedimentos</th>
+                            <th className="pb-3 text-center">Ticket Médio</th>
                             <th className="pb-3 text-right pr-4">Total Gasto</th>
                         </tr>
                     </thead>
@@ -465,6 +476,11 @@ const PatientRankingCard = ({ data = [], color = "#c4c8b2" }: any) => {
                                     </td>
                                     <td className="py-4 text-center">
                                         <span className="font-bold text-slate-600 bg-slate-50 px-3 py-1 rounded-full text-xs">{patient.count}x</span>
+                                    </td>
+                                    <td className="py-4 text-center">
+                                        <span className="font-bold text-slate-400 text-xs">
+                                            R$ {patient.average?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                        </span>
                                     </td>
                                     <td className="py-4 text-right pr-4">
                                         <span className="font-black text-[#8A9A5B] text-base">

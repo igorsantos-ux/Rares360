@@ -69,7 +69,7 @@ export class CashFlowService {
 
     static async getDRE(clinicId: string, startDate?: Date, endDate?: Date) {
         const where: any = { clinicId };
-        
+
         if (startDate || endDate) {
             where.date = {
                 ...(startDate ? { gte: startDate } : {}),
@@ -115,7 +115,7 @@ interface BillingAnalyticsParams {
 
 export class BillingService {
     static async getBillingAnalytics({ clinicId, startDate, endDate, groupBy = 'month' }: BillingAnalyticsParams) {
-        
+
         // 1. Definir o período atual
         const now = new Date();
         const start = startDate || new Date(now.getFullYear(), now.getMonth(), 1);
@@ -150,10 +150,10 @@ export class BillingService {
         // --- CÁLCULOS DOS KPIs ---
         const totalBilling = currentTransactions.reduce((acc, t) => acc + t.amount, 0);
         const totalPreviousBilling = previousTransactions.reduce((acc, t) => acc + t.amount, 0);
-        
+
         const countCurrent = currentTransactions.length;
         const averageTicket = countCurrent > 0 ? totalBilling / countCurrent : 0;
-        
+
         let growthPercentage = 0;
         if (totalPreviousBilling > 0) {
             growthPercentage = ((totalBilling - totalPreviousBilling) / totalPreviousBilling) * 100;
@@ -164,7 +164,7 @@ export class BillingService {
         // --- CÁLCULO DA TIMELINE (BarChart) ---
         // Pre-preencher mapa para garantir os "zeros" no gráfico (dias sem vendas)
         const timelineMap: Record<string, { total: number, count: number }> = {};
-        
+
         const iterDate = new Date(start);
         iterDate.setHours(0, 0, 0, 0);
         const loopEnd = new Date(end);
@@ -224,23 +224,29 @@ export class BillingService {
         }
 
         // --- CÁLCULOS DOS RANKINGS ---
-        const procMap: Record<string, number> = {};
-        const doctorMap: Record<string, number> = {};
-        const categoryMap: Record<string, number> = {}; // Top Categories
+        const procMap: Record<string, { total: number, count: number }> = {};
+        const doctorMap: Record<string, { total: number, count: number }> = {};
+        const categoryMap: Record<string, { total: number, count: number }> = {}; // Top Categories
         const patientMap: Record<string, { value: number, count: number, name: string, id: string, avatarUrl: string | null }> = {};
-        
+
         currentTransactions.forEach(t => {
             // Procedimentos
             const proc = t.procedureName || 'Sem Procedimento';
-            procMap[proc] = (procMap[proc] || 0) + t.amount;
-            
+            if (!procMap[proc]) procMap[proc] = { total: 0, count: 0 };
+            procMap[proc].total += t.amount;
+            procMap[proc].count += 1;
+
             // Médicos
             const doc = (t as any).doctorName || t.doctor?.name || 'Clínica';
-            doctorMap[doc] = (doctorMap[doc] || 0) + t.amount;
+            if (!doctorMap[doc]) doctorMap[doc] = { total: 0, count: 0 };
+            doctorMap[doc].total += t.amount;
+            doctorMap[doc].count += 1;
 
             // Categorias (usaremos como Vendedores/Sellers proxy pois a regra de Vendedor não está clara no BD)
             const cat = t.category || 'Outros';
-            categoryMap[cat] = (categoryMap[cat] || 0) + t.amount;
+            if (!categoryMap[cat]) categoryMap[cat] = { total: 0, count: 0 };
+            categoryMap[cat].total += t.amount;
+            categoryMap[cat].count += 1;
 
             // Pacientes (VIPs)
             if (t.patient) {
@@ -259,9 +265,14 @@ export class BillingService {
             }
         });
 
-        const sortRank = (map: Record<string, number>) => 
+        const sortRank = (map: Record<string, { total: number, count: number }>) =>
             Object.entries(map)
-                .map(([name, value]) => ({ name, value }))
+                .map(([name, data]) => ({
+                    name,
+                    value: data.total,
+                    count: data.count,
+                    average: data.count > 0 ? data.total / data.count : 0
+                }))
                 .sort((a, b) => b.value - a.value)
                 .slice(0, 10); // Top 10
 
@@ -287,6 +298,7 @@ export class BillingService {
                 name: p.name,
                 value: p.value,
                 count: p.count,
+                average: p.count > 0 ? p.value / p.count : 0,
                 id: p.id,
                 avatarUrl: p.avatarUrl,
                 isNew: !previousPurchasers.has(p.id)
@@ -301,12 +313,12 @@ export class BillingService {
         currentTransactions.forEach(t => {
             const origin = t.patient?.origin || 'Outros';
             originMap[origin] = (originMap[origin] || 0) + 1; // Usando Count para Origem (quantos pacientes vieram)
-            
+
             const pay = t.paymentMethod || 'Não Informado';
             paymentMap[pay] = (paymentMap[pay] || 0) + t.amount; // Usando Faturamento para Formas de Recebimento
         });
 
-        const buildDist = (map: Record<string, number>) => 
+        const buildDist = (map: Record<string, number>) =>
             Object.entries(map).map(([name, value]) => ({ name, value }));
 
         return {
