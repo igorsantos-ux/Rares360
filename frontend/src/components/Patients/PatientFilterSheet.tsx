@@ -7,8 +7,6 @@ import {
     SheetTitle,
     SheetFooter,
 } from '../ui/Sheet';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/Select';
-import { RadioGroup, RadioGroupItem } from '../ui/RadioGroup';
 import { Label } from '../ui/Label';
 import { Input } from '../ui/Input';
 import { Filter } from 'lucide-react';
@@ -36,7 +34,6 @@ const MONTHS = [
 export function PatientFilterSheet({ open, onClose }: Props) {
     const [searchParams, setSearchParams] = useSearchParams();
 
-    // Local state for the drawer before applying
     const [filters, setFilters] = React.useState({
         status: searchParams.get('status') || 'todos',
         aniversario: searchParams.get('aniversario') || '',
@@ -48,7 +45,6 @@ export function PatientFilterSheet({ open, onClose }: Props) {
 
     const handleApply = () => {
         const newParams = new URLSearchParams(searchParams);
-
         Object.entries(filters).forEach(([key, value]) => {
             if (value && value !== 'todos') {
                 newParams.set(key, value);
@@ -56,7 +52,6 @@ export function PatientFilterSheet({ open, onClose }: Props) {
                 newParams.delete(key);
             }
         });
-
         setSearchParams(newParams);
         onClose();
     };
@@ -87,46 +82,33 @@ export function PatientFilterSheet({ open, onClose }: Props) {
                 </SheetHeader>
 
                 <div className="py-8 space-y-8">
-                    {/* Status */}
-                    <div className="space-y-4">
+                    {/* Status - HTML SELECT (Failsafe) */}
+                    <div className="space-y-3">
                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Status do Paciente</Label>
-                        <RadioGroup
+                        <select
                             value={filters.status}
-                            onValueChange={(v: string) => setFilters(prev => ({ ...prev, status: v }))}
-                            className="flex gap-4"
+                            onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                            className="w-full h-12 bg-white border border-[#8A9A5B]/20 rounded-xl px-4 text-sm font-medium focus:ring-2 focus:ring-[#8A9A5B]/20 outline-none"
                         >
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="todos" id="todos" />
-                                <Label htmlFor="todos" className="text-sm font-medium">Todos</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="ativo" id="ativo" />
-                                <Label htmlFor="ativo" className="text-sm font-medium">Ativos</Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="inativo" id="inativo" />
-                                <Label htmlFor="inativo" className="text-sm font-medium">Inativos</Label>
-                            </div>
-                        </RadioGroup>
+                            <option value="todos">Todos</option>
+                            <option value="ativo">Ativos</option>
+                            <option value="inativo">Inativos</option>
+                        </select>
                     </div>
 
-                    {/* Aniversário */}
+                    {/* Aniversário - HTML SELECT */}
                     <div className="space-y-3">
                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Mês de Aniversário</Label>
-                        <Select
+                        <select
                             value={filters.aniversario}
-                            onValueChange={(v) => setFilters(prev => ({ ...prev, aniversario: v }))}
+                            onChange={(e) => setFilters(prev => ({ ...prev, aniversario: e.target.value }))}
+                            className="w-full h-12 bg-white border border-[#8A9A5B]/20 rounded-xl px-4 text-sm font-medium focus:ring-2 focus:ring-[#8A9A5B]/20 outline-none"
                         >
-                            <SelectTrigger className="w-full bg-white border-[#8A9A5B]/20 rounded-xl">
-                                <SelectValue placeholder="Selecione o mês" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="">Qualquer mês</SelectItem>
-                                {MONTHS.map(m => (
-                                    <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            <option value="">Qualquer mês</option>
+                            {MONTHS.map(m => (
+                                <option key={m.value} value={m.value}>{m.label}</option>
+                            ))}
+                        </select>
                     </div>
 
                     {/* LTV Range */}
@@ -156,44 +138,36 @@ export function PatientFilterSheet({ open, onClose }: Props) {
                         </div>
                     </div>
 
-                    {/* Última Consulta */}
+                    {/* Última Consulta - HTML SELECT */}
                     <div className="space-y-3">
                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Recuperação (Última Visita)</Label>
-                        <Select
+                        <select
                             value={filters.lastVisit}
-                            onValueChange={(v) => setFilters(prev => ({ ...prev, lastVisit: v }))}
+                            onChange={(e) => setFilters(prev => ({ ...prev, lastVisit: e.target.value }))}
+                            className="w-full h-12 bg-white border border-[#8A9A5B]/20 rounded-xl px-4 text-sm font-medium focus:ring-2 focus:ring-[#8A9A5B]/20 outline-none"
                         >
-                            <SelectTrigger className="w-full bg-white border-[#8A9A5B]/20 rounded-xl">
-                                <SelectValue placeholder="Selecione o período" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="">Qualquer data</SelectItem>
-                                <SelectItem value="30-dias">Últimos 30 dias</SelectItem>
-                                <SelectItem value="3-6-meses">Entre 3 a 6 meses</SelectItem>
-                                <SelectItem value="mais-6-meses">Mais de 6 meses (Inativos)</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            <option value="">Qualquer data</option>
+                            <option value="30-dias">Últimos 30 dias</option>
+                            <option value="3-6-meses">Entre 3 a 6 meses</option>
+                            <option value="mais-6-meses">Mais de 6 meses (Inativos)</option>
+                        </select>
                     </div>
 
-                    {/* Origem */}
+                    {/* Origem - HTML SELECT */}
                     <div className="space-y-3">
                         <Label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Origem do Lead</Label>
-                        <Select
+                        <select
                             value={filters.origem}
-                            onValueChange={(v) => setFilters(prev => ({ ...prev, origem: v }))}
+                            onChange={(e) => setFilters(prev => ({ ...prev, origem: e.target.value }))}
+                            className="w-full h-12 bg-white border border-[#8A9A5B]/20 rounded-xl px-4 text-sm font-medium focus:ring-2 focus:ring-[#8A9A5B]/20 outline-none"
                         >
-                            <SelectTrigger className="w-full bg-white border-[#8A9A5B]/20 rounded-xl">
-                                <SelectValue placeholder="Selecione a origem" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="">Todas as origens</SelectItem>
-                                <SelectItem value="Instagram">Instagram</SelectItem>
-                                <SelectItem value="Google">Google</SelectItem>
-                                <SelectItem value="Indicação">Indicação de Amigo</SelectItem>
-                                <SelectItem value="Passagem">Passagem/Fachada</SelectItem>
-                                <SelectItem value="Outro">Outro</SelectItem>
-                            </SelectContent>
-                        </Select>
+                            <option value="">Todas as origens</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Google">Google</option>
+                            <option value="Indicação">Indicação de Amigo</option>
+                            <option value="Passagem">Passagem/Fachada</option>
+                            <option value="Outro">Outro</option>
+                        </select>
                     </div>
                 </div>
 
