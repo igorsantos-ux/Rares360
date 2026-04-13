@@ -26,7 +26,9 @@ interface TaskCardProps {
 export const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
   const navigate = useNavigate();
   const [isExpanded, setIsExpanded] = React.useState(false);
-  const procedures = (task.pendingProcedures as any[]) || [];
+  const procedures = ((task.pendingProcedures as any[]) || [])
+    .sort((a, b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime())
+    .slice(0, 1);
 
   // Calcular a última visita (maior transactionDate)
   const lastVisitDate = procedures.reduce((latest, proc) => {
