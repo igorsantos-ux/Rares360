@@ -315,41 +315,59 @@ export class ImportController {
 
             if (type === 'billing') {
                 // Lógica de Faturamento Diário (Transactions)
-                const transactionsToCreate = data.map((row: any) => {
+                const patientCache = new Map<string, string>(); // Cache para evitar múltiplas consultas ao mesmo paciente
+                const validTransactions: any[] = [];
+
+                for (const row of data) {
                     const cleanRow: any = {};
                     for (const key in row) {
-                        // Normalização agressiva de cabeçalhos
                         const normalizedKey = normalizeKey(key);
                         cleanRow[normalizedKey] = row[key];
                     }
 
-                    // Log das chaves encontradas para depuração (apenas na primeira linha)
-                    if (data.indexOf(row) === 0) {
-                        console.log('DEBUG: Chaves da planilha (final-norm):', Object.keys(cleanRow));
-                    }
-
-                    // Helper para parse de valores monetários BR/US
                     const parseCurrency = (val: any) => {
                         if (typeof val === 'number') return val;
                         if (!val || typeof val !== 'string') return 0;
-
                         let clean = val.replace(/R\$\s?/, '').trim();
-                        if (clean.includes(',') && clean.includes('.')) {
-                            clean = clean.replace(/\./g, '').replace(',', '.');
-                        }
-                        else if (clean.includes(',')) {
-                            clean = clean.replace(',', '.');
-                        }
-
+                        if (clean.includes(',') && clean.includes('.')) clean = clean.replace(/\./g, '').replace(',', '.');
+                        else if (clean.includes(',')) clean = clean.replace(',', '.');
                         const parsed = parseFloat(clean);
                         return isNaN(parsed) ? 0 : parsed;
                     };
 
                     const valorRaw = cleanRow['PRECO DE VENDA'] || cleanRow['PRECO- TABELA'] || cleanRow['PRECO'] || cleanRow['VALOR'] || cleanRow['VALOR TOTAL'] || 0;
                     const valor = Math.abs(parseCurrency(valorRaw));
+                    if (valor <= 0) continue;
 
                     const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['LIQUIDO'] || valorRaw;
                     const valorLiquido = Math.abs(parseCurrency(valorLiquidoRaw));
+
+                    const pacienteNome = (cleanRow['PACIENTE'] || cleanRow['NOME'] || cleanRow['CLIENTE'] || '').trim();
+                    if (!pacienteNome) continue;
+
+                    // 1. Vincular ou Criar Paciente antes da Transação
+                    let patientId = patientCache.get(pacienteNome.toLowerCase());
+
+                    if (!patientId) {
+                        let patient = await prisma.patient.findFirst({
+                            where: {
+                                clinicId,
+                                fullName: { equals: pacienteNome, mode: 'insensitive' }
+                            }
+                        });
+
+                        if (!patient) {
+                            console.log(`DEBUG: Criando paciente novo durante importação de faturamento: ${pacienteNome}`);
+                            patient = await prisma.patient.create({
+                                data: {
+                                    fullName: pacienteNome,
+                                    clinicId,
+                                }
+                            });
+                        }
+                        patientId = patient.id;
+                        patientCache.set(pacienteNome.toLowerCase(), patientId);
+                    }
 
                     let date = new Date();
                     const dataRaw = cleanRow['DATA DA VENDA'] || cleanRow['DATA'] || cleanRow['DATA PROCEDIMENTO'];
@@ -364,78 +382,48 @@ export class ImportController {
 
                     const procedimento = cleanRow['PROCEDIMENTO'] || 'Procedimento não informado';
                     const medico = cleanRow['MEDICO SOLICITANTE'] || cleanRow['MEDICO'] || '';
-                    const paciente = cleanRow['PACIENTE'] || cleanRow['NOME'] || cleanRow['CLIENTE'] || '';
-                    const descricao = `${procedimento}${paciente ? ` - ${paciente}` : ''}${medico ? ` (${medico})` : ''}`;
+                    const descricao = `${procedimento} - ${pacienteNome}${medico ? ` (${medico})` : ''}`;
 
-                    return {
+                    validTransactions.push({
                         description: descricao,
                         amount: valor,
                         netAmount: valorLiquido,
                         type: 'INCOME',
-                        status: 'PAID',
+                        status: 'PAID', // Definido como PAID para entrar no LTV
                         category: cleanRow['TIPO'] || 'Faturamento',
                         paymentMethod: cleanRow['FORMA DE PAGAMENTO'] || cleanRow['PAGAMENTO'] || 'Outros',
                         centerOfCost: 'Operacional',
                         procedureName: procedimento,
                         doctorName: medico,
-                        patientName: paciente,
+                        patientId, // Vínculo essencial para o LTV
                         date: date,
-                        clinicId: clinicId
-                    };
-                });
-
-                const validTransactions = transactionsToCreate.filter(t => t.amount > 0);
+                        clinicId: clinicId,
+                        importBatchId: batch.id
+                    });
+                }
 
                 if (validTransactions.length > 0) {
                     const result = await prisma.transaction.createMany({
-                        data: validTransactions.map(({ patientName, ...t }) => ({ ...t, importBatchId: batch.id }))
+                        data: validTransactions
                     });
                     resultCount = result.count;
 
-                    // Atualizar o lote IMEDIATAMENTE no banco para o usuário ver progresso
+                    // Atualizar o lote IMEDIATAMENTE
                     await prisma.importBatch.update({
                         where: { id: batch.id },
                         data: { recordCount: resultCount }
                     });
 
-                    // Log informativo das datas importadas
-                    const dates = validTransactions.map(t => t.date.getTime());
-                    const minDate = new Date(Math.min(...dates));
-                    const maxDate = new Date(Math.max(...dates));
-                    console.log(`SUCCESS: Importação concluída. ${resultCount} transações salvas. Range de datas: ${minDate.toLocaleDateString()} até ${maxDate.toLocaleDateString()}`);
-
-                    // GATILHO CRM: Tenta gerar tarefas de follow-up de forma resiliente
+                    // GATILHO CRM (Reaproveitando os pacientes já carregados)
                     for (const t of validTransactions) {
                         try {
-                            if (t.patientName && t.procedureName) {
-                                let patient = await prisma.patient.findFirst({
-                                    where: {
-                                        clinicId,
-                                        fullName: { equals: t.patientName, mode: 'insensitive' }
-                                    }
-                                });
-
-                                // Se o paciente não existir, criamos ele automaticamente
-                                if (!patient) {
-                                    console.log(`DEBUG: Criando paciente novo durante importação: ${t.patientName}`);
-                                    patient = await prisma.patient.create({
-                                        data: {
-                                            fullName: t.patientName,
-                                            clinicId,
-                                        }
-                                    });
-                                }
-
-                                if (patient) {
-                                    await TaskService.triggerFollowUp(clinicId, {
-                                        patientId: patient.id,
-                                        procedureName: t.procedureName,
-                                        transactionDate: t.date
-                                    });
-                                }
-                            }
+                            await TaskService.triggerFollowUp(clinicId, {
+                                patientId: t.patientId,
+                                procedureName: t.procedureName,
+                                transactionDate: t.date
+                            });
                         } catch (crmError) {
-                            console.error(`ERROR: Falha ao processar trigger de CRM para linha:`, t, crmError);
+                            console.error(`ERROR: CRM trigger failed:`, crmError);
                         }
                     }
                 }

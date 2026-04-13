@@ -127,7 +127,7 @@ export class PatientController {
 
             // Rentabilidade para o Header (Paciente de Alta Rentabilidade)
             const totalSpent = patient.transactions
-                .filter(t => t.type === 'INCOME' && (t.status === 'PAID' || t.status === 'RECEBIDO'))
+                .filter(t => t.type === 'INCOME' && (t.status === 'PAID' || t.status === 'RECEBIDO' || t.status === 'PAGO'))
                 .reduce((acc, t) => acc + t.amount, 0);
 
             const totalInventoryCost = patient.inventoryUsages.reduce((acc, usage) => {
@@ -161,7 +161,7 @@ export class PatientController {
                     patientId: id,
                     clinicId,
                     type: 'INCOME',
-                    status: { in: ['PAID', 'RECEBIDO'] }
+                    status: { in: ['PAID', 'RECEBIDO', 'PAGO'] }
                 },
                 _sum: { amount: true }
             });
