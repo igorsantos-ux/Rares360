@@ -24,6 +24,7 @@ router.get('/stock/history', CoreController.getStockHistory);
 // Pacientes
 router.get('/patients', PatientController.list);
 router.get('/patients/:id', PatientController.getById);
+router.get('/patients/:id/dashboard', PatientController.getDashboard);
 router.post('/patients', PatientController.create);
 router.patch('/patients/:id', PatientController.update);
 router.delete('/patients/:id', PatientController.delete);

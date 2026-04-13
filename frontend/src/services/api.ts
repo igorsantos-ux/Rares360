@@ -19,11 +19,11 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
     const token = localStorage.getItem('heath_finance_token');
     const clinicId = localStorage.getItem('heath_finance_clinic_id');
-    
+
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     if (clinicId) {
         config.headers['x-clinic-id'] = clinicId;
     }
@@ -81,7 +81,7 @@ export const financialApi = {
 };
 
 export const payablesApi = {
-    getPayables: (params?: { page?: number; limit?: number; filter?: string; search?: string; startDate?: string; endDate?: string }) => 
+    getPayables: (params?: { page?: number; limit?: number; filter?: string; search?: string; startDate?: string; endDate?: string }) =>
         api.get('contas-a-pagar', { params }),
     createPayable: (data: any) => api.post('contas-a-pagar', data),
     updatePayableStatus: (id: string, status: string) => api.patch(`contas-a-pagar/${id}/status`, { status }),
@@ -93,7 +93,7 @@ export const payablesApi = {
 };
 
 export const receivablesApi = {
-    getReceivables: (params?: { page?: number; limit?: number; filter?: string; search?: string; startDate?: string; endDate?: string }) => 
+    getReceivables: (params?: { page?: number; limit?: number; filter?: string; search?: string; startDate?: string; endDate?: string }) =>
         api.get('pendenciais', { params }),
     createReceivable: (data: any) => api.post('pendenciais', data),
     updateReceivableStatus: (id: string, status: string) => api.patch(`pendenciais/${id}/status`, { status }),
@@ -103,6 +103,7 @@ export const receivablesApi = {
 export const coreApi = {
     getPatients: () => api.get('core/patients'),
     getPatientById: (id: string) => api.get(`core/patients/${id}`),
+    getPatientDashboard: (id: string) => api.get(`core/patients/${id}/dashboard`),
     createPatient: (data: any) => api.post('core/patients', data),
     updatePatient: (id: string, data: any) => api.patch(`core/patients/${id}`, data),
     deletePatient: (id: string) => api.delete(`core/patients/${id}`),

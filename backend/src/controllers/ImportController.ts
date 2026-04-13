@@ -1,3 +1,4 @@
+import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import * as xlsx from 'xlsx';
 import { TaskService } from '../services/TaskService.js';
@@ -43,7 +44,7 @@ export class ImportController {
                 const phone = String(cleanRow['CELULAR'] || cleanRow['TELEFONE'] || cleanRow['TELEFONE CELULAR'] || cleanRow['FONE'] || '');
                 const cpf = cleanRow['CPF'] || cleanRow['DOCUMENTO'];
                 const birthDateRaw = cleanRow['DATA DE NASCIMENTO'] || cleanRow['NASCIMENTO'] || cleanRow['DATA NASCIMENTO'];
-                
+
                 let birthDate = null;
                 if (birthDateRaw) {
                     if (typeof birthDateRaw === 'number') {
@@ -150,7 +151,7 @@ export class ImportController {
 
                 // Como é Faturamento, trataremos sempre como ENTRADA (INCOME)
                 const tipo = 'INCOME';
-                
+
                 // Tratar status - vamos assumir PAGO se houver valor, a menos que especificado
                 const status = 'PAID';
 
@@ -192,7 +193,7 @@ export class ImportController {
                 select: { description: true, amount: true, date: true, category: true }
             });
 
-            const existingSet = new Set(existingTransactions.map(t => 
+            const existingSet = new Set(existingTransactions.map(t =>
                 `${t.description.trim()}|${t.amount}|${t.date.toISOString().split('T')[0]}|${t.category}`
             ));
 
@@ -200,11 +201,11 @@ export class ImportController {
             const validTransactions = transactionsToCreate.filter(t => {
                 if (t.amount <= 0) return false;
                 const hash = `${t.description.trim()}|${t.amount}|${t.date.toISOString().split('T')[0]}|${t.category}`;
-                
+
                 if (existingSet.has(hash)) {
                     return false;
                 }
-                
+
                 existingSet.add(hash); // Prevenir linhas duplicadas dentro da mesma planilha
                 return true;
             });
@@ -257,9 +258,9 @@ export class ImportController {
             });
 
             if (!type) {
-                return res.status(400).json({ 
+                return res.status(400).json({
                     message: 'Tipo de importação não especificado no payload (req.body.type)',
-                    debug_body: req.body 
+                    debug_body: req.body
                 });
             }
 
@@ -270,7 +271,7 @@ export class ImportController {
 
             // Ler o buffer do arquivo Excel
             const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
-            
+
             // Determinar qual aba usar baseado no tipo ou pegar a padrão
             let sheetName = '';
             if (type === 'billing') {
@@ -321,7 +322,7 @@ export class ImportController {
                         const normalizedKey = normalizeKey(key);
                         cleanRow[normalizedKey] = row[key];
                     }
-                    
+
                     // Log das chaves encontradas para depuração (apenas na primeira linha)
                     if (data.indexOf(row) === 0) {
                         console.log('DEBUG: Chaves da planilha (final-norm):', Object.keys(cleanRow));
@@ -331,22 +332,22 @@ export class ImportController {
                     const parseCurrency = (val: any) => {
                         if (typeof val === 'number') return val;
                         if (!val || typeof val !== 'string') return 0;
-                        
+
                         let clean = val.replace(/R\$\s?/, '').trim();
                         if (clean.includes(',') && clean.includes('.')) {
                             clean = clean.replace(/\./g, '').replace(',', '.');
-                        } 
+                        }
                         else if (clean.includes(',')) {
                             clean = clean.replace(',', '.');
                         }
-                        
+
                         const parsed = parseFloat(clean);
                         return isNaN(parsed) ? 0 : parsed;
                     };
 
                     const valorRaw = cleanRow['PRECO DE VENDA'] || cleanRow['PRECO- TABELA'] || cleanRow['PRECO'] || cleanRow['VALOR'] || cleanRow['VALOR TOTAL'] || 0;
                     const valor = Math.abs(parseCurrency(valorRaw));
-                    
+
                     const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['LIQUIDO'] || valorRaw;
                     const valorLiquido = Math.abs(parseCurrency(valorLiquidoRaw));
 
@@ -386,8 +387,8 @@ export class ImportController {
                 const validTransactions = transactionsToCreate.filter(t => t.amount > 0);
 
                 if (validTransactions.length > 0) {
-                    const result = await prisma.transaction.createMany({ 
-                        data: validTransactions.map(({ patientName, ...t }) => ({ ...t, importBatchId: batch.id })) 
+                    const result = await prisma.transaction.createMany({
+                        data: validTransactions.map(({ patientName, ...t }) => ({ ...t, importBatchId: batch.id }))
                     });
                     resultCount = result.count;
 
@@ -408,7 +409,7 @@ export class ImportController {
                         try {
                             if (t.patientName && t.procedureName) {
                                 let patient = await prisma.patient.findFirst({
-                                    where: { 
+                                    where: {
                                         clinicId,
                                         fullName: { equals: t.patientName, mode: 'insensitive' }
                                     }
@@ -421,7 +422,6 @@ export class ImportController {
                                         data: {
                                             fullName: t.patientName,
                                             clinicId,
-                                            status: 'ACTIVE'
                                         }
                                     });
                                 }
@@ -439,7 +439,7 @@ export class ImportController {
                         }
                     }
                 }
-            } 
+            }
             else if (type === 'pricing') {
                 // Lógica de Procedimentos Simplificada (TIPO, PROCEDIMENTO, DURAÇÃO, PRODUTO, TAREFA)
                 for (const row of data) {
@@ -538,7 +538,7 @@ export class ImportController {
         } catch (error: any) {
             console.error('❌ ERRO CRÍTICO NA IMPORTAÇÃO:', error);
             // Retorna o erro detalhado para o frontend capturar
-            return res.status(500).json({ 
+            return res.status(500).json({
                 message: error.message || 'Erro interno no processamento da planilha',
                 stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
                 details: error.toString()
@@ -551,7 +551,7 @@ export class ImportController {
             const dbUrl = process.env.DATABASE_URL || '';
             // Máscara para o hostname
             const hostname = dbUrl.split('@')[1]?.split(':')[0] || 'Hostname não encontrado';
-            return res.json({ 
+            return res.json({
                 status: 'online',
                 db_hostname: hostname,
                 message: 'Verifique se este hostname coincide com o do seu Supabase atual.'
@@ -594,7 +594,7 @@ export class ImportController {
             // Rollback: Deletar todos os registros vinculados a este lote
             // O onDelete: Cascade lidará com agendamentos/evoluções dos pacientes automaticamente no banco se configurado,
             // ou podemos fazer manual se necessário. No schema configuramos Cascade para relations se possível.
-            
+
             await prisma.$transaction([
                 prisma.patient.deleteMany({ where: { importBatchId: batchId, clinicId } }),
                 prisma.transaction.deleteMany({ where: { importBatchId: batchId, clinicId } }),

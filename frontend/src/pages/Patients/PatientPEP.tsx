@@ -14,11 +14,12 @@ import {
     FinancialModule,
     DocumentsModule
 } from '../../components/Patients/PEP/Modules/Placeholders';
+import { OverviewDashboard } from '../../components/Patients/PEP/Modules/OverviewDashboard';
 
 const PatientPEP = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [activeModule, setActiveModule] = useState('evolutions');
+    const [activeModule, setActiveModule] = useState('overview');
 
     const { data: patient, isLoading, error } = useQuery({
         queryKey: ['patient', id],
@@ -49,6 +50,7 @@ const PatientPEP = () => {
 
     const renderModule = () => {
         switch (activeModule) {
+            case 'overview': return <OverviewDashboard patient={patient} />;
             case 'data': return <MainDataModule patient={patient} />;
             case 'evolutions': return <EvolutionModule patient={patient} />;
             case 'prescriptions': return <PrescriptionModule patient={patient} />;
