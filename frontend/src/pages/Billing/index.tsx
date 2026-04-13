@@ -320,24 +320,27 @@ const RankingCard = ({ title, data = [], total = 0, icon, color }: any) => (
                     const percent = total > 0 ? (item.value / total) * 100 : 0;
                     return (
                         <div key={idx} className="group">
-                            <div className="flex justify-between items-start mb-2 text-sm">
-                                <div className="flex flex-col gap-0.5 truncate max-w-[60%]">
-                                    <span className="font-black text-slate-600 truncate">
+                            <div className="flex justify-between items-start mb-3 text-sm">
+                                <div className="flex flex-col gap-1 truncate max-w-[65%]">
+                                    <span className="font-black text-slate-700 truncate text-sm">
                                         <span className="text-slate-300 mr-2">#{idx + 1}</span>
                                         {item.name}
                                     </span>
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-bold text-[#8A9A5B] bg-[#8A9A5B]/5 px-2 py-0.5 rounded-md">
+                                        <span className="text-xs font-black text-[#8A9A5B] bg-[#8A9A5B]/10 px-2.5 py-1 rounded-lg border border-[#8A9A5B]/10">
                                             {item.count}x
                                         </span>
-                                        <span className="text-[10px] font-medium text-slate-400">
+                                        <span className="text-[11px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-lg">
                                             Tkt: R$ {item.average?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
                                 </div>
-                                <span className="font-black text-slate-800 text-right">
-                                    R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </span>
+                                <div className="flex flex-col items-end">
+                                    <span className="font-black text-slate-900 text-base">
+                                        R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Faturamento</span>
+                                </div>
                             </div>
                             <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
                                 <div
