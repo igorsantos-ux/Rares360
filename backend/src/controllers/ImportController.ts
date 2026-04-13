@@ -601,17 +601,25 @@ export class ImportController {
     }
 
     static async importPayables(req: Request, res: Response) {
+        console.log('📥 Iniciando importPayables...');
         try {
             const clinicId = (req as any).user?.clinicId;
+            console.log('🏥 ClinicId:', clinicId);
             if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
 
-            if (!(req as any).file) return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+            if (!(req as any).file) {
+                console.log('❌ Nenhum arquivo no request.file');
+                return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+            }
+
+            console.log('📂 Arquivo recebido:', (req as any).file.originalname, 'Size:', (req as any).file.size);
 
             const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
             const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
             const data: any[] = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
 
+            console.log('📊 Linhas extraídas:', data.length);
             if (data.length === 0) return res.status(400).json({ message: 'Planilha vazia' });
 
             // 1. Criar Lote de Importação
@@ -686,7 +694,7 @@ export class ImportController {
                     if (amount <= 0) throw new Error('O valor da conta deve ser maior que zero.');
 
                     // Criar Contas a Pagar
-                    await prisma.accountPayable.create({
+                    const account = await prisma.accountPayable.create({
                         data: {
                             clinicId,
                             importBatchId: batch.id,
@@ -702,6 +710,19 @@ export class ImportController {
                             notes: String(cleanRow['OBSERVAÇÃO NF - BOLETO'] || cleanRow['OBSERVACAO'] || '').trim(),
                             costCenter: String(cleanRow['CLASSIFICAÇÃO'] || 'Operacional').trim(),
                             costType: String(cleanRow['TIPO DE DESPESA'] || 'FIXA').trim().toUpperCase(),
+                        }
+                    });
+
+                    // CRIAR PARCELA ÚNICA (Importante para visualização no front v14.0)
+                    await prisma.accountPayableInstallment.create({
+                        data: {
+                            accountPayableId: account.id,
+                            installmentNumber: 1,
+                            amount: amount,
+                            dueDate,
+                            status,
+                            paidAt: status === 'PAGO' ? (paymentDate || dueDate) : null,
+                            paymentMethod: String(cleanRow['TIPO DO PAGAMENTO'] || cleanRow['FORMA DE PAGAMENTO'] || 'Outros').trim(),
                         }
                     });
 
