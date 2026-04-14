@@ -770,4 +770,122 @@ export class ImportController {
             return res.status(500).json({ message: 'Erro interno ao processar planilha', error: error.message });
         }
     }
+
+    static async importInventory(req: Request, res: Response) {
+        console.log('📦 Iniciando importInventory...');
+        try {
+            const clinicId = (req as any).user?.clinicId;
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+
+            if (!(req as any).file) {
+                return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+            }
+
+            const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const data: any[] = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+            if (data.length === 0) return res.status(400).json({ message: 'Planilha vazia' });
+
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'ESTOQUE' as any,
+                    fileName: (req as any).file.originalname,
+                    recordCount: 0
+                }
+            });
+
+            const parseCurrency = (val: any) => {
+                if (typeof val === 'number') return val;
+                if (!val || typeof val !== 'string') return 0;
+                let clean = val.replace(/R\$\s?/, '').replace(/\./g, '').replace(',', '.').trim();
+                const parsed = parseFloat(clean);
+                return isNaN(parsed) ? 0 : parsed;
+            };
+
+            const parseNumber = (val: any) => {
+                if (typeof val === 'number') return val;
+                if (!val || typeof val !== 'string') return 0;
+                let clean = val.replace(/\./g, '').replace(',', '.').trim();
+                const parsed = parseFloat(clean);
+                return isNaN(parsed) ? 0 : parsed;
+            };
+
+            let successCount = 0;
+            const errorLogs: any[] = [];
+
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const cleanRow: any = {};
+                for (const key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+
+                try {
+                    const name = cleanRow['NOME DO PRODUTO'] || cleanRow['NOME'];
+                    if (!name) throw new Error('Nome do produto ausente.');
+
+                    const code = String(cleanRow['CÓD'] || cleanRow['COD'] || '').trim();
+                    const statusRaw = String(cleanRow['STATUS'] || '').toUpperCase().trim();
+                    const isActive = statusRaw === 'INATIVO' ? false : true;
+
+                    const category = String(cleanRow['CATEGORIA'] || 'Geral').trim();
+                    const unit = String(cleanRow['UNIDADE'] || 'UN').trim();
+                    const manufacturer = String(cleanRow['FABRICANTE'] || '').trim();
+
+                    const unitCost = parseCurrency(cleanRow['VALOR UNITÁRIO'] || cleanRow['VALOR UNITARIO'] || 0);
+                    const currentStock = parseNumber(cleanRow['QTD ESTOQUE ATUAL'] || cleanRow['ESTOQUE ATUAL'] || cleanRow['QTD EM ESTOQUE ATUAL'] || 0);
+                    const minQuantity = parseNumber(cleanRow['QTD MÍNIMA'] || cleanRow['QTD MINIMA'] || 0);
+
+                    await prisma.inventoryItem.create({
+                        data: {
+                            clinicId,
+                            importBatchId: batch.id,
+                            code,
+                            isActive,
+                            name,
+                            category,
+                            unit,
+                            manufacturer,
+                            unitCost,
+                            currentStock,
+                            minQuantity
+                        }
+                    });
+
+                    successCount++;
+                } catch (err: any) {
+                    errorLogs.push({
+                        importBatchId: batch.id,
+                        rowNumber: i + 1,
+                        rowData: row,
+                        errorMessage: err.message || 'Erro desconhecido ao processar linha'
+                    });
+                }
+            }
+
+            if (errorLogs.length > 0) {
+                await prisma.importErrorLog.createMany({ data: errorLogs });
+            }
+
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: successCount }
+            });
+
+            return res.json({
+                message: 'Importação de estoque concluída',
+                totalRows: data.length,
+                successCount,
+                errorCount: errorLogs.length,
+                batchId: batch.id
+            });
+
+        } catch (error: any) {
+            console.error('Erro na importação de estoque:', error);
+            return res.status(500).json({ message: 'Erro interno ao processar planilha', error: error.message });
+        }
+    }
 }

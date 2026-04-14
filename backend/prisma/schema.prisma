@@ -333,12 +333,15 @@ model Lead {
 
 model InventoryItem {
   id              String           @id @default(uuid())
-  name            String
-  category        String
-  unit            String           @default("Unidade")
-  quantity        Float            @default(0)
-  minQuantity     Float            @default(0)
-  unitCost        Float            @default(0)
+  code            String?          // Mapeado de "CÓD"
+  isActive        Boolean          @default(true) // Mapeado de "STATUS"
+  name            String           // Mapeado de "NOME DO PRODUTO"
+  category        String           // Mapeado de "CATEGORIA"
+  unit            String           @default("Unidade") // Mapeado de "UNIDADE"
+  manufacturer    String?          // Mapeado de "FABRICANTE"
+  currentStock    Float            @default(0) // Mapeado de "QTD ESTOQUE ATUAL"
+  minQuantity     Float            @default(0) // Mapeado de "QTD MÍNIMA"
+  unitCost        Float            @default(0) // Mapeado de "VALOR UNITÁRIO"
   supplier        String?
   expirationDate  DateTime?
   batch           String?

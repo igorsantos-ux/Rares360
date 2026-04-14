@@ -3,18 +3,18 @@ import { useForm } from 'react-hook-form';
 import type { SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { 
-    X, 
-    Save, 
-    Loader2, 
-    Package, 
-    Tags, 
-    Info, 
-    Truck, 
-    Calendar, 
-    Hash,
-    DollarSign,
-    Box
+import {
+  X,
+  Save,
+  Loader2,
+  Package,
+  Tags,
+  Info,
+  Truck,
+  Calendar,
+  Hash,
+  DollarSign,
+  Box
 } from 'lucide-react';
 import { coreApi } from '../../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -24,7 +24,7 @@ const inventorySchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
   category: z.string().min(1, 'Categoria é obrigatória'),
   unit: z.string().min(1, 'Unidade é obrigatória'),
-  quantity: z.coerce.number().min(0, 'Quantidade deve ser positiva'),
+  currentStock: z.coerce.number().min(0, 'Quantidade deve ser positiva'),
   minQuantity: z.coerce.number().min(0, 'Mínimo deve ser positivo'),
   unitCost: z.coerce.number().min(0, 'Custo deve ser positivo'),
   supplier: z.string().optional().nullable(),
@@ -50,7 +50,7 @@ export function InventorySheet({ isOpen, onClose, onSave, item }: Props) {
       name: '',
       category: '',
       unit: 'Unidade',
-      quantity: 0,
+      currentStock: 0,
       minQuantity: 0,
       unitCost: 0,
       supplier: '',
@@ -61,37 +61,37 @@ export function InventorySheet({ isOpen, onClose, onSave, item }: Props) {
 
   useEffect(() => {
     if (isOpen) {
-        if (item) {
-            reset({
-                ...item,
-                expirationDate: item.expirationDate ? new Date(item.expirationDate).toISOString().split('T')[0] : '',
-                supplier: item.supplier || '',
-                batch: item.batch || ''
-            });
-        } else {
-            reset({
-              name: '',
-              category: '',
-              unit: 'Unidade',
-              quantity: 0,
-              minQuantity: 0,
-              unitCost: 0,
-              supplier: '',
-              expirationDate: '',
-              batch: ''
-            });
-        }
+      if (item) {
+        reset({
+          ...item,
+          expirationDate: item.expirationDate ? new Date(item.expirationDate).toISOString().split('T')[0] : '',
+          supplier: item.supplier || '',
+          batch: item.batch || ''
+        });
+      } else {
+        reset({
+          name: '',
+          category: '',
+          unit: 'Unidade',
+          currentStock: 0,
+          minQuantity: 0,
+          unitCost: 0,
+          supplier: '',
+          expirationDate: '',
+          batch: ''
+        });
+      }
     }
   }, [item, isOpen, reset]);
 
   const onSubmit: SubmitHandler<InventoryFormData> = async (data) => {
     try {
       setIsSubmitting(true);
-      
+
       // Isolamento de falhas com Try/Catch e Toast
       await coreApi.createStockItem(data);
       toast.success('Item registrado com sucesso!');
-      
+
       onSave();
       onClose();
     } catch (error: any) {
@@ -141,156 +141,156 @@ export function InventorySheet({ isOpen, onClose, onSave, item }: Props) {
             {/* Form Content */}
             <div className="flex-1 overflow-y-auto p-8 scrollbar-thin scrollbar-thumb-slate-200">
               <form id="inventoryForm" onSubmit={handleSubmit(onSubmit as any)} className="space-y-10">
-                
+
                 {/* Dados Básicos */}
                 <section className="space-y-6">
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#8A9A5B]/10">
-                        <Info size={16} className="text-[#8A9A5B]" />
-                        <h3 className="text-xs font-black text-[#697D58] uppercase tracking-widest">Informações Gerais</h3>
-                    </div>
+                  <div className="flex items-center gap-2 pb-2 border-b border-[#8A9A5B]/10">
+                    <Info size={16} className="text-[#8A9A5B]" />
+                    <h3 className="text-xs font-black text-[#697D58] uppercase tracking-widest">Informações Gerais</h3>
+                  </div>
 
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome do Insumo <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                      <input
+                        {...register('name')}
+                        placeholder="Ex: Toxina Botulínica, Luvas P"
+                        className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl pl-12 pr-4 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-[#8A9A5B]/10 focus:border-[#8A9A5B] transition-all outline-none"
+                      />
+                    </div>
+                    {errors.name && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.name.message}</span>}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nome do Insumo <span className="text-red-500">*</span></label>
-                        <div className="relative">
-                            <Package className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                            <input
-                                {...register('name')}
-                                placeholder="Ex: Toxina Botulínica, Luvas P"
-                                className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl pl-12 pr-4 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-[#8A9A5B]/10 focus:border-[#8A9A5B] transition-all outline-none"
-                            />
-                        </div>
-                        {errors.name && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.name.message}</span>}
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoria <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <Tags className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                        <select
+                          {...register('category')}
+                          className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-4 focus:ring-[#8A9A5B]/10 transition-all outline-none appearance-none"
+                        >
+                          <option value="">Selecione</option>
+                          <option value="Injetáveis">💉 Injetáveis</option>
+                          <option value="Descartáveis">📦 Descartáveis</option>
+                          <option value="Cosméticos">🧴 Cosméticos</option>
+                          <option value="Equipamentos">🔬 Equipamentos</option>
+                          <option value="Outros">⚙️ Outros</option>
+                        </select>
+                      </div>
+                      {errors.category && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.category.message}</span>}
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Categoria <span className="text-red-500">*</span></label>
-                            <div className="relative">
-                                <Tags className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                <select 
-                                    {...register('category')}
-                                    className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-4 focus:ring-[#8A9A5B]/10 transition-all outline-none appearance-none"
-                                >
-                                    <option value="">Selecione</option>
-                                    <option value="Injetáveis">💉 Injetáveis</option>
-                                    <option value="Descartáveis">📦 Descartáveis</option>
-                                    <option value="Cosméticos">🧴 Cosméticos</option>
-                                    <option value="Equipamentos">🔬 Equipamentos</option>
-                                    <option value="Outros">⚙️ Outros</option>
-                                </select>
-                            </div>
-                            {errors.category && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.category.message}</span>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unidade <span className="text-red-500">*</span></label>
-                            <div className="relative">
-                                <Box className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                <select 
-                                    {...register('unit')}
-                                    className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-4 focus:ring-[#8A9A5B]/10 transition-all outline-none appearance-none"
-                                >
-                                    <option value="Unidade">Unidade</option>
-                                    <option value="Caixa">Caixa</option>
-                                    <option value="Frasco">Frasco</option>
-                                    <option value="Ampola">Ampola</option>
-                                    <option value="ml">ml</option>
-                                    <option value="mg">mg</option>
-                                </select>
-                            </div>
-                            {errors.unit && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.unit.message}</span>}
-                        </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Unidade <span className="text-red-500">*</span></label>
+                      <div className="relative">
+                        <Box className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                        <select
+                          {...register('unit')}
+                          className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-4 focus:ring-[#8A9A5B]/10 transition-all outline-none appearance-none"
+                        >
+                          <option value="Unidade">Unidade</option>
+                          <option value="Caixa">Caixa</option>
+                          <option value="Frasco">Frasco</option>
+                          <option value="Ampola">Ampola</option>
+                          <option value="ml">ml</option>
+                          <option value="mg">mg</option>
+                        </select>
+                      </div>
+                      {errors.unit && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.unit.message}</span>}
                     </div>
+                  </div>
                 </section>
 
                 {/* Controle de Estoque */}
                 <section className="space-y-6">
-                    <div className="flex items-center gap-2 pb-2 border-b border-[#DEB587]/20">
-                        <Box size={16} className="text-[#DEB587]" />
-                        <h3 className="text-xs font-black text-[#DEB587] uppercase tracking-widest">Saldo & Segurança</h3>
-                    </div>
+                  <div className="flex items-center gap-2 pb-2 border-b border-[#DEB587]/20">
+                    <Box size={16} className="text-[#DEB587]" />
+                    <h3 className="text-xs font-black text-[#DEB587] uppercase tracking-widest">Saldo & Segurança</h3>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Qtd Atual</label>
-                            <input 
-                                type="number" 
-                                step="any"
-                                {...register('quantity')} 
-                                className="w-full bg-white border border-[#DEB587]/20 rounded-2xl px-5 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-[#DEB587]/10 focus:border-[#DEB587] transition-all outline-none text-center text-lg" 
-                            />
-                            {errors.quantity && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.quantity.message}</span>}
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-[#DEB587]">Qtd Mínima (Alerta)</label>
-                            <input 
-                                type="number" 
-                                step="any"
-                                {...register('minQuantity')} 
-                                className="w-full bg-[#DEB587]/5 border-2 border-[#DEB587]/30 rounded-2xl px-5 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-[#DEB587]/10 focus:border-[#DEB587] transition-all outline-none text-center text-lg placeholder:text-[#DEB587]/30" 
-                            />
-                            {errors.minQuantity && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.minQuantity.message}</span>}
-                        </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Qtd Atual</label>
+                      <input
+                        type="number"
+                        step="any"
+                        {...register('currentStock')}
+                        className="w-full bg-white border border-[#DEB587]/20 rounded-2xl px-5 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-[#DEB587]/10 focus:border-[#DEB587] transition-all outline-none text-center text-lg"
+                      />
+                      {errors.currentStock && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.currentStock.message}</span>}
                     </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-[#DEB587]">Qtd Mínima (Alerta)</label>
+                      <input
+                        type="number"
+                        step="any"
+                        {...register('minQuantity')}
+                        className="w-full bg-[#DEB587]/5 border-2 border-[#DEB587]/30 rounded-2xl px-5 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-[#DEB587]/10 focus:border-[#DEB587] transition-all outline-none text-center text-lg placeholder:text-[#DEB587]/30"
+                      />
+                      {errors.minQuantity && <span className="text-red-500 text-[10px] font-bold uppercase tracking-tighter">{errors.minQuantity.message}</span>}
+                    </div>
+                  </div>
                 </section>
 
                 {/* Valores e Rastreabilidade */}
                 <section className="space-y-6">
-                    <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
-                        <Hash size={16} className="text-slate-400" />
-                        <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Rastreabilidade & Custos</h3>
-                    </div>
+                  <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                    <Hash size={16} className="text-slate-400" />
+                    <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest">Rastreabilidade & Custos</h3>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Custo Unitário</label>
-                            <div className="relative">
-                                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                <input 
-                                    type="number" 
-                                    step="0.01"
-                                    {...register('unitCost')} 
-                                    placeholder="0,00"
-                                    className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-slate-100 transition-all outline-none" 
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lote</label>
-                            <div className="relative">
-                                <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                <input 
-                                    {...register('batch')} 
-                                    placeholder="Ex: L2024-X"
-                                    className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-slate-100 transition-all outline-none" 
-                                />
-                            </div>
-                        </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Custo Unitário</label>
+                      <div className="relative">
+                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...register('unitCost')}
+                          placeholder="0,00"
+                          className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-slate-100 transition-all outline-none"
+                        />
+                      </div>
                     </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Lote</label>
+                      <div className="relative">
+                        <Hash className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                        <input
+                          {...register('batch')}
+                          placeholder="Ex: L2024-X"
+                          className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-slate-700 font-bold focus:ring-4 focus:ring-slate-100 transition-all outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-[#8A9A5B]">Data de Validade</label>
-                            <div className="relative">
-                                <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8A9A5B]" size={18} />
-                                <input 
-                                    type="date"
-                                    {...register('expirationDate')} 
-                                    className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-4 focus:ring-[#8A9A5B]/5 transition-all outline-none" 
-                                />
-                            </div>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fornecedor</label>
-                            <div className="relative">
-                                <Truck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                                <input 
-                                    {...register('supplier')} 
-                                    placeholder="Nome do parceiro"
-                                    className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-4 focus:ring-slate-100 transition-all outline-none" 
-                                />
-                            </div>
-                        </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest text-[#8A9A5B]">Data de Validade</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8A9A5B]" size={18} />
+                        <input
+                          type="date"
+                          {...register('expirationDate')}
+                          className="w-full bg-white border border-[#8A9A5B]/20 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-4 focus:ring-[#8A9A5B]/5 transition-all outline-none"
+                        />
+                      </div>
                     </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Fornecedor</label>
+                      <div className="relative">
+                        <Truck className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                        <input
+                          {...register('supplier')}
+                          placeholder="Nome do parceiro"
+                          className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold focus:ring-4 focus:ring-slate-100 transition-all outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </section>
               </form>
             </div>

@@ -27,4 +27,7 @@ router.post('/finance', upload.single('file'), ImportController.importFinancialD
 // Nova rota de importação de Contas a Pagar
 router.post('/payables', upload.single('file'), ImportController.importPayables);
 
+// Nova rota de importação de Estoque
+router.post('/inventory', upload.single('file'), ImportController.importInventory);
+
 export default router;
