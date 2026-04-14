@@ -5,9 +5,8 @@ import {
     FileText,
     CheckCircle2,
     Loader2,
-    Download,
     ArrowRight,
-    FileSpreadsheet
+    Package
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -221,4 +220,3 @@ export function ImportInventoryModal({ isOpen, onClose, onSuccess }: Props) {
     );
 }
 
-import { Package } from 'lucide-react';
