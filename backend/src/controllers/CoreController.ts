@@ -22,7 +22,7 @@ const doctorSchema = z.object({
     crm: z.string().optional().nullable(),
     phone: z.string().optional().nullable(),
     isActive: z.boolean().optional().default(true),
-    
+
     // Novos campos
     cpf: z.string().optional().nullable(),
     birthDate: z.string().optional().nullable(),
@@ -59,11 +59,11 @@ export class CoreController {
     static async createStock(req: any, res: Response) {
         try {
             const validation = stockSchema.safeParse(req.body);
-            
+
             if (!validation.success) {
-                return res.status(400).json({ 
-                    error: 'Validação falhou', 
-                    details: validation.error.flatten().fieldErrors 
+                return res.status(400).json({
+                    error: 'Validação falhou',
+                    details: validation.error.flatten().fieldErrors
                 });
             }
 
@@ -71,7 +71,7 @@ export class CoreController {
                 ...validation.data,
                 clinicId: req.clinicId
             });
-            
+
             res.status(201).json(data);
         } catch (error) {
             console.error('Erro ao criar item de estoque:', error);
@@ -92,11 +92,11 @@ export class CoreController {
     static async createDoctor(req: any, res: Response) {
         try {
             const validation = doctorSchema.safeParse(req.body);
-            
+
             if (!validation.success) {
-                return res.status(400).json({ 
-                    error: 'Validação falhou', 
-                    details: validation.error.flatten().fieldErrors 
+                return res.status(400).json({
+                    error: 'Validação falhou',
+                    details: validation.error.flatten().fieldErrors
                 });
             }
 
@@ -106,11 +106,16 @@ export class CoreController {
                 crm: validation.data.crm ?? undefined,
                 phone: validation.data.phone ?? undefined,
                 cpf: validation.data.cpf ?? undefined,
-                email: validation.data.email ?? undefined,
+                email: (validation.data.email === '' || validation.data.email === null) ? undefined : validation.data.email,
                 crmUf: validation.data.crmUf ?? undefined,
                 rqe: validation.data.rqe ?? undefined,
                 pixKey: validation.data.pixKey ?? undefined,
-                birthDate: validation.data.birthDate ?? undefined,
+                birthDate: (validation.data.birthDate as any) ?? undefined,
+                consultationValue: validation.data.consultationValue ?? undefined,
+                repasseType: validation.data.repasseType ?? undefined,
+                repasseValue: validation.data.repasseValue ?? undefined,
+                availability: validation.data.availability ?? undefined,
+                defaultDuration: validation.data.defaultDuration ?? undefined,
                 clinicId: req.clinicId
             });
             res.status(201).json(data);
@@ -162,7 +167,7 @@ export class CoreController {
     static async registerMovement(req: any, res: Response) {
         try {
             const { itemId, type, quantity, reason } = req.body;
-            
+
             if (!itemId || !type || !quantity) {
                 return res.status(400).json({ error: 'ItemId, type e quantity são obrigatórios' });
             }

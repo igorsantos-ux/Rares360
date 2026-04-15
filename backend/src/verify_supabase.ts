@@ -17,11 +17,11 @@ async function main() {
       console.log('Status Ativo:', user.isActive)
     } else {
       console.log('❌ Usuário roberta.alamino@rares360.com.br NÃO ENCONTRADO.')
-      
+
       const allUsers = await prisma.user.findMany({ select: { email: true } })
       console.log('Usuários existentes:', allUsers.map(u => u.email).join(', '))
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('❌ Erro na conexão:', err.message)
   } finally {
     await prisma.$disconnect()

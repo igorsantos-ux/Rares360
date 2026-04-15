@@ -25,7 +25,7 @@ export class AppointmentController {
             endTime: { gt: startTime },
             status: { notIn: ['CANCELADO', 'FALTA'] }, // Agendamentos cancelados ou faltas não bloqueiam
             isOverbook: false // Se for um encaixe marcado anteriormente, ele não bloqueia outros?
-                              // Na verdade, o agendamento EXISTENTE se for overbook, ele ainda ocupa o espaço físico.
+            // Na verdade, o agendamento EXISTENTE se for overbook, ele ainda ocupa o espaço físico.
         };
 
         // 1. Validar PROFISSIONAL
@@ -87,7 +87,7 @@ export class AppointmentController {
 
             // Agregação de Inteligência Financeira por Paciente
             const patientIds = [...new Set(appointments.map(a => a.patientId))];
-            
+
             if (patientIds.length > 0) {
                 const [transactions, proposals, appCounts] = await Promise.all([
                     prisma.transaction.findMany({
@@ -190,9 +190,9 @@ export class AppointmentController {
             console.error('Mensagem de erro:', error.message);
             if (error.code) console.error('Código Prisma:', error.code);
             if (error.meta) console.error('Metadados Prisma:', error.meta);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Erro ao criar agendamento',
-                details: error.message 
+                details: error.message
             });
         }
     }
@@ -227,7 +227,7 @@ export class AppointmentController {
             }
 
             const oldAppointment = await prisma.appointment.findUnique({ where: { id } });
-            
+
             // Sanitizar campos de relação para o update
             const updateData = { ...data };
             if (updateData.hasOwnProperty('roomId') && !updateData.roomId) updateData.roomId = null;
@@ -254,9 +254,9 @@ export class AppointmentController {
             console.error('ID:', req.params.id);
             console.error('Payload:', req.body);
             console.error('Erro:', error.message);
-            res.status(500).json({ 
+            res.status(500).json({
                 error: 'Erro ao atualizar agendamento',
-                details: error.message 
+                details: error.message
             });
         }
     }
@@ -280,7 +280,7 @@ export class AppointmentController {
 
             // 2. Trigger Estoque: Baixa de insumos (se houver procedimento vinculado)
             if (appointment.procedureId) {
-                const procedure = await prisma.procedurePricing.findUnique({
+                const procedure = await prisma.procedure.findUnique({
                     where: { id: appointment.procedureId },
                     include: { supplies: true }
                 });
@@ -289,9 +289,9 @@ export class AppointmentController {
                     for (const supply of procedure.supplies) {
                         // Buscar item do estoque pelo nome ou id se estiver vinculado
                         const inventoryItem = await prisma.inventoryItem.findFirst({
-                            where: { 
+                            where: {
                                 clinicId: appointment.clinicId,
-                                name: supply.name 
+                                name: supply.name
                             }
                         });
 
@@ -299,7 +299,7 @@ export class AppointmentController {
                             // Criar movimento de saída
                             await prisma.stockMovement.create({
                                 data: {
-                                    type: 'SAIDA',
+                                    type: 'OUT',
                                     quantity: supply.quantity,
                                     reason: `Uso em agendamento: ${appointment.id}`,
                                     itemId: inventoryItem.id,
@@ -311,7 +311,7 @@ export class AppointmentController {
                             await prisma.inventoryItem.update({
                                 where: { id: inventoryItem.id },
                                 data: {
-                                    quantity: { decrement: supply.quantity }
+                                    currentStock: { decrement: supply.quantity }
                                 }
                             });
                         }

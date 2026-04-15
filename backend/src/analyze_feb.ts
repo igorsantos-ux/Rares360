@@ -51,7 +51,7 @@ try {
     console.log(`--- AUDITORIA FEVEREIRO ---`);
     console.log(`Total de linhas em Fev: ${febRows}`);
     console.log(`Soma Total: R$ ${totalFeb.toLocaleString('pt-BR')}`);
-    
+
     let dupCount = 0;
     duplicatesMap.forEach((count, hash) => {
         if (count > 1) {
@@ -60,6 +60,6 @@ try {
         }
     });
     console.log(`Total de linhas que seriam ignoradas por de-duplicação: ${dupCount}`);
-} catch (err) {
+} catch (err: any) {
     console.error('Erro:', err.message);
 }

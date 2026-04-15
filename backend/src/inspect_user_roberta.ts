@@ -19,7 +19,7 @@ async function main() {
     } else {
       console.log('Usuário não encontrado.')
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('Erro:', err.message)
   } finally {
     await prisma.$disconnect()

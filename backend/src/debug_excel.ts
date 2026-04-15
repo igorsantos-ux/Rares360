@@ -14,8 +14,8 @@ try {
         const data = xlsx.utils.sheet_to_json(sheet);
         if (data.length > 0) {
             console.log('\n--- ABA: ', billingSheetName, ' ---');
-            console.log('Chaves Originais:', Object.keys(data[0]));
-            const cleanKeys = Object.keys(data[0]).map(k => k.trim().toUpperCase());
+            console.log('Chaves Originais:', Object.keys(data[0] as any));
+            const cleanKeys = Object.keys(data[0] as any).map(k => k.trim().toUpperCase());
             console.log('Chaves Trimmed/Upper:', cleanKeys);
             console.log('Exemplo Linha 1:', data[0]);
         }
@@ -27,10 +27,10 @@ try {
         const data = xlsx.utils.sheet_to_json(sheet);
         if (data.length > 0) {
             console.log('\n--- ABA: ', pricingSheetName, ' ---');
-            console.log('Chaves Trimmed/Upper:', Object.keys(data[0]).map(k => k.trim().toUpperCase()));
+            console.log('Chaves Trimmed/Upper:', Object.keys(data[0] as any).map(k => k.trim().toUpperCase()));
             console.log('Exemplo Linha 1:', data[0]);
         }
     }
-} catch (err) {
+} catch (err: any) {
     console.error('Erro ao ler planilha:', err.message);
 }
