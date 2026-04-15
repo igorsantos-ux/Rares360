@@ -324,64 +324,102 @@ const KPICard = ({ title, value, icon, subtitle, valueColor = "text-[#1A202C]" }
     </div>
 );
 
-const RankingCard = ({ title, data = [], total = 0, icon, color, onItemClick }: any) => (
-    <div className="bg-white p-8 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex flex-col h-full">
-        <div className="flex items-center gap-3 mb-6">
-            <div className="p-2.5 rounded-xl text-white" style={{ backgroundColor: color }}>
-                {icon}
+const RankingCard = ({ title, data = [], total = 0, icon, color, onItemClick }: any) => {
+    const [page, setPage] = useState(0);
+    const perPage = 10;
+    const totalPages = Math.ceil(data.length / perPage);
+    const paginatedData = data.slice(page * perPage, (page + 1) * perPage);
+
+    return (
+        <div className="bg-white p-8 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex flex-col h-full">
+            <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl text-white" style={{ backgroundColor: color }}>
+                        {icon}
+                    </div>
+                    <div>
+                        <h3 className="font-extrabold text-lg text-slate-800">{title}</h3>
+                        {data.length > 0 && (
+                            <p className="text-[10px] font-bold text-slate-400 mt-0.5">{data.length} itens total</p>
+                        )}
+                    </div>
+                </div>
             </div>
-            <h3 className="font-extrabold text-lg text-slate-800">{title}</h3>
-        </div>
-        <div className="space-y-5 flex-1 overflow-y-auto pr-2">
-            {data.length === 0 ? (
-                <p className="text-sm text-slate-400 font-bold">Nenhum dado registrado.</p>
-            ) : (
-                data.map((item: any, idx: number) => {
-                    const percent = total > 0 ? (item.value / total) * 100 : 0;
-                    return (
-                        <div
-                            key={idx}
-                            className="group cursor-pointer hover:bg-[#8A9A5B]/5 rounded-2xl p-2 -m-2 transition-all"
-                            onClick={() => onItemClick?.(item.name)}
-                        >
-                            <div className="flex justify-between items-start mb-3 text-sm">
-                                <div className="flex flex-col gap-1 truncate max-w-[65%]">
-                                    <span className="font-black text-slate-700 truncate text-sm group-hover:text-[#697D58] transition-colors">
-                                        <span className="text-slate-300 mr-2">#{idx + 1}</span>
-                                        {item.name}
-                                    </span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-black text-[#8A9A5B] bg-[#8A9A5B]/10 px-2.5 py-1 rounded-lg border border-[#8A9A5B]/10">
-                                            {item.count}x
+            <div className="space-y-5 flex-1 pr-2">
+                {data.length === 0 ? (
+                    <p className="text-sm text-slate-400 font-bold">Nenhum dado registrado.</p>
+                ) : (
+                    paginatedData.map((item: any, idx: number) => {
+                        const globalIdx = page * perPage + idx;
+                        const percent = total > 0 ? (item.value / total) * 100 : 0;
+                        return (
+                            <div
+                                key={globalIdx}
+                                className="group cursor-pointer hover:bg-[#8A9A5B]/5 rounded-2xl p-2 -m-2 transition-all"
+                                onClick={() => onItemClick?.(item.name)}
+                            >
+                                <div className="flex justify-between items-start mb-3 text-sm">
+                                    <div className="flex flex-col gap-1 truncate max-w-[65%]">
+                                        <span className="font-black text-slate-700 truncate text-sm group-hover:text-[#697D58] transition-colors">
+                                            <span className="text-slate-300 mr-2">#{globalIdx + 1}</span>
+                                            {item.name}
                                         </span>
-                                        <span className="text-[11px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-lg">
-                                            Tkt: R$ {item.average?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-black text-[#8A9A5B] bg-[#8A9A5B]/10 px-2.5 py-1 rounded-lg border border-[#8A9A5B]/10">
+                                                {item.count}x
+                                            </span>
+                                            <span className="text-[11px] font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-lg">
+                                                Tkt: R$ {item.average?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="font-black text-slate-900 text-base">
+                                            R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                                         </span>
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Faturamento</span>
                                     </div>
                                 </div>
-                                <div className="flex flex-col items-end">
-                                    <span className="font-black text-slate-900 text-base">
-                                        R$ {item.value.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                                    </span>
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">Faturamento</span>
+                                <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
+                                    <div
+                                        className="h-full rounded-full transition-all duration-1000 opacity-80 group-hover:opacity-100"
+                                        style={{ width: `${Math.max(percent, 2)}%`, backgroundColor: color }}
+                                    />
                                 </div>
+                                <p className="text-[9px] font-black text-slate-400 mt-1.5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Repr: {percent.toFixed(1)}% do total
+                                </p>
                             </div>
-                            <div className="h-2 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
-                                <div
-                                    className="h-full rounded-full transition-all duration-1000 opacity-80 group-hover:opacity-100"
-                                    style={{ width: `${Math.max(percent, 2)}%`, backgroundColor: color }}
-                                />
-                            </div>
-                            <p className="text-[9px] font-black text-slate-400 mt-1.5 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                Repr: {percent.toFixed(1)}% do total
-                            </p>
-                        </div>
-                    );
-                })
+                        );
+                    })
+                )}
+            </div>
+
+            {/* Paginação */}
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 pt-4 border-t border-slate-100">
+                    <button
+                        onClick={() => setPage(p => Math.max(0, p - 1))}
+                        disabled={page === 0}
+                        className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-500 hover:bg-[#8A9A5B]/10 hover:text-[#697D58] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                        ← Anterior
+                    </button>
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                        {page + 1} / {totalPages}
+                    </span>
+                    <button
+                        onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                        disabled={page >= totalPages - 1}
+                        className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-50 text-slate-500 hover:bg-[#8A9A5B]/10 hover:text-[#697D58] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    >
+                        Próximo →
+                    </button>
+                </div>
             )}
         </div>
-    </div>
-);
+    );
+};
 
 const PieCard = ({ title, data = [], isCurrency = false, onSliceClick }: any) => {
     // Tratando dados para evitar quebras se vier vazio ou 0
