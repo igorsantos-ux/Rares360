@@ -818,14 +818,26 @@ export class ImportController {
 
             for (let i = 0; i < data.length; i++) {
                 const row = data[i];
+                const keys = Object.keys(row);
+
+                // Pular se a linha estiver vazia (todas as colunas vazias)
+                if (keys.every(k => !row[k] || String(row[k]).trim() === "")) continue;
+
+                if (i === 0) {
+                    console.log('📝 Exemplo da primeira linha (chaves originais):', keys);
+                }
+
                 const cleanRow: any = {};
                 for (const key in row) {
                     cleanRow[key.trim().toUpperCase()] = row[key];
                 }
 
                 try {
-                    const name = cleanRow['NOME DO PRODUTO'] || cleanRow['NOME'];
-                    if (!name) throw new Error('Nome do produto ausente.');
+                    const name = cleanRow['NOME DO PRODUTO'] || cleanRow['NOME'] || cleanRow['PRODUTO'];
+                    if (!name) {
+                        if (i < 5) console.log(`⚠️ Linha ${i + 1}: Nome não encontrado. Colunas:`, Object.keys(cleanRow));
+                        throw new Error('Coluna "NOME DO PRODUTO" não identificada ou vazia.');
+                    }
 
                     const code = String(cleanRow['CÓD'] || cleanRow['COD'] || '').trim();
                     const statusRaw = String(cleanRow['STATUS'] || '').toUpperCase().trim();
@@ -835,9 +847,9 @@ export class ImportController {
                     const unit = String(cleanRow['UNIDADE'] || 'UN').trim();
                     const manufacturer = String(cleanRow['FABRICANTE'] || '').trim();
 
-                    const unitCost = parseCurrency(cleanRow['VALOR UNITÁRIO'] || cleanRow['VALOR UNITARIO'] || 0);
-                    const currentStock = parseNumber(cleanRow['QTD ESTOQUE ATUAL'] || cleanRow['ESTOQUE ATUAL'] || cleanRow['QTD EM ESTOQUE ATUAL'] || 0);
-                    const minQuantity = parseNumber(cleanRow['QTD MÍNIMA'] || cleanRow['QTD MINIMA'] || 0);
+                    const unitCost = parseCurrency(cleanRow['VALOR UNITÁRIO'] || cleanRow['VALOR UNITARIO'] || cleanRow['PREÇO'] || cleanRow['CUSTO'] || 0);
+                    const currentStock = parseNumber(cleanRow['QTD ESTOQUE ATUAL'] || cleanRow['ESTOQUE ATUAL'] || cleanRow['QTD ATUAL'] || cleanRow['QTD'] || 0);
+                    const minQuantity = parseNumber(cleanRow['QTD MÍNIMA'] || cleanRow['QTD MINIMA'] || cleanRow['MÍNIMO'] || cleanRow['MINIMO'] || 0);
 
                     await prisma.inventoryItem.create({
                         data: {
