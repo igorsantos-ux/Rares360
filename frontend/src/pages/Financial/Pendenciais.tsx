@@ -18,12 +18,12 @@ import {
 import { toast, Toaster } from 'react-hot-toast';
 import { DeleteConfirmationModal } from '../../components/Financial/DeleteConfirmationModal';
 import DateFilter from '../../components/DateFilter';
-import { 
-    PieChart, 
-    Pie, 
-    Cell, 
-    ResponsiveContainer, 
-    Tooltip, 
+import {
+    PieChart,
+    Pie,
+    Cell,
+    ResponsiveContainer,
+    Tooltip,
     Legend,
     BarChart,
     Bar,
@@ -35,7 +35,7 @@ import {
 const StatusBadge = ({ status, dueDate }: { status: string; dueDate: string | null }) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const date = dueDate ? new Date(dueDate) : null;
     const normalizedDate = date ? new Date(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) : null;
 
@@ -56,7 +56,23 @@ const StatusBadge = ({ status, dueDate }: { status: string; dueDate: string | nu
 };
 
 const ProcedureDistributionChart = ({ data }: { data: any[] }) => {
-    const COLORS = ['#8A9A5B', '#DEB587', '#E5A988', '#64748B', '#F43F5E', '#F59E0B', '#10B981'];
+    const COLORS = ['#8A9A5B', '#DEB587', '#E5A988', '#64748B', '#F43F5E', '#F59E0B', '#10B981', '#94A3B8'];
+
+    const processedData = useMemo(() => {
+        if (!data || data.length <= 8) return data;
+
+        const sorted = [...data].sort((a, b) => b.value - a.value);
+        const top = sorted.slice(0, 7);
+        const others = sorted.slice(7);
+
+        const othersTotal = others.reduce((acc, curr) => acc + curr.value, 0);
+        const othersAvgPercentage = others.reduce((acc, curr) => acc + (curr.percentage || 0), 0);
+
+        return [
+            ...top,
+            { name: 'Outros', value: othersTotal, percentage: Math.round(othersAvgPercentage * 10) / 10 }
+        ];
+    }, [data]);
 
     if (!data || data.length === 0) {
         return (
@@ -73,7 +89,7 @@ const ProcedureDistributionChart = ({ data }: { data: any[] }) => {
                 <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                         <Pie
-                            data={data}
+                            data={processedData}
                             cx="50%"
                             cy="50%"
                             innerRadius={60}
@@ -81,14 +97,14 @@ const ProcedureDistributionChart = ({ data }: { data: any[] }) => {
                             paddingAngle={5}
                             dataKey="value"
                         >
-                            {data.map((_, index) => (
+                            {processedData.map((_, index) => (
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                             ))}
                         </Pie>
-                        <Tooltip 
-                            contentStyle={{ 
-                                borderRadius: '1.5rem', 
-                                border: 'none', 
+                        <Tooltip
+                            contentStyle={{
+                                borderRadius: '1.5rem',
+                                border: 'none',
                                 boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
                                 fontWeight: '900',
                                 fontSize: '10px',
@@ -97,11 +113,17 @@ const ProcedureDistributionChart = ({ data }: { data: any[] }) => {
                             }}
                             formatter={(value: any) => [`R$ ${Number(value || 0).toLocaleString('pt-BR')}`, 'Total']}
                         />
-                        <Legend 
+                        <Legend
                             layout="vertical"
                             align="right"
                             verticalAlign="middle"
                             iconType="circle"
+                            wrapperStyle={{
+                                maxHeight: '200px',
+                                overflowY: 'auto',
+                                paddingRight: '10px',
+                                scrollbarWidth: 'thin'
+                            }}
                             formatter={(value, entry: any) => (
                                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider ml-2">
                                     {value}: {entry.payload.percentage}%
@@ -116,19 +138,53 @@ const ProcedureDistributionChart = ({ data }: { data: any[] }) => {
 };
 
 const MonthlyEvolutionChart = ({ data }: { data: any[] }) => {
-    const COLORS = ['#8A9A5B', '#DEB587', '#E5A988', '#64748B', '#F43F5E', '#F59E0B', '#10B981'];
+    const COLORS = ['#8A9A5B', '#DEB587', '#E5A988', '#64748B', '#F43F5E', '#F59E0B', '#10B981', '#94A3B8'];
 
-    const procedures = useMemo(() => {
+    const { processedData, procedures } = useMemo(() => {
         try {
-            const keys = new Set<string>();
+            // 1. Identificar todos os procedimentos e o faturamento total de cada um
+            const procedureTotals: Record<string, number> = {};
             data.forEach(item => {
-                Object.keys(item).forEach(key => {
-                    if (key !== 'month') keys.add(key);
+                Object.entries(item).forEach(([key, value]) => {
+                    if (key !== 'month' && typeof value === 'number') {
+                        procedureTotals[key] = (procedureTotals[key] || 0) + value;
+                    }
                 });
             });
-            return Array.from(keys);
+
+            // 2. Selecionar os top 10 procedimentos
+            const sortedProcedures = Object.entries(procedureTotals)
+                .sort((a, b) => b[1] - a[1]);
+
+            const top10Keys = new Set(sortedProcedures.slice(0, 10).map(([key]) => key));
+            const hasOthers = sortedProcedures.length > 10;
+
+            // 3. Processar os dados para agrupar o restante em "Outros"
+            const processed = data.map(item => {
+                const newItem: any = { month: item.month };
+                let othersSum = 0;
+
+                Object.entries(item).forEach(([key, value]) => {
+                    if (key === 'month') return;
+                    if (top10Keys.has(key)) {
+                        newItem[key] = value;
+                    } else if (typeof value === 'number') {
+                        othersSum += value;
+                    }
+                });
+
+                if (hasOthers) {
+                    newItem['Outros'] = othersSum;
+                }
+                return newItem;
+            });
+
+            const finalProcedures = Array.from(top10Keys);
+            if (hasOthers) finalProcedures.push('Outros');
+
+            return { processedData: processed, procedures: finalProcedures };
         } catch {
-            return [];
+            return { processedData: data, procedures: [] };
         }
     }, [data]);
 
@@ -145,25 +201,25 @@ const MonthlyEvolutionChart = ({ data }: { data: any[] }) => {
             <h3 className="text-[10px] font-black text-[#697D58] uppercase tracking-[0.2em] mb-6">Evolução Mensal (Faturamento)</h3>
             <div className="w-full h-full min-h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data}>
+                    <BarChart data={processedData}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#8A9A5B20" />
-                        <XAxis 
-                            dataKey="month" 
-                            axisLine={false} 
-                            tickLine={false} 
+                        <XAxis
+                            dataKey="month"
+                            axisLine={false}
+                            tickLine={false}
                             tick={{ fontSize: 9, fontWeight: 900, fill: '#94A3B8' }}
                         />
-                        <YAxis 
-                            axisLine={false} 
-                            tickLine={false} 
+                        <YAxis
+                            axisLine={false}
+                            tickLine={false}
                             tick={{ fontSize: 9, fontWeight: 900, fill: '#94A3B8' }}
-                            tickFormatter={(value) => `R$${value >= 1000 ? (value/1000).toFixed(0)+'k' : value}`}
+                            tickFormatter={(value) => `R$${value >= 1000 ? (value / 1000).toFixed(0) + 'k' : value}`}
                         />
-                        <Tooltip 
+                        <Tooltip
                             cursor={{ fill: '#8A9A5B05' }}
-                            contentStyle={{ 
-                                borderRadius: '1.5rem', 
-                                border: 'none', 
+                            contentStyle={{
+                                borderRadius: '1.5rem',
+                                border: 'none',
                                 boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
                                 fontWeight: '900',
                                 fontSize: '10px',
@@ -171,13 +227,23 @@ const MonthlyEvolutionChart = ({ data }: { data: any[] }) => {
                             }}
                             formatter={(value: any) => [`R$ ${Number(value).toLocaleString('pt-BR')}`, '']}
                         />
-                        <Legend iconType="circle" wrapperStyle={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', paddingTop: '20px' }} />
+                        <Legend
+                            iconType="circle"
+                            wrapperStyle={{
+                                fontSize: '9px',
+                                fontWeight: 900,
+                                textTransform: 'uppercase',
+                                paddingTop: '20px',
+                                maxHeight: '100px',
+                                overflowY: 'auto'
+                            }}
+                        />
                         {procedures.map((proc, index) => (
-                            <Bar 
-                                key={proc} 
-                                dataKey={proc} 
-                                stackId="a" 
-                                fill={COLORS[index % COLORS.length]} 
+                            <Bar
+                                key={proc}
+                                dataKey={proc}
+                                stackId="a"
+                                fill={COLORS[index % COLORS.length]}
                                 radius={index === procedures.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                             />
                         ))}
@@ -297,9 +363,9 @@ const PendenciaisPage = () => {
     const formatDate = (dateStr: any) => {
         if (!dateStr) return '-';
         const d = new Date(dateStr);
-        return d.getUTCDate().toString().padStart(2, '0') + '/' + 
-               (d.getUTCMonth() + 1).toString().padStart(2, '0') + '/' + 
-               d.getUTCFullYear();
+        return d.getUTCDate().toString().padStart(2, '0') + '/' +
+            (d.getUTCMonth() + 1).toString().padStart(2, '0') + '/' +
+            d.getUTCFullYear();
     };
 
     const totalPages = receivablesResponse?.totalPages || 1;
@@ -307,14 +373,14 @@ const PendenciaisPage = () => {
     return (
         <div className="space-y-10 pb-12 animate-in fade-in duration-500">
             <Toaster position="top-right" />
-            
+
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
                     <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Contas a Receber (Pendências)</h2>
                     <p className="text-slate-500 font-medium mt-1">Acompanhamento de faturamento e pagamentos de clientes.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <DateFilter 
+                    <DateFilter
                         selectedPeriod={selectedPeriod}
                         setSelectedPeriod={setSelectedPeriod}
                         customStartDate={customStartDate}
@@ -323,7 +389,7 @@ const PendenciaisPage = () => {
                         setCustomEndDate={setCustomEndDate}
                         onApply={() => queryClient.invalidateQueries({ queryKey: ['receivables-list'] })}
                     />
-                    <button 
+                    <button
                         onClick={() => setIsSheetOpen(true)}
                         className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
                         <Plus size={20} />
@@ -335,24 +401,24 @@ const PendenciaisPage = () => {
             {/* KPIs */}
             <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <StatCard 
-                        title="Total Pendente" 
-                        value={`R$ ${summary.totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
-                        icon={<DollarSign size={20} />} 
-                        color="moss" 
+                    <StatCard
+                        title="Total Pendente"
+                        value={`R$ ${summary.totalPending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                        icon={<DollarSign size={20} />}
+                        color="moss"
                     />
-                    <StatCard 
-                        title="Recebido no Mês" 
-                        value={`R$ ${summary.totalReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
-                        icon={<CheckCircle2 size={20} />} 
-                        color="moss" 
+                    <StatCard
+                        title="Recebido no Mês"
+                        value={`R$ ${summary.totalReceived.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                        icon={<CheckCircle2 size={20} />}
+                        color="moss"
                     />
-                    <StatCard 
-                        title="Pendências" 
-                        value={`R$ ${summary.totalOverdue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`} 
-                        icon={<AlertCircle size={20} />} 
-                        color="dun" 
-                        alert={summary.totalOverdue > 0} 
+                    <StatCard
+                        title="Pendências"
+                        value={`R$ ${summary.totalOverdue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                        icon={<AlertCircle size={20} />}
+                        color="dun"
+                        alert={summary.totalOverdue > 0}
                     />
                 </div>
 
@@ -443,7 +509,7 @@ const PendenciaisPage = () => {
                                         <td className="px-8 py-6 text-right">
                                             <div className="flex items-center justify-end gap-2 text-slate-400">
                                                 {item.status !== 'RECEBIDO' && (
-                                                    <button 
+                                                    <button
                                                         onClick={() => updateStatusMutation.mutate({ id: item.id, status: 'RECEBIDO' })}
                                                         className="p-2.5 text-emerald-500 hover:bg-emerald-50 rounded-xl transition-all"
                                                         title="Dar Baixa (Receber)"
@@ -452,7 +518,7 @@ const PendenciaisPage = () => {
                                                     </button>
                                                 )}
                                                 {item.category === 'Procedimentos' && item.procedureExecution?.status === 'PENDENTE' && (
-                                                    <button 
+                                                    <button
                                                         onClick={() => executeMutation.mutate(item.procedureExecution.id)}
                                                         className="p-2.5 text-[#DEB587] hover:bg-[#DEB587]/10 rounded-xl transition-all"
                                                         title="💉 Marcar como Executado"
@@ -466,14 +532,14 @@ const PendenciaisPage = () => {
                                                     </a>
                                                 )}
                                                 <div className="relative group/menu">
-                                                                <button 
-                                                                    disabled={isLocked}
-                                                                    className="p-2.5 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-20"
-                                                                >
-                                                                    {isLocked ? <LockIcon size={18} className="text-slate-300" /> : <MoreVertical size={18} />}
-                                                                </button>
+                                                    <button
+                                                        disabled={isLocked}
+                                                        className="p-2.5 hover:bg-slate-100 rounded-xl transition-all disabled:opacity-20"
+                                                    >
+                                                        {isLocked ? <LockIcon size={18} className="text-slate-300" /> : <MoreVertical size={18} />}
+                                                    </button>
                                                     <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 z-50 invisible group-hover/menu:visible opacity-0 group-hover/menu:opacity-100 transition-all pointer-events-none group-hover/menu:pointer-events-auto">
-                                                        <button 
+                                                        <button
                                                             onClick={() => setDeleteModal({ open: true, item })}
                                                             className="w-full text-left px-5 py-2.5 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
                                                         >
@@ -489,7 +555,7 @@ const PendenciaisPage = () => {
                         </table>
                     </div>
                 )}
-                
+
                 {/* Paginação */}
                 {totalPages > 1 && (
                     <div className="p-6 bg-slate-50/50 border-t border-[#8A9A5B]/5 flex items-center justify-between gap-4">
@@ -516,13 +582,13 @@ const PendenciaisPage = () => {
                 )}
             </div>
 
-            <AccountReceivableSheet 
+            <AccountReceivableSheet
                 isOpen={isSheetOpen}
                 onClose={() => setIsSheetOpen(false)}
                 onSave={handleSave}
             />
 
-            <DeleteConfirmationModal 
+            <DeleteConfirmationModal
                 isOpen={deleteModal.open}
                 onClose={() => setDeleteModal({ open: false, item: null })}
                 description={deleteModal.item?.description}
