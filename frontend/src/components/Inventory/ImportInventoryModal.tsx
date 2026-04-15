@@ -6,7 +6,8 @@ import {
     CheckCircle2,
     Loader2,
     ArrowRight,
-    Package
+    Package,
+    Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
@@ -76,6 +77,13 @@ export function ImportInventoryModal({ isOpen, onClose, onSuccess }: Props) {
         setResult(null);
     };
 
+    const downloadTemplate = () => {
+        const link = document.createElement('a');
+        link.href = '/templates/MODELO - ESTOQUE.xlsx';
+        link.download = 'MODELO - ESTOQUE.xlsx';
+        link.click();
+    };
+
     return (
         <AnimatePresence>
             {isOpen && (
@@ -137,6 +145,25 @@ export function ImportInventoryModal({ isOpen, onClose, onSuccess }: Props) {
                                                 </div>
                                             )}
                                         </label>
+
+                                        {/* Download Template */}
+                                        <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex items-center justify-between group hover:bg-white hover:shadow-md transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-white text-[#8A9A5B] rounded-xl flex items-center justify-center shadow-sm">
+                                                    <Download size={18} />
+                                                </div>
+                                                <div className="text-xs">
+                                                    <p className="font-black text-slate-700 uppercase tracking-widest">Modelo de Planilha</p>
+                                                    <p className="text-slate-400 font-medium">Baixe o formato pronto para importar</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                onClick={downloadTemplate}
+                                                className="px-5 py-2.5 bg-[#8A9A5B] text-white text-[10px] font-black rounded-xl hover:bg-[#697D58] transition-colors shadow-lg shadow-[#8A9A5B]/20 uppercase"
+                                            >
+                                                Baixar
+                                            </button>
+                                        </div>
 
                                         <button
                                             onClick={handleImport}
