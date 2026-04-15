@@ -273,8 +273,7 @@ export class BillingService {
                     count: data.count,
                     average: data.count > 0 ? data.total / data.count : 0
                 }))
-                .sort((a, b) => b.value - a.value)
-                .slice(0, 10); // Top 10
+                .sort((a, b) => b.value - a.value);
 
         // Processando Ranking VIP e verificando Novo/Recorrente
         const patientIds = Object.keys(patientMap);
