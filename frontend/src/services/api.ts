@@ -154,6 +154,8 @@ export const reportingApi = {
         return api.get(`reporting/billing-analytics?${query.toString()}`);
     },
     getGoals: () => api.get('reporting/goals'),
+    getDrillDown: (params: { type: string; value: string; startDate?: string; endDate?: string }) =>
+        api.get('reporting/drill-down', { params }),
     postSmartGoal: (targetProfit: number) => api.post('reporting/smart-goal', { targetProfit }),
 };
 

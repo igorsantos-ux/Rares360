@@ -341,5 +341,95 @@ export class BillingService {
             }
         };
     }
+
+    static async getDrillDown({ clinicId, type, value, startDate, endDate }: {
+        clinicId: string;
+        type: string;
+        value: string;
+        startDate?: Date;
+        endDate?: Date;
+    }) {
+        const now = new Date();
+        const start = startDate || new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = endDate || now;
+
+        // Build dynamic where clause based on drill-down type
+        const baseWhere: any = {
+            clinicId,
+            type: 'INCOME',
+            status: 'PAID',
+            date: { gte: start, lte: end }
+        };
+
+        switch (type.toUpperCase()) {
+            case 'PROCEDURE':
+                baseWhere.procedureName = value;
+                break;
+            case 'DOCTOR':
+                baseWhere.OR = [
+                    { doctorName: value },
+                    { doctor: { name: value } }
+                ];
+                break;
+            case 'CATEGORY':
+                baseWhere.category = value;
+                break;
+            case 'ORIGIN':
+                baseWhere.patient = { origin: value };
+                break;
+            case 'PAYMENT_METHOD':
+                baseWhere.paymentMethod = value;
+                break;
+            default:
+                baseWhere.description = { contains: value, mode: 'insensitive' };
+        }
+
+        const transactions = await prisma.transaction.findMany({
+            where: baseWhere,
+            include: {
+                patient: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        phone: true,
+                        photoUrl: true
+                    }
+                },
+                doctor: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            },
+            orderBy: { date: 'desc' },
+            take: 50
+        });
+
+        const total = transactions.reduce((acc, t) => acc + t.amount, 0);
+        const count = transactions.length;
+        const averageTicket = count > 0 ? total / count : 0;
+
+        return {
+            summary: {
+                total,
+                count,
+                averageTicket
+            },
+            items: transactions.map(t => ({
+                id: t.id,
+                date: t.date,
+                description: t.description,
+                procedureName: t.procedureName,
+                doctorName: t.doctorName || t.doctor?.name || 'Clínica',
+                patientName: t.patient?.fullName || 'N/A',
+                patientId: t.patient?.id || null,
+                patientPhone: (t.patient as any)?.phone || null,
+                paymentMethod: t.paymentMethod || 'Não Informado',
+                amount: t.amount,
+                status: t.status
+            }))
+        };
+    }
 }
 

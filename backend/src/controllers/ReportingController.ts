@@ -87,7 +87,7 @@ export class ReportingController {
             // Capturar parâmetros de data
             const { startDate, endDate } = req.query;
             const today = new Date();
-            
+
             // Início do período (padrão 1º dia do mês atual)
             const start = startDate ? new Date(startDate as string) : new Date(today.getFullYear(), today.getMonth(), 1);
             // Fim do período (padrão último dia do mês atual)
@@ -152,7 +152,7 @@ export class ReportingController {
             // 4. Gráfico de Evolução Adaptativo
             const chartData = [];
             const diffDays = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24));
-            
+
             let interval = 'month';
             if (diffDays <= 31) interval = 'day';
             else if (diffDays <= 90) interval = 'week';
@@ -207,7 +207,7 @@ export class ReportingController {
                 const startYear = start.getFullYear();
                 const endMonth = end.getMonth();
                 const endYear = end.getFullYear();
-                
+
                 let curMonth = startMonth;
                 let curYear = startYear;
 
@@ -277,6 +277,28 @@ export class ReportingController {
             res.json({ message: 'Funcionalidade em transição' });
         } catch (error) {
             res.status(500).json({ error: 'Internal server error' });
+        }
+    }
+    static async getDrillDown(req: any, res: Response) {
+        try {
+            const { type, value, startDate, endDate } = req.query;
+
+            if (!type || !value) {
+                return res.status(400).json({ error: 'Parâmetros "type" e "value" são obrigatórios.' });
+            }
+
+            const data = await BillingService.getDrillDown({
+                clinicId: req.clinicId,
+                type: type as string,
+                value: value as string,
+                startDate: startDate ? new Date(startDate as string) : undefined,
+                endDate: endDate ? new Date(endDate as string) : undefined
+            });
+
+            res.json(data);
+        } catch (error: any) {
+            console.error('Erro getDrillDown:', error);
+            res.status(500).json({ error: 'Falha ao buscar detalhamento.' });
         }
     }
 }

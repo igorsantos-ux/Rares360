@@ -12,6 +12,7 @@ router.get('/dashboard', ReportingController.getDashboardData);
 router.get('/cash-flow', ReportingController.getCashFlow);
 router.get('/dre', ReportingController.getDRE);
 router.get('/billing-analytics', ReportingController.getBillingAnalytics);
+router.get('/drill-down', ReportingController.getDrillDown);
 router.get('/goals', ReportingController.getGoals);
 router.post('/smart-goal', ReportingController.postSmartGoal);
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { DrillDownSheet } from '../../components/Financial/DrillDownSheet';
 import { reportingApi } from '../../services/api';
 import {
     BarChart3,
@@ -46,6 +47,11 @@ const BillingPage = () => {
     });
 
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+    const [drillDownData, setDrillDownData] = useState<{ type: string; value: string } | null>(null);
+
+    const handleDrillDown = (type: string, value: string) => {
+        setDrillDownData({ type, value });
+    };
 
     const { data: dashboardData, isLoading, isError, refetch } = useQuery({
         queryKey: ['billing-dashboard', dateRange.startDate, dateRange.endDate, groupBy],
@@ -226,6 +232,7 @@ const BillingPage = () => {
                     data={rankings.procedures}
                     total={kpis.totalBilling}
                     color="#DEB587"
+                    onItemClick={(name: string) => handleDrillDown('PROCEDURE', name)}
                 />
                 <RankingCard
                     title="Top Médicos"
@@ -233,6 +240,7 @@ const BillingPage = () => {
                     data={rankings.doctors}
                     total={kpis.totalBilling}
                     color="#8A9A5B"
+                    onItemClick={(name: string) => handleDrillDown('DOCTOR', name)}
                 />
                 <RankingCard
                     title="Top Avaliadores/Vendas (Categorias)"
@@ -240,6 +248,7 @@ const BillingPage = () => {
                     data={rankings.categories}
                     total={kpis.totalBilling}
                     color="#5B7C9A"
+                    onItemClick={(name: string) => handleDrillDown('CATEGORY', name)}
                 />
             </div>
 
@@ -251,8 +260,8 @@ const BillingPage = () => {
 
             {/* Rodapé Analítico: Distribuições */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <PieCard title="Origem dos Pacientes" data={distributions.origins} />
-                <PieCard title="Formas de Recebimento" data={distributions.paymentMethods} isCurrency />
+                <PieCard title="Origem dos Pacientes" data={distributions.origins} onSliceClick={(name: string) => handleDrillDown('ORIGIN', name)} />
+                <PieCard title="Formas de Recebimento" data={distributions.paymentMethods} isCurrency onSliceClick={(name: string) => handleDrillDown('PAYMENT_METHOD', name)} />
             </div>
 
             {/* Modal de Importação */}
@@ -261,6 +270,17 @@ const BillingPage = () => {
                 onClose={() => setIsImportModalOpen(false)}
                 onSuccess={() => refetch()}
             />
+
+            {/* Drill-Down Sheet */}
+            {drillDownData && (
+                <DrillDownSheet
+                    isOpen={!!drillDownData}
+                    onClose={() => setDrillDownData(null)}
+                    type={drillDownData.type}
+                    value={drillDownData.value}
+                    dateRange={dateRange}
+                />
+            )}
         </div>
     );
 };
@@ -304,7 +324,7 @@ const KPICard = ({ title, value, icon, subtitle, valueColor = "text-[#1A202C]" }
     </div>
 );
 
-const RankingCard = ({ title, data = [], total = 0, icon, color }: any) => (
+const RankingCard = ({ title, data = [], total = 0, icon, color, onItemClick }: any) => (
     <div className="bg-white p-8 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex flex-col h-full">
         <div className="flex items-center gap-3 mb-6">
             <div className="p-2.5 rounded-xl text-white" style={{ backgroundColor: color }}>
@@ -319,10 +339,14 @@ const RankingCard = ({ title, data = [], total = 0, icon, color }: any) => (
                 data.map((item: any, idx: number) => {
                     const percent = total > 0 ? (item.value / total) * 100 : 0;
                     return (
-                        <div key={idx} className="group">
+                        <div
+                            key={idx}
+                            className="group cursor-pointer hover:bg-[#8A9A5B]/5 rounded-2xl p-2 -m-2 transition-all"
+                            onClick={() => onItemClick?.(item.name)}
+                        >
                             <div className="flex justify-between items-start mb-3 text-sm">
                                 <div className="flex flex-col gap-1 truncate max-w-[65%]">
-                                    <span className="font-black text-slate-700 truncate text-sm">
+                                    <span className="font-black text-slate-700 truncate text-sm group-hover:text-[#697D58] transition-colors">
                                         <span className="text-slate-300 mr-2">#{idx + 1}</span>
                                         {item.name}
                                     </span>
@@ -359,7 +383,7 @@ const RankingCard = ({ title, data = [], total = 0, icon, color }: any) => (
     </div>
 );
 
-const PieCard = ({ title, data = [], isCurrency = false }: any) => {
+const PieCard = ({ title, data = [], isCurrency = false, onSliceClick }: any) => {
     // Tratando dados para evitar quebras se vier vazio ou 0
     const validData = data.filter((d: any) => d.value > 0);
 
@@ -372,7 +396,7 @@ const PieCard = ({ title, data = [], isCurrency = false }: any) => {
                     </div>
                     <div>
                         <h3 className="font-extrabold text-lg text-slate-800">{title}</h3>
-                        <p className="text-[10px] uppercase font-bold text-slate-400">Distribuição geral</p>
+                        <p className="text-[10px] uppercase font-bold text-slate-400">Distribuição geral • Clique para detalhar</p>
                     </div>
                 </div>
                 <div className="space-y-2.5 mt-6">
@@ -380,7 +404,11 @@ const PieCard = ({ title, data = [], isCurrency = false }: any) => {
                         <p className="text-xs text-slate-400 font-bold">Sem dados suficientes.</p>
                     ) : (
                         validData.map((d: any, i: number) => (
-                            <div key={i} className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl">
+                            <div
+                                key={i}
+                                className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl cursor-pointer hover:bg-[#8A9A5B]/10 hover:ring-1 hover:ring-[#8A9A5B]/20 transition-all"
+                                onClick={() => onSliceClick?.(d.name)}
+                            >
                                 <div className="flex items-center gap-2">
                                     <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
                                     <span className="text-xs font-black text-slate-600 truncate max-w-[120px]">{d.name}</span>
@@ -403,9 +431,11 @@ const PieCard = ({ title, data = [], isCurrency = false }: any) => {
                                 outerRadius={80}
                                 paddingAngle={5}
                                 dataKey="value"
+                                cursor="pointer"
+                                onClick={(entry: any) => onSliceClick?.(entry.name)}
                             >
                                 {validData.map((_: any, index: number) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity" />
                                 ))}
                             </Pie>
                             <RechartsTooltip content={<CustomPieTooltip />} />
