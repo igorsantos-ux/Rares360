@@ -422,68 +422,116 @@ const RankingCard = ({ title, data = [], total = 0, icon, color, onItemClick }: 
 };
 
 const PieCard = ({ title, data = [], isCurrency = false, onSliceClick }: any) => {
-    // Tratando dados para evitar quebras se vier vazio ou 0
+    const [page, setPage] = useState(0);
+    const perPage = 8;
+
+    // Filter and sort
     const validData = data.filter((d: any) => d.value > 0);
 
+    // For the PIE CHART: top 7 + Outros
+    const chartData = (() => {
+        if (validData.length <= 8) return validData;
+        const top = validData.slice(0, 7);
+        const othersTotal = validData.slice(7).reduce((acc: number, d: any) => acc + d.value, 0);
+        return [...top, { name: 'Outros', value: othersTotal }];
+    })();
+
+    // For the LEGEND LIST: paginated
+    const totalPages = Math.ceil(validData.length / perPage);
+    const paginatedLegend = validData.slice(page * perPage, (page + 1) * perPage);
+
     return (
-        <div className="bg-white p-8 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex flex-col sm:flex-row items-center gap-6">
-            <div className="flex-1 w-full">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-[#DEB587]/10 rounded-xl text-[#DEB587]">
-                        <PieChartIcon size={20} />
-                    </div>
-                    <div>
-                        <h3 className="font-extrabold text-lg text-slate-800">{title}</h3>
-                        <p className="text-[10px] uppercase font-bold text-slate-400">Distribuição geral • Clique para detalhar</p>
-                    </div>
+        <div className="bg-white p-8 rounded-[2.5rem] border border-[#8A9A5B]/10 shadow-sm flex flex-col gap-6">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-[#DEB587]/10 rounded-xl text-[#DEB587]">
+                    <PieChartIcon size={20} />
                 </div>
-                <div className="space-y-2.5 mt-6">
+                <div>
+                    <h3 className="font-extrabold text-lg text-slate-800">{title}</h3>
+                    <p className="text-[10px] uppercase font-bold text-slate-400">
+                        {validData.length} itens • Clique para detalhar
+                    </p>
+                </div>
+            </div>
+
+            {/* Chart + Legend side by side */}
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+                {/* Legend List */}
+                <div className="flex-1 w-full space-y-2">
                     {validData.length === 0 ? (
                         <p className="text-xs text-slate-400 font-bold">Sem dados suficientes.</p>
                     ) : (
-                        validData.map((d: any, i: number) => (
-                            <div
-                                key={i}
-                                className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl cursor-pointer hover:bg-[#8A9A5B]/10 hover:ring-1 hover:ring-[#8A9A5B]/20 transition-all"
-                                onClick={() => onSliceClick?.(d.name)}
-                            >
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
-                                    <span className="text-xs font-black text-slate-600 truncate max-w-[120px]">{d.name}</span>
+                        paginatedLegend.map((d: any, i: number) => {
+                            const globalIdx = page * perPage + i;
+                            return (
+                                <div
+                                    key={globalIdx}
+                                    className="flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl cursor-pointer hover:bg-[#8A9A5B]/10 hover:ring-1 hover:ring-[#8A9A5B]/20 transition-all"
+                                    onClick={() => onSliceClick?.(d.name)}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[globalIdx % COLORS.length] }}></div>
+                                        <span className="text-xs font-black text-slate-600 truncate max-w-[140px]">{d.name}</span>
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-700">
+                                        {isCurrency ? `R$ ${d.value.toLocaleString('pt-BR')}` : d.value}
+                                    </span>
                                 </div>
-                                <span className="text-xs font-bold text-slate-700">
-                                    {isCurrency ? `R$ ${d.value.toLocaleString('pt-BR')}` : d.value}
-                                </span>
-                            </div>
-                        ))
+                            );
+                        })
+                    )}
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-3 border-t border-slate-100 mt-3">
+                            <button
+                                onClick={() => setPage(p => Math.max(0, p - 1))}
+                                disabled={page === 0}
+                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-50 text-slate-500 hover:bg-[#8A9A5B]/10 hover:text-[#697D58] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                ←
+                            </button>
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                {page + 1}/{totalPages}
+                            </span>
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                                disabled={page >= totalPages - 1}
+                                className="px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-slate-50 text-slate-500 hover:bg-[#8A9A5B]/10 hover:text-[#697D58] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                            >
+                                →
+                            </button>
+                        </div>
                     )}
                 </div>
-            </div>
-            <div className="w-full sm:w-[200px] h-[200px] flex justify-center items-center">
-                {validData.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                            <Pie
-                                data={validData}
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                                cursor="pointer"
-                                onClick={(entry: any) => onSliceClick?.(entry.name)}
-                            >
-                                {validData.map((_: any, index: number) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity" />
-                                ))}
-                            </Pie>
-                            <RechartsTooltip content={<CustomPieTooltip />} />
-                        </PieChart>
-                    </ResponsiveContainer>
-                ) : (
-                    <div className="w-32 h-32 rounded-full border-8 border-slate-50 flex flex-col items-center justify-center">
-                        <PieChartIcon size={24} className="text-slate-200" />
-                    </div>
-                )}
+
+                {/* Pie Chart */}
+                <div className="w-full sm:w-[200px] h-[200px] flex justify-center items-center shrink-0">
+                    {chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={chartData}
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                    cursor="pointer"
+                                    onClick={(entry: any) => onSliceClick?.(entry.name)}
+                                >
+                                    {chartData.map((_: any, index: number) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="hover:opacity-80 transition-opacity" />
+                                    ))}
+                                </Pie>
+                                <RechartsTooltip content={<CustomPieTooltip />} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="w-32 h-32 rounded-full border-8 border-slate-50 flex flex-col items-center justify-center">
+                            <PieChartIcon size={24} className="text-slate-200" />
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

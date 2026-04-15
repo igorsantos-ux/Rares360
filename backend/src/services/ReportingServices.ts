@@ -310,15 +310,17 @@ export class BillingService {
         const paymentMap: Record<string, number> = {};
 
         currentTransactions.forEach(t => {
-            const origin = t.patient?.origin || 'Outros';
-            originMap[origin] = (originMap[origin] || 0) + 1; // Usando Count para Origem (quantos pacientes vieram)
+            const origin = (t.patient?.origin || 'Outros').trim().toUpperCase();
+            originMap[origin] = (originMap[origin] || 0) + 1;
 
-            const pay = t.paymentMethod || 'Não Informado';
-            paymentMap[pay] = (paymentMap[pay] || 0) + t.amount; // Usando Faturamento para Formas de Recebimento
+            const pay = (t.paymentMethod || 'Não Informado').trim().toUpperCase();
+            paymentMap[pay] = (paymentMap[pay] || 0) + t.amount;
         });
 
         const buildDist = (map: Record<string, number>) =>
-            Object.entries(map).map(([name, value]) => ({ name, value }));
+            Object.entries(map)
+                .map(([name, value]) => ({ name, value }))
+                .sort((a, b) => b.value - a.value);
 
         return {
             kpis: {
