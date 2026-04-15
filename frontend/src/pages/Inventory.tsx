@@ -34,7 +34,7 @@ const Inventory = () => {
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [isMovementModalOpen, setIsMovementModalOpen] = useState(false);
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-    const [movementType, setMovementType] = useState<'ENTRADA' | 'SAIDA'>('ENTRADA');
+    const [movementType, setMovementType] = useState<'IN' | 'OUT'>('IN');
     const [selectedItem, setSelectedItem] = useState<any>(null);
     const [filterType, setFilterType] = useState<'all' | 'low' | 'expiration'>('all');
 
@@ -95,7 +95,7 @@ const Inventory = () => {
         setIsSheetOpen(true);
     };
 
-    const handleOpenMovement = (type: 'ENTRADA' | 'SAIDA') => {
+    const handleOpenMovement = (type: 'IN' | 'OUT') => {
         setMovementType(type);
         setIsMovementModalOpen(true);
     };
@@ -133,14 +133,14 @@ const Inventory = () => {
                 </div>
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => handleOpenMovement('ENTRADA')}
+                        onClick={() => handleOpenMovement('IN')}
                         className="flex items-center gap-2 px-5 py-3 bg-green-50 text-green-700 border border-green-100 rounded-2xl font-bold text-sm hover:bg-green-100 transition-all shadow-sm"
                     >
                         <ArrowUpCircle size={18} />
                         Entrada
                     </button>
                     <button
-                        onClick={() => handleOpenMovement('SAIDA')}
+                        onClick={() => handleOpenMovement('OUT')}
                         className="flex items-center gap-2 px-5 py-3 bg-red-50 text-red-700 border border-red-100 rounded-2xl font-bold text-sm hover:bg-red-100 transition-all shadow-sm"
                     >
                         <ArrowDownCircle size={18} />
