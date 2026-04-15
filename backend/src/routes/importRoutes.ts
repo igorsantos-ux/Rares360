@@ -30,4 +30,7 @@ router.post('/payables', upload.single('file'), ImportController.importPayables)
 // Nova rota de importação de Estoque
 router.post('/inventory', upload.single('file'), ImportController.importInventory);
 
+// Nova rota de importação de Movimentação de Estoque
+router.post('/stock-movements', upload.single('file'), ImportController.importStockMovements);
+
 export default router;

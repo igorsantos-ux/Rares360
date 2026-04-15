@@ -360,18 +360,23 @@ model InventoryItem {
 }
 
 model StockMovement {
-  id        String        @id @default(uuid())
-  type      MovementType
-  quantity  Float
-  reason    String?
-  createdAt DateTime      @default(now())
-  userId    String?
-  itemId    String
-  clinicId  String
-  clinic    Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  item      InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  id            String        @id @default(uuid())
+  type          MovementType
+  quantity      Float
+  reason        String?
+  date          DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  userId        String?
+  itemId        String
+  clinicId      String
+  importBatchId String?
+
+  importBatch   ImportBatch?  @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+  clinic        Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  item          InventoryItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
   @@index([clinicId, itemId])
+  @@index([importBatchId])
 }
 
 model FinancialGoal {
@@ -591,8 +596,8 @@ model Task {
 }
 
 enum MovementType {
-  ENTRADA
-  SAIDA
+  IN
+  OUT
 }
 
 enum ClosureStatus {
@@ -740,6 +745,7 @@ enum ImportModule {
   ESTOQUE
   PROCEDIMENTOS
   CONTAS_A_PAGAR
+  MOVIMENTACAO
 }
 
 model ImportBatch {
@@ -758,6 +764,7 @@ model ImportBatch {
   procedures         Procedure[]
   equipments         Equipment[]
   accountPayables    AccountPayable[]
+  stockMovements     StockMovement[]
   errors             ImportErrorLog[]
 
   @@index([clinicId])

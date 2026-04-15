@@ -259,6 +259,9 @@ export const importApi = {
     }),
     importInventory: (formData: FormData) => api.post('import/inventory', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+    importStockMovements: (formData: FormData) => api.post('import/stock-movements', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
     })
 };
 

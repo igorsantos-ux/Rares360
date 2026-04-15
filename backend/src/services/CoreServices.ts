@@ -32,10 +32,10 @@ export class MedicalService {
         });
     }
 
-    static async createDoctor(data: { 
-        name: string; 
-        specialty: string; 
-        commission: number; 
+    static async createDoctor(data: {
+        name: string;
+        specialty: string;
+        commission: number;
         clinicId: string;
         crm?: string;
         phone?: string;
@@ -89,14 +89,14 @@ export class InventoryService {
             where: { clinicId }
         });
 
-        const totalInventoryValue = items.reduce((acc, item) => acc + (item.quantity * item.unitCost), 0);
+        const totalInventoryValue = items.reduce((acc, item) => acc + (item.currentStock * item.unitCost), 0);
 
         // Lógica Curva ABC (Simplificada por Valor de Estoque)
-        const sortedItems = [...items].sort((a, b) => (b.quantity * b.unitCost) - (a.quantity * a.unitCost));
+        const sortedItems = [...items].sort((a, b) => (b.currentStock * b.unitCost) - (a.currentStock * a.unitCost));
 
         let cumulativeValue = 0;
         return sortedItems.map(item => {
-            const itemValue = item.quantity * item.unitCost;
+            const itemValue = item.currentStock * item.unitCost;
             cumulativeValue += itemValue;
             const totalValueSum = totalInventoryValue || 1;
             const percentage = (cumulativeValue / totalValueSum) * 100;
@@ -108,7 +108,7 @@ export class InventoryService {
             return {
                 ...item,
                 totalValue: itemValue,
-                status: item.quantity <= item.minQuantity ? 'BELOW_MINIMUM' : 'OK',
+                status: item.currentStock <= item.minQuantity ? 'BELOW_MINIMUM' : 'OK',
                 categoryABC
             };
         });
@@ -126,7 +126,7 @@ export class InventoryService {
             return await prisma.inventoryItem.update({
                 where: { id: existingItem.id },
                 data: {
-                    quantity: existingItem.quantity + Number(data.quantity),
+                    currentStock: existingItem.currentStock + Number(data.currentStock || data.quantity || 0),
                     minQuantity: Number(data.minQuantity),
                     unitCost: Number(data.unitCost),
                     category: data.category,
@@ -147,13 +147,15 @@ export class InventoryService {
         });
     }
 
-    static async registerMovement(data: { 
-        itemId: string, 
-        type: MovementType, 
-        quantity: number, 
-        reason: string, 
+    static async registerMovement(data: {
+        itemId: string,
+        type: MovementType,
+        quantity: number,
+        reason: string,
         clinicId: string,
-        userId?: string 
+        date?: Date | string,
+        userId?: string,
+        importBatchId?: string
     }) {
         return await prisma.$transaction(async (tx) => {
             // 1. Criar o registro de movimentação
@@ -163,8 +165,10 @@ export class InventoryService {
                     type: data.type,
                     quantity: data.quantity,
                     reason: data.reason,
+                    date: data.date ? new Date(data.date) : new Date(),
                     clinicId: data.clinicId,
-                    userId: data.userId
+                    userId: data.userId,
+                    importBatchId: data.importBatchId
                 }
             });
 
@@ -176,21 +180,24 @@ export class InventoryService {
             if (!item) throw new Error("Item não encontrado");
 
             // 3. Validar saldo negativo para saídas
-            if (data.type === 'SAIDA' && item.quantity < data.quantity) {
-                throw new Error(`Saldo insuficiente. Estoque atual: ${item.quantity}`);
+            if (data.type === 'OUT' && item.currentStock < data.quantity) {
+                if (!data.importBatchId) { // No caso de importação, não bloqueamos para permitir ajustes retroativos? 
+                    // Melhor bloquear por segurança em ambos
+                    throw new Error(`Saldo insuficiente para item ${item.name}. Estoque atual: ${item.currentStock}`);
+                }
             }
 
             // 4. Calcular novo saldo
-            const newQuantity = data.type === 'ENTRADA' 
-                ? item.quantity + data.quantity 
-                : item.quantity - data.quantity;
+            const newQuantity = data.type === 'IN'
+                ? item.currentStock + data.quantity
+                : item.currentStock - data.quantity;
 
             // 5. Atualizar item
             await tx.inventoryItem.update({
                 where: { id: data.itemId },
-                data: { 
-                    quantity: newQuantity,
-                    lastRestock: data.type === 'ENTRADA' ? new Date() : item.lastRestock
+                data: {
+                    currentStock: newQuantity,
+                    lastRestock: data.type === 'IN' ? new Date() : item.lastRestock
                 }
             });
 

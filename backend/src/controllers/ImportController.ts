@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import * as xlsx from 'xlsx';
 import { TaskService } from '../services/TaskService.js';
+import { InventoryService } from '../services/CoreServices.js';
 
 export class ImportController {
     static async bulkImportPatients(req: Request, res: Response) {
@@ -897,6 +898,129 @@ export class ImportController {
 
         } catch (error: any) {
             console.error('Erro na importação de estoque:', error);
+            return res.status(500).json({ message: 'Erro interno ao processar planilha', error: error.message });
+        }
+    }
+
+    static async importStockMovements(req: Request, res: Response) {
+        console.log('📦 Iniciando importStockMovements...');
+        try {
+            const clinicId = (req as any).user?.clinicId;
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+
+            if (!(req as any).file) {
+                return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+            }
+
+            const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const data: any[] = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+            if (data.length === 0) return res.status(400).json({ message: 'Planilha vazia' });
+
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'MOVIMENTACAO',
+                    fileName: (req as any).file.originalname,
+                    recordCount: 0
+                }
+            });
+
+            const parseNumber = (val: any) => {
+                if (typeof val === 'number') return val;
+                if (!val || typeof val !== 'string') return 0;
+                let clean = val.replace(/\./g, '').replace(',', '.').trim();
+                const parsed = parseFloat(clean);
+                return isNaN(parsed) ? 0 : parsed;
+            };
+
+            const parseExcelDate = (excelDate: any) => {
+                if (!excelDate) return new Date();
+                if (excelDate instanceof Date) return excelDate;
+                if (typeof excelDate === 'number') {
+                    return new Date(Math.round((excelDate - 25569) * 86400 * 1000));
+                }
+                const parsed = new Date(excelDate);
+                return isNaN(parsed.getTime()) ? new Date() : parsed;
+            };
+
+            let successCount = 0;
+            const errorLogs: any[] = [];
+
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const keys = Object.keys(row);
+                if (keys.every(k => !row[k] || String(row[k]).trim() === "")) continue;
+
+                const cleanRow: any = {};
+                for (const key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+
+                try {
+                    const code = String(cleanRow['CÓDIGO'] || cleanRow['CODIGO'] || cleanRow['CÓD'] || cleanRow['COD'] || '').trim();
+                    const name = String(cleanRow['NOME DO PRODUTO'] || cleanRow['PRODUTO'] || cleanRow['NOME'] || '').trim();
+                    const quantity = parseNumber(cleanRow['QTD COMPRADA'] || cleanRow['QUANTIDADE'] || cleanRow['QTD'] || 0);
+                    const date = parseExcelDate(cleanRow['DATA'] || cleanRow['DATA COMPRA']);
+
+                    if (quantity <= 0) throw new Error('Quantidade deve ser maior que zero.');
+
+                    const item = await prisma.inventoryItem.findFirst({
+                        where: {
+                            clinicId,
+                            OR: [
+                                code ? { code: { equals: code, mode: 'insensitive' } } : undefined,
+                                name ? { name: { equals: name, mode: 'insensitive' } } : undefined
+                            ].filter(Boolean) as any
+                        }
+                    });
+
+                    if (!item) {
+                        throw new Error(`Produto não encontrado no catálogo (${code || name})`);
+                    }
+
+                    await InventoryService.registerMovement({
+                        itemId: item.id,
+                        type: 'IN',
+                        quantity,
+                        reason: 'Importação em Massa',
+                        date,
+                        clinicId,
+                        importBatchId: batch.id
+                    });
+
+                    successCount++;
+                } catch (err: any) {
+                    errorLogs.push({
+                        importBatchId: batch.id,
+                        rowNumber: i + 1,
+                        rowData: JSON.stringify(row),
+                        errorMessage: err.message || 'Erro desconhecido'
+                    });
+                }
+            }
+
+            if (errorLogs.length > 0) {
+                await prisma.importErrorLog.createMany({ data: errorLogs });
+            }
+
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: successCount }
+            });
+
+            return res.json({
+                message: 'Importação de movimentações concluída',
+                totalRows: data.length,
+                successCount,
+                errorCount: errorLogs.length,
+                batchId: batch.id
+            });
+
+        } catch (error: any) {
+            console.error('Erro na importação de movimentações:', error);
             return res.status(500).json({ message: 'Erro interno ao processar planilha', error: error.message });
         }
     }
