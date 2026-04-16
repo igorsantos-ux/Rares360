@@ -28,6 +28,7 @@ import DoctorsPage from './pages/DoctorsPage';
 import ImportHistory from './pages/ImportHistory';
 import Procedures from './pages/Procedures';
 import TeamPage from './pages/Management/Team';
+import PurchaseIntelligence from './pages/PurchaseIntelligence';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -105,6 +106,7 @@ function App() {
                 <Route path="/tasks" element={<CRMPage />} />
                 <Route path="/goals" element={<Goals />} />
                 <Route path="/inventory" element={<Inventory />} />
+                <Route path="/pge" element={<PurchaseIntelligence />} />
                 <Route path="/agenda" element={<Agenda />} />
                 <Route path="/documents" element={<DocumentsPage />} />
                 <Route path="/automations" element={<Automations />} />

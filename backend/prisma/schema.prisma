@@ -348,6 +348,11 @@ model InventoryItem {
   lastRestock     DateTime         @default(now())
   clinicId        String
   
+  // PGE - Inteligência de Compras
+  leadTime        Int              @default(7)   // Dias para fornecedor entregar
+  desiredCoverage Int              @default(30)  // Dias de cobertura desejada
+  safetyStock     Float            @default(0)   // Estoque de segurança
+  
   importBatchId   String?
   importBatch     ImportBatch?     @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
 

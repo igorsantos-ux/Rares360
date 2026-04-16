@@ -267,4 +267,8 @@ export const importApi = {
     })
 };
 
+export const inventoryApi = {
+    getPGE: () => api.get('inventory/pge'),
+};
+
 export default api;

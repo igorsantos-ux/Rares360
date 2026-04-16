@@ -18,7 +18,8 @@ import {
     ChevronDown,
     Stethoscope,
     History,
-    Shield
+    Shield,
+    Brain
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -76,6 +77,7 @@ const Sidebar = () => {
                 { icon: <Calculator size={20} />, label: "Procedimentos", path: "/procedures" },
                 { icon: <TrendingUp size={20} />, label: "Precificação", path: "/pricing" },
                 { icon: <Package size={20} />, label: "Estoque", path: "/inventory", id: "estoque-insumos" },
+                { icon: <Brain size={20} />, label: "Inteligência de Compras", path: "/pge", id: "pge-compras" },
                 { icon: <Target size={20} />, label: "Metas", path: "/goals" },
                 { icon: <History size={20} />, label: "Importações", path: "/imports" },
                 { icon: <FolderOpen size={20} />, label: "Documentos", path: "/documents", id: "documentos-compliance" },
