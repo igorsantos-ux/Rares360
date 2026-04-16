@@ -31,9 +31,9 @@ export class ProcedureExecutionService {
             if (pricing && pricing.supplies.length > 0) {
                 for (const supply of pricing.supplies) {
                     const item = await prisma.inventoryItem.findFirst({
-                        where: { 
+                        where: {
                             name: { equals: supply.name, mode: 'insensitive' },
-                            clinicId 
+                            clinicId
                         }
                     });
 
@@ -44,10 +44,10 @@ export class ProcedureExecutionService {
                             if (item.quantity < supply.quantity) {
                                 console.warn(`⚠️ ALERTA CRÍTICO: Estoque insuficiente para ${supply.name}. Saldo: ${item.quantity}, Necessário: ${supply.quantity}`);
                             }
-                            
+
                             await InventoryService.registerMovement({
                                 itemId: item.id,
-                                type: 'SAIDA',
+                                type: 'OUT',
                                 quantity: supply.quantity,
                                 reason: `Execução: ${execution.procedureName}`,
                                 clinicId
@@ -66,7 +66,7 @@ export class ProcedureExecutionService {
         // 3. Automação de Follow-up (Retorno)
         let daysToFollowUp = 7; // Default
         const lowerName = execution.procedureName.toLowerCase();
-        
+
         if (lowerName.includes('botox') || lowerName.includes('toxina')) {
             daysToFollowUp = 15;
         } else if (lowerName.includes('bioestimulador') || lowerName.includes('sculptra') || lowerName.includes('radiesse')) {
@@ -95,7 +95,7 @@ export class ProcedureExecutionService {
     static async listPending(clinicId: string) {
         return await prisma.procedureExecution.findMany({
             where: { clinicId, status: 'PENDENTE' },
-            include: { 
+            include: {
                 patient: {
                     select: { fullName: true }
                 }

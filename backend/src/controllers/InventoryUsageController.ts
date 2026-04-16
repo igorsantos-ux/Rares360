@@ -56,7 +56,7 @@ export class InventoryUsageController {
                 // 3. Registrar Movimento de Saída (Auditoria)
                 await tx.stockMovement.create({
                     data: {
-                        type: 'SAIDA',
+                        type: 'OUT',
                         quantity: parseFloat(quantity),
                         reason: reason || `Uso clínico - Paciente ID: ${patientId}`,
                         itemId: inventoryItemId,
