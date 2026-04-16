@@ -30,7 +30,7 @@ export class TaskService {
         const rawTasks = await prisma.task.findMany({
             where: {
                 clinicId,
-                status: { in: ['TODO', 'IN_PROGRESS'] } // Apenas abertas no Kanban
+                status: { in: ['TODO', 'IN_PROGRESS', 'DONE', 'LOST'] }
             },
             include: {
                 patient: {
