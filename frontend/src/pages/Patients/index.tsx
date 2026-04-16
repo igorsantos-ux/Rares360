@@ -5,6 +5,7 @@ import { coreApi } from '../../services/api';
 import { PatientSheet } from '../../components/Patients/PatientSheet';
 import { PatientFilterSheet } from '../../components/Patients/PatientFilterSheet';
 import { ImportPatientsModal } from '../../components/Patients/ImportPatientsModal';
+import { SensitiveField } from '../../components/ui/SensitiveField';
 import {
     Users,
     Search,
@@ -275,6 +276,16 @@ const PatientsPage = () => {
                                                     </div>
                                                     <div className="space-y-1">
                                                         <p className="font-black text-slate-700 text-sm">{patient.fullName}</p>
+                                                        {patient.cpf && (
+                                                            <div className="text-[10px] text-slate-400">
+                                                                <SensitiveField 
+                                                                    value={patient.cpf} 
+                                                                    entity="Patient" 
+                                                                    entityId={patient.id} 
+                                                                    targetField="cpf" 
+                                                                />
+                                                            </div>
+                                                        )}
                                                         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg border text-[9px] font-black uppercase tracking-wider ${config.color}`}>
                                                             {config.label}
                                                         </span>

@@ -92,6 +92,34 @@ model Clinic {
   importBatches         ImportBatch[]
 }
 
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  EXPORT
+  VIEW_SENSITIVE
+}
+
+model AuditLog {
+  id        String      @id @default(uuid())
+  clinicId  String
+  userId    String?
+  action    AuditAction
+  entity    String
+  entityId  String
+  oldValues Json?
+  newValues Json?
+  ipAddress String?
+  timestamp DateTime    @default(now())
+
+  // Note: Relação opcional com clinic e user para não forçar integridade referencial rígida no log, 
+  // que deve ser imutável mesmo se um usuário for deletado.
+  
+  @@index([clinicId, entity, entityId])
+  @@index([clinicId, action])
+  @@index([clinicId, userId])
+}
+
 model User {
   id                String            @id @default(uuid())
   email             String            @unique
@@ -234,6 +262,13 @@ model Patient {
   
   importBatchId             String?
   importBatch               ImportBatch?         @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
+
+  // LGPD & Soft Delete
+  deletedAt                 DateTime?
+  consentDataProcessing     Boolean              @default(false)
+  consentMarketing          Boolean              @default(false)
+  consentTermsVersion       String?
+  consentDate               DateTime?
 
   clinic                    Clinic               @relation(fields: [clinicId], references: [id])
   procedureExecutions       ProcedureExecution[]

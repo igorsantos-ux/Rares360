@@ -378,24 +378,24 @@ export class PatientController {
     static async delete(req: any, res: Response) {
         try {
             const { id } = req.params;
+            const clinicId = req.clinicId || (req as any).user?.clinicId;
 
-            // Check for financial records before deleting
-            const transactionCount = await prisma.transaction.count({
-                where: { patientId: id }
+            // Soft delete para conformidade com o CFM
+            await (prisma as any).patient.update({ 
+                where: { id },
+                data: {
+                    isActive: false,
+                    deletedAt: new Date()
+                }
             });
 
-            if (transactionCount > 0) {
-                return res.status(400).json({
-                    error: 'Não é possível excluir um paciente com histórico financeiro.',
-                    details: 'Este paciente possui faturas atreladas. Recomenda-se apenas desativar o cadastro.'
-                });
-            }
+            // O AuditLog será disparado automaticamente pela extensão do Prisma
+            // que registra a ação de UPDATE nos valores, evidenciando a desativação.
 
-            await prisma.patient.delete({ where: { id } });
-            res.json({ message: 'Paciente excluído com sucesso' });
+            res.json({ message: 'Paciente desativado e arquivado com sucesso' });
         } catch (error: any) {
-            console.error('Error deleting patient:', error);
-            res.status(500).json({ error: 'Erro ao excluir paciente' });
+            console.error('Error (soft) deleting patient:', error);
+            res.status(500).json({ error: 'Erro ao arquivar paciente' });
         }
     }
 }

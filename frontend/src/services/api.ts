@@ -112,6 +112,9 @@ export const coreApi = {
     createDoctor: (data: any) => api.post('core/doctors', data),
     updateDoctor: (id: string, data: any) => api.patch(`core/doctors/${id}`, data),
     deleteDoctor: (id: string) => api.delete(`core/doctors/${id}`),
+    
+    logSensitiveView: (data: { entity: string, entityId: string, targetField: string }) => api.post('audit/sensitive', data),
+    
     getStock: () => api.get('core/stock'),
     getProductivity: () => api.get('core/productivity'),
     createStockItem: (data: any) => api.post('core/stock', data),

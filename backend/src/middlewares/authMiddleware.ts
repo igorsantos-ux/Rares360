@@ -49,8 +49,10 @@ export const tenantMiddleware = async (req: any, res: Response, next: NextFuncti
     }
 
     const clinicId = req.clinicId;
+    const userId = req.user?.id;
+    const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
     
-    tenantContext.run({ clinicId }, () => {
+    tenantContext.run({ clinicId, userId, ipAddress }, () => {
         next();
     });
 };

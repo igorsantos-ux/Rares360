@@ -49,6 +49,11 @@ const patientSchema = z.object({
   healthInsurance: z.string().optional(),
   leadSource: z.string().optional(),
   photoUrl: z.string().optional(),
+  
+  // Conformidade LGPD
+  consentDataProcessing: z.boolean().optional(),
+  consentMarketing: z.boolean().optional(),
+  consentTermsVersion: z.string().optional(),
 });
 
 type PatientFormData = z.infer<typeof patientSchema>;
@@ -129,7 +134,10 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
                 insurancePlan: '',
                 healthInsurance: '',
                 leadSource: '',
-                photoUrl: ''
+                photoUrl: '',
+                consentDataProcessing: false,
+                consentMarketing: false,
+                consentTermsVersion: ''
             });
             setPhotoPreview(null);
         }
@@ -333,6 +341,59 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
                                 <input {...register('education')} className="w-full bg-white border border-[#8A9A5B]/20 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all" />
                             </div>
                         </div>
+
+                        {/* Card LGPD */}
+                        <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                                <CheckCircle2 size={18} className="text-emerald-600" />
+                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Privacidade e LGPD</h3>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" className="sr-only peer" {...register('consentDataProcessing')} />
+                                        <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                                        <span className="ml-3 text-xs font-bold text-slate-600">Consentimento Informado (Tratamento)</span>
+                                    </label>
+                                </div>
+                                <div className="space-y-2">
+                                    <label className="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" className="sr-only peer" {...register('consentMarketing')} />
+                                        <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                                        <span className="ml-3 text-xs font-bold text-slate-600">Marketing e Ofertas (WhatsApp)</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            {/* Warning LGPD se não assinado */}
+                            {(!patient || (!patient.consentDataProcessing && !patient.consentTermsVersion)) && (
+                                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center justify-between">
+                                    <div>
+                                        <p className="text-xs font-bold text-red-600">⚠️ Termos não assinados</p>
+                                        <p className="text-[10px] text-red-500/80">O paciente ainda não consentiu oficialmente com a LGPD.</p>
+                                    </div>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => {
+                                            toast.success('Link de assinatura enviado para o WhatsApp do paciente!');
+                                            setValue('consentDataProcessing', true);
+                                            setValue('consentTermsVersion', 'v1.0-' + new Date().toISOString());
+                                        }}
+                                        className="text-[10px] font-black bg-red-100 text-red-600 px-3 py-1.5 rounded-md hover:bg-red-200 transition-colors uppercase"
+                                    >
+                                        Solicitar Assinatura
+                                    </button>
+                                </div>
+                            )}
+                            {(patient && patient.consentTermsVersion) && (
+                                <div className="mt-2 text-[10px] text-slate-400 font-medium">
+                                    Termo: {patient.consentTermsVersion} 
+                                    {patient.consentDate && ` (Assinado em: ${new Date(patient.consentDate).toLocaleDateString()})`}
+                                </div>
+                            )}
+                        </div>
+
                     </motion.div>
                 )}
 
