@@ -4,7 +4,6 @@ import axios from 'axios';
 import { 
     Dialog, 
     DialogContent, 
-    DialogHeader, 
     DialogTitle 
 } from "../../../ui/Dialog";
 import { Button } from "../../../ui/Button";
@@ -16,7 +15,6 @@ import {
     Plus, 
     Trash2, 
     Calculator,
-    Info,
     ChevronRight,
     CheckCircle2,
     Printer,
