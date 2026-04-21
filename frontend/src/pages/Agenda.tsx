@@ -13,7 +13,9 @@ import {
     Cpu,
     Loader2,
     Info,
-    TrendingUp
+    TrendingUp,
+    Stethoscope,
+    WalletCards
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { appointmentsApi } from '../services/api';
@@ -21,10 +23,8 @@ import { toast } from 'react-hot-toast';
 import AppointmentModal from '../components/Agenda/AppointmentModal';
 import { PatientSheet } from '../components/Patients/PatientSheet';
 import { ProposalModal } from '../components/Patients/ProposalModal';
-import { useNavigate } from 'react-router-dom';
 
 const Agenda = () => {
-    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const calendarRef = useRef<FullCalendar>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,7 +53,7 @@ const Agenda = () => {
                 title: app.patient.fullName,
                 start: app.startTime,
                 end: app.endTime,
-                extendedProps: { ...app },
+                extendedProps: { ...app, patientName: app.patient.fullName },
                 backgroundColor: 'transparent',
                 borderColor: 'transparent',
                 textColor: getStatusColor(app.status).text,
@@ -114,6 +114,115 @@ const Agenda = () => {
             startTime: resizeInfo.event.start,
             endTime: resizeInfo.event.end
         });
+    };
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('pt-BR', { 
+            style: 'currency', 
+            currency: 'BRL',
+            maximumFractionDigits: 0
+        }).format(value);
+    };
+
+    const renderEventContent = (eventInfo: any) => {
+        const { event } = eventInfo;
+        const props = event.extendedProps;
+        const stats = props.patientStats || { totalInvested: 0, avgTicket: 0, provisionalRevenue: 0, isRecurring: false, lastVisit: null };
+        const palette = getStatusColor(props.status);
+
+        return (
+            <div 
+                className="flex flex-col h-full w-full rounded-lg overflow-hidden border shadow-sm transition-all hover:shadow-md"
+                style={{ backgroundColor: palette.bodyBg, borderColor: palette.headerBg + '40' }}
+            >
+                <div 
+                    className="px-2 py-1 flex items-center justify-between"
+                    style={{ backgroundColor: palette.headerBg }}
+                >
+                    <span className="text-[10px] font-black text-white uppercase tracking-tight">
+                        {eventInfo.timeText}
+                    </span>
+                    {props.isOverbook && (
+                        <span className="bg-white/20 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">
+                            Encaixe
+                        </span>
+                    )}
+                </div>
+
+                <div className="p-2 flex flex-col flex-1 min-h-0">
+                    <div className="flex items-center gap-1.5 mb-1">
+                        <Info size={11} className="text-slate-400" />
+                        <span className="text-[12px] font-extrabold text-slate-800 truncate leading-tight">
+                            {props.patient?.fullName}
+                        </span>
+                    </div>
+
+                    <span className="text-[11px] font-medium text-slate-500 truncate mb-1">
+                        {props.procedure?.name || 'Consulta / Outro'}
+                    </span>
+
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1.5 font-bold">
+                            <div 
+                                className="w-1.5 h-1.5 rounded-full" 
+                                style={{ backgroundColor: stats.isRecurring ? '#10b981' : '#3b82f6' }}
+                            />
+                            <span className="text-[9px] font-bold text-slate-400 border border-slate-100 rounded-md px-1 py-0.5 uppercase tracking-wider">
+                                {stats.isRecurring ? 'Recorrente' : 'Novo'}
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                            <button 
+                                title="Prontuário (PEP)"
+                                onClick={(e) => { e.stopPropagation(); window.location.href = `/patients/${props.patientId}`; }}
+                                className="p-1 hover:bg-white rounded-md text-[#8A9A5B] transition-colors border border-transparent hover:border-[#8A9A5B]/10"
+                            >
+                                <Stethoscope size={12} />
+                            </button>
+                            <button 
+                                title="Orçamento"
+                                onClick={(e) => { 
+                                    e.stopPropagation(); 
+                                    setSelectedPatientForProposal({ id: props.patientId, name: props.patientName });
+                                    setIsProposalModalOpen(true);
+                                }}
+                                className="p-1 hover:bg-white rounded-md text-amber-500 transition-colors border border-transparent hover:border-amber-500/10"
+                            >
+                                <WalletCards size={12} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mb-2 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100/50">
+                        <span className="text-[8px] font-black text-slate-400 uppercase block mb-0.5">Última Visita</span>
+                        <span className="text-[10px] font-bold text-slate-600 block">
+                            {stats.lastVisit ? new Date(stats.lastVisit).toLocaleDateString('pt-BR') : 'Primeira Vez'}
+                        </span>
+                    </div>
+
+                    <div className="mt-auto pt-2 border-t border-slate-200/50 grid grid-cols-2 gap-x-2 gap-y-1">
+                        <div className="flex flex-col">
+                            <span className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter">Investiu</span>
+                            <span className="text-[11px] font-black text-slate-900 leading-none">{formatCurrency(stats.totalInvested)}</span>
+                        </div>
+                        <div className="flex flex-col text-right">
+                            <span className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter">Ticket Md</span>
+                            <span className="text-[11px] font-black text-slate-900 leading-none">{formatCurrency(stats.avgTicket)}</span>
+                        </div>
+                        <div className="flex flex-col col-span-2 pt-2">
+                            <div className="flex items-center gap-1 mb-0.5">
+                                <TrendingUp size={9} className="text-emerald-500" />
+                                <span className="text-[8px] text-emerald-600 uppercase font-bold tracking-tighter">Previsibilidade</span>
+                            </div>
+                            <span className="text-[11px] font-black text-emerald-700 leading-none">
+                                {formatCurrency(stats.provisionalRevenue)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -242,41 +351,22 @@ const Agenda = () => {
                 </main>
             </div>
 
-            {isModalOpen && (
-                <AppointmentModal 
-                    isOpen={isModalOpen}
-                    onClose={() => setIsModalOpen(false)}
-                    selectedDate={selectedDate}
-                    appointment={selectedAppointment}
-                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ['appointments'] })}
-                />
-            )}
-
-            {isPatientSheetOpen && (
-                <PatientSheet 
-                    isOpen={isPatientSheetOpen}
-                    onClose={() => setIsPatientSheetOpen(false)}
-                    onSave={() => queryClient.invalidateQueries({ queryKey: ['patients-list'] })}
-                    patient={selectedPatientForEdit}
-                />
-            )}
-
-            {isProposalModalOpen && selectedPatientForProposal && (
-                <ProposalModal 
-                    isOpen={isProposalModalOpen}
-                    onClose={() => setIsProposalModalOpen(false)}
-                    patientId={selectedPatientForProposal.id}
-                    patientName={selectedPatientForProposal.name}
-                />
-            )}
-
             <style>{`
                 .custom-calendar .fc {
                     --fc-border-color: #f1f5f9;
-                    --fc-today-bg-color: #f8fafc;
-                    font-family: inherit;
+                    --fc-button-bg-color: #697D58;
+                    --fc-button-border-color: #697D58;
+                    --fc-button-hover-bg-color: #556B2F;
+                    --fc-button-hover-border-color: #556B2F;
+                    --fc-button-active-bg-color: #4a5c2d;
+                    --fc-button-active-border-color: #4a5c2d;
+                    --fc-today-bg-color: rgba(105, 125, 88, 0.05);
+                    font-family: 'Inter', sans-serif;
                 }
-                .custom-calendar .fc-timegrid-slot {
+                .fc-theme-standard td, .fc-theme-standard th {
+                    border-color: #f1f5f9;
+                }
+                .fc .fc-timegrid-slot {
                     height: 10rem !important;
                     border-bottom: 1px dashed #f1f5f9 !important;
                 }
@@ -309,122 +399,34 @@ const Agenda = () => {
                     letter-spacing: 0.05em;
                 }
             `}</style>
-        </div>
-    );
-};
 
-const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { 
-        style: 'currency', 
-        currency: 'BRL',
-        maximumFractionDigits: 0
-    }).format(value);
-};
+            {isModalOpen && (
+                <AppointmentModal 
+                    isOpen={isModalOpen}
+                    onClose={() => setIsModalOpen(false)}
+                    selectedDate={selectedDate}
+                    appointment={selectedAppointment}
+                    onSuccess={() => queryClient.invalidateQueries({ queryKey: ['appointments'] })}
+                />
+            )}
 
-const renderEventContent = (eventInfo: any) => {
-    const { event } = eventInfo;
-    const props = event.extendedProps;
-    const stats = props.patientStats || { totalInvested: 0, avgTicket: 0, provisionalRevenue: 0, isRecurring: false, lastVisit: null };
-    const palette = getStatusColor(props.status);
+            {isPatientSheetOpen && (
+                <PatientSheet 
+                    isOpen={isPatientSheetOpen}
+                    onClose={() => setIsPatientSheetOpen(false)}
+                    onSave={() => queryClient.invalidateQueries({ queryKey: ['patients-list'] })}
+                    patient={selectedPatientForEdit}
+                />
+            )}
 
-    return (
-        <div 
-            className="flex flex-col h-full w-full rounded-lg overflow-hidden border shadow-sm transition-all hover:shadow-md"
-            style={{ backgroundColor: palette.bodyBg, borderColor: palette.headerBg + '40' }}
-        >
-            {/* Header - Compact */}
-            <div 
-                className="px-2 py-1 flex items-center justify-between"
-                style={{ backgroundColor: palette.headerBg }}
-            >
-                <span className="text-[10px] font-black text-white uppercase tracking-tight">
-                    {eventInfo.timeText}
-                </span>
-                {props.isOverbook && (
-                    <span className="bg-white/20 text-white text-[8px] px-1.5 py-0.5 rounded-full font-bold">
-                        Encaixe
-                    </span>
-                )}
-            </div>
-
-            {/* Body - Comfortable */}
-            <div className="p-2 flex flex-col flex-1 min-h-0">
-                {/* Identification */}
-                <div className="flex items-center gap-1.5 mb-1">
-                    <Info size={11} className="text-slate-400" />
-                    <span className="text-[12px] font-extrabold text-slate-800 truncate leading-tight">
-                        {props.patient?.fullName}
-                    </span>
-                </div>
-
-                {/* Procedure */}
-                <span className="text-[11px] font-medium text-slate-500 truncate mb-1">
-                    {props.procedure?.name || 'Consulta / Outro'}
-                </span>
-
-                {/* Profile Tag */}
-                <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5 font-bold">
-                        <div 
-                            className="w-1.5 h-1.5 rounded-full" 
-                            style={{ backgroundColor: stats.isRecurring ? '#10b981' : '#3b82f6' }}
-                        />
-                        <span className="text-[9px] font-bold text-slate-400 border border-slate-100 rounded-md px-1 py-0.5 uppercase tracking-wider">
-                            {stats.isRecurring ? 'Recorrente' : 'Novo'}
-                        </span>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                        <button 
-                            title="Prontuário (PEP)"
-                            onClick={(e) => { e.stopPropagation(); window.location.href = `/patients/${props.patientId}`; }}
-                            className="p-1 hover:bg-white rounded-md text-[#8A9A5B] transition-colors border border-transparent hover:border-[#8A9A5B]/10"
-                        >
-                            <Stethoscope size={12} />
-                        </button>
-                        <button 
-                            title="Orçamento"
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setSelectedPatientForProposal({ id: props.patientId, name: props.patientName });
-                                setIsProposalModalOpen(true);
-                            }}
-                            className="p-1 hover:bg-white rounded-md text-amber-500 transition-colors border border-transparent hover:border-amber-500/10"
-                        >
-                            <WalletCards size={12} />
-                        </button>
-                    </div>
-                </div>
-
-                {/* Last Visit Info */}
-                <div className="mb-2 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100/50">
-                    <span className="text-[8px] font-black text-slate-400 uppercase block mb-0.5">Última Visita</span>
-                    <span className="text-[10px] font-bold text-slate-600 block">
-                        {stats.lastVisit ? new Date(stats.lastVisit).toLocaleDateString('pt-BR') : 'Primeira Vez'}
-                    </span>
-                </div>
-
-                {/* Finance Grid - Larger */}
-                <div className="mt-auto pt-2 border-t border-slate-200/50 grid grid-cols-2 gap-x-2 gap-y-1">
-                    <div className="flex flex-col">
-                        <span className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter">Investiu</span>
-                        <span className="text-[11px] font-black text-slate-900 leading-none">{formatCurrency(stats.totalInvested)}</span>
-                    </div>
-                    <div className="flex flex-col text-right">
-                        <span className="text-[8px] text-slate-400 uppercase font-bold tracking-tighter">Ticket Md</span>
-                        <span className="text-[11px] font-black text-slate-900 leading-none">{formatCurrency(stats.avgTicket)}</span>
-                    </div>
-                    <div className="flex flex-col col-span-2 pt-2">
-                        <div className="flex items-center gap-1 mb-0.5">
-                            <TrendingUp size={9} className="text-emerald-500" />
-                            <span className="text-[8px] text-emerald-600 uppercase font-bold tracking-tighter">Previsibilidade</span>
-                        </div>
-                        <span className="text-[11px] font-black text-emerald-700 leading-none">
-                            {formatCurrency(stats.provisionalRevenue)}
-                        </span>
-                    </div>
-                </div>
-            </div>
+            {isProposalModalOpen && selectedPatientForProposal && (
+                <ProposalModal 
+                    isOpen={isProposalModalOpen}
+                    onClose={() => setIsProposalModalOpen(false)}
+                    patientId={selectedPatientForProposal.id}
+                    patientName={selectedPatientForProposal.name}
+                />
+            )}
         </div>
     );
 };

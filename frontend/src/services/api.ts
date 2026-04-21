@@ -141,7 +141,7 @@ export const pepApi = {
     // Propostas
     getProposals: (patientId: string) => api.get(`pep/proposals?patientId=${patientId}`),
     createProposal: (data: any) => api.post('pep/proposals', data),
-    updateProposalStatus: (id: string, status: string) => api.patch(`pep/proposals/${id}/status`, { status }),
+    updateProposalStatus: (id: string, status: string, data: any = {}) => api.patch(`pep/proposals/${id}/status`, { status, ...data }),
 };
 
 export const reportingApi = {

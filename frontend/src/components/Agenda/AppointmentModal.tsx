@@ -15,8 +15,7 @@ import {
   AlertCircle,
   CheckCircle2,
   FileText,
-  UserEdit,
-  ExternalLink
+  UserRoundPen
 } from 'lucide-react';
 import { appointmentsApi, coreApi, proceduresApi } from '../../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -286,7 +285,7 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                               title="Editar Cadastro"
                               className="p-3 bg-white border border-slate-200 rounded-xl text-blue-500 hover:bg-slate-50 transition-all"
                             >
-                              <UserEdit size={18} />
+                              <UserRoundPen size={18} />
                             </button>
                           </div>
                         )}
