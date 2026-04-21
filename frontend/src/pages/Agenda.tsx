@@ -19,13 +19,21 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { appointmentsApi } from '../services/api';
 import { toast } from 'react-hot-toast';
 import AppointmentModal from '../components/Agenda/AppointmentModal';
+import { PatientSheet } from '../components/Patients/PatientSheet';
+import { ProposalModal } from '../components/Patients/ProposalModal';
+import { useNavigate } from 'react-router-dom';
 
 const Agenda = () => {
+    const navigate = useNavigate();
     const queryClient = useQueryClient();
     const calendarRef = useRef<FullCalendar>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isPatientSheetOpen, setIsPatientSheetOpen] = useState(false);
+    const [isProposalModalOpen, setIsProposalModalOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+    const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<any>(null);
+    const [selectedPatientForProposal, setSelectedPatientForProposal] = useState<any>(null);
     const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
 
     // Estado de Filtros
@@ -137,6 +145,14 @@ const Agenda = () => {
                     </div>
                     
                     <button 
+                        onClick={() => { setSelectedPatientForEdit(null); setIsPatientSheetOpen(true); }}
+                        className="bg-white border-2 border-[#697D58]/20 text-[#697D58] hover:bg-[#697D58]/5 px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all active:scale-95"
+                    >
+                        <Users size={20} />
+                        Novo Paciente
+                    </button>
+
+                    <button 
                         onClick={() => { setSelectedAppointment(null); setSelectedDate(new Date()); setIsModalOpen(true); }}
                         className="bg-[#697D58] hover:bg-[#556B2F] text-white px-6 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-lg shadow-[#697D58]/20 transition-all active:scale-95"
                     >
@@ -236,6 +252,24 @@ const Agenda = () => {
                 />
             )}
 
+            {isPatientSheetOpen && (
+                <PatientSheet 
+                    isOpen={isPatientSheetOpen}
+                    onClose={() => setIsPatientSheetOpen(false)}
+                    onSave={() => queryClient.invalidateQueries({ queryKey: ['patients-list'] })}
+                    patient={selectedPatientForEdit}
+                />
+            )}
+
+            {isProposalModalOpen && selectedPatientForProposal && (
+                <ProposalModal 
+                    isOpen={isProposalModalOpen}
+                    onClose={() => setIsProposalModalOpen(false)}
+                    patientId={selectedPatientForProposal.id}
+                    patientName={selectedPatientForProposal.name}
+                />
+            )}
+
             <style>{`
                 .custom-calendar .fc {
                     --fc-border-color: #f1f5f9;
@@ -290,7 +324,7 @@ const formatCurrency = (value: number) => {
 const renderEventContent = (eventInfo: any) => {
     const { event } = eventInfo;
     const props = event.extendedProps;
-    const stats = props.patientStats || { totalInvested: 0, avgTicket: 0, provisionalRevenue: 0, isRecurring: false };
+    const stats = props.patientStats || { totalInvested: 0, avgTicket: 0, provisionalRevenue: 0, isRecurring: false, lastVisit: null };
     const palette = getStatusColor(props.status);
 
     return (
@@ -329,13 +363,44 @@ const renderEventContent = (eventInfo: any) => {
                 </span>
 
                 {/* Profile Tag */}
-                <div className="flex items-center gap-1.5 mb-2">
-                    <div 
-                        className="w-1.5 h-1.5 rounded-full" 
-                        style={{ backgroundColor: stats.isRecurring ? '#10b981' : '#3b82f6' }}
-                    />
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                        {stats.isRecurring ? 'Recorrente' : 'Paciente Novo'}
+                <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5 font-bold">
+                        <div 
+                            className="w-1.5 h-1.5 rounded-full" 
+                            style={{ backgroundColor: stats.isRecurring ? '#10b981' : '#3b82f6' }}
+                        />
+                        <span className="text-[9px] font-bold text-slate-400 border border-slate-100 rounded-md px-1 py-0.5 uppercase tracking-wider">
+                            {stats.isRecurring ? 'Recorrente' : 'Novo'}
+                        </span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                        <button 
+                            title="Prontuário (PEP)"
+                            onClick={(e) => { e.stopPropagation(); window.location.href = `/patients/${props.patientId}`; }}
+                            className="p-1 hover:bg-white rounded-md text-[#8A9A5B] transition-colors border border-transparent hover:border-[#8A9A5B]/10"
+                        >
+                            <Stethoscope size={12} />
+                        </button>
+                        <button 
+                            title="Orçamento"
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setSelectedPatientForProposal({ id: props.patientId, name: props.patientName });
+                                setIsProposalModalOpen(true);
+                            }}
+                            className="p-1 hover:bg-white rounded-md text-amber-500 transition-colors border border-transparent hover:border-amber-500/10"
+                        >
+                            <WalletCards size={12} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Last Visit Info */}
+                <div className="mb-2 bg-slate-50/50 p-1.5 rounded-lg border border-slate-100/50">
+                    <span className="text-[8px] font-black text-slate-400 uppercase block mb-0.5">Última Visita</span>
+                    <span className="text-[10px] font-bold text-slate-600 block">
+                        {stats.lastVisit ? new Date(stats.lastVisit).toLocaleDateString('pt-BR') : 'Primeira Vez'}
                     </span>
                 </div>
 

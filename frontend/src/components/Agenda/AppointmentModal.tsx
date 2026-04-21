@@ -13,7 +13,10 @@ import {
   Cpu,
   Stethoscope,
   AlertCircle,
-  CheckCircle2
+  CheckCircle2,
+  FileText,
+  UserEdit,
+  ExternalLink
 } from 'lucide-react';
 import { appointmentsApi, coreApi, proceduresApi } from '../../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -261,12 +264,46 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
               <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
                 {/* Paciente e Profissional */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormGroup label="Paciente" icon={<User size={14} />} error={errors.patientId?.message}>
-                    <select {...register('patientId')} className="form-input">
-                      <option value="">Selecione o paciente</option>
-                      {patients?.map((p: any) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
-                    </select>
-                  </FormGroup>
+                    <FormGroup label="Paciente" icon={<User size={14} />} error={errors.patientId?.message}>
+                      <div className="flex gap-2">
+                        <select {...register('patientId')} className="form-input flex-1">
+                          <option value="">Selecione o paciente</option>
+                          {patients?.map((p: any) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
+                        </select>
+                        {watch('patientId') && (
+                          <div className="flex gap-1">
+                            <button 
+                              type="button"
+                              onClick={() => window.open(`/patients/${watch('patientId')}`, '_blank')}
+                              title="Ver Prontuário"
+                              className="p-3 bg-white border border-slate-200 rounded-xl text-[#8A9A5B] hover:bg-slate-50 transition-all"
+                            >
+                              <FileText size={18} />
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => { /* Edit Patient Logic */ }}
+                              title="Editar Cadastro"
+                              className="p-3 bg-white border border-slate-200 rounded-xl text-blue-500 hover:bg-slate-50 transition-all"
+                            >
+                              <UserEdit size={18} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {watch('patientId') && patients && (
+                        <div className="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                          <Clock size={10} />
+                          <span>Última Visita:</span>
+                          <span className="text-slate-600">
+                            {patients.find((p: any) => p.id === watch('patientId'))?.lastVisit 
+                              ? new Date(patients.find((p: any) => p.id === watch('patientId'))?.lastVisit).toLocaleDateString('pt-BR') 
+                              : 'Primeira vez'}
+                          </span>
+                        </div>
+                      )}
+                    </FormGroup>
 
                   <FormGroup label="Profissional" icon={<Stethoscope size={14} />} error={errors.professionalId?.message}>
                     <select {...register('professionalId')} className="form-input">

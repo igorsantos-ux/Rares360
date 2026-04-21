@@ -114,6 +114,7 @@ export class AppointmentController {
                     const totalInvested = pTransactions.reduce((acc, t) => acc + t.amount, 0);
                     const avgTicket = pTransactions.length > 0 ? totalInvested / pTransactions.length : 0;
                     const provisionalRevenue = pProposals.reduce((acc, p) => acc + p.totalValue, 0);
+                    const lastVisit = app.patient.lastVisit;
 
                     return {
                         ...app,
@@ -121,7 +122,8 @@ export class AppointmentController {
                             totalInvested,
                             avgTicket,
                             provisionalRevenue,
-                            isRecurring: pAppCount > 1
+                            isRecurring: pAppCount > 1,
+                            lastVisit
                         }
                     };
                 });

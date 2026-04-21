@@ -218,6 +218,7 @@ model Doctor {
   transactions Transaction[]
   appointments Appointment[]
   evolutions   ClinicalEvolution[]
+  executedProposals Proposal[] @relation("ExecutedProposals")
 
   @@index([clinicId])
 }
@@ -332,26 +333,31 @@ model InventoryUsage {
   @@index([clinicId, patientId])
 }
 
-model Proposal {
-  id          String         @id @default(uuid())
-  items       Json
-  totalValue  Float
-  status      ProposalStatus @default(PENDENTE)
-  contractUrl String?
-  createdAt   DateTime       @default(now())
-  patientId   String
-  clinicId    String
-
-  clinic  Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
-
-  @@index([clinicId, patientId])
-}
-
 enum ProposalStatus {
   PENDENTE
+  CONTRATO
   APROVADO
   EXECUTADO
+}
+
+model Proposal {
+  id           String         @id @default(uuid())
+  items        Json
+  totalValue   Float
+  status       ProposalStatus @default(PENDENTE)
+  contractUrl  String?
+  executedAt   DateTime?
+  executedById String?
+  
+  createdAt    DateTime       @default(now())
+  patientId    String
+  clinicId     String
+
+  clinic       Clinic  @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient      Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  professional Doctor? @relation("ExecutedProposals", fields: [executedById], references: [id])
+
+  @@index([clinicId, patientId])
 }
 
 model Lead {
