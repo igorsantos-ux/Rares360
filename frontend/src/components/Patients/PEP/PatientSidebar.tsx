@@ -26,7 +26,7 @@ const PatientSidebar = ({ activeModule, onModuleChange }: any) => {
         { id: 'prescriptions', label: 'Receituário Digital', icon: icons.prescriptions },
         { id: 'inventory', label: 'Estoque & Insumos', icon: icons.inventory },
         { id: 'history', label: 'Histórico de Consultas', icon: icons.history },
-        { id: 'financial', label: 'Propostas & Orçamentos', icon: icons.financial },
+        { id: 'financial', label: 'Plano de Tratamento', icon: icons.financial },
         { id: 'documents', label: 'Documentos & Exames', icon: icons.documents },
         { id: 'data', label: 'Dados Cadastrais', icon: icons.data },
     ];

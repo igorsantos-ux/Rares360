@@ -31,6 +31,7 @@ import pepRoutes from './routes/pepRoutes.js';
 import goalRoutes from './routes/goalRoutes.js';
 import managementRoutes from './routes/managementRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
+import treatmentPlanRoutes from './routes/treatmentPlanRoutes.js';
 import { SeedService } from './services/SeedService.js';
 import { MigrationService } from './services/MigrationService.js';
 
@@ -89,6 +90,7 @@ app.use('/api/leads', leadRoutes);
 
 app.use('/api/import', authMiddleware, tenantMiddleware, importRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api/treatment-plans', authMiddleware, tenantMiddleware, treatmentPlanRoutes);
 
 process.on('SIGTERM', () => {
     console.log('SIGTERM recebido. Encerrando graciosamente...');

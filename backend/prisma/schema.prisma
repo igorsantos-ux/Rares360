@@ -90,6 +90,8 @@ model Clinic {
   invoices              Invoice[]
   monthlyGoals          MonthlyGoal[]
   importBatches         ImportBatch[]
+  treatmentPlans        TreatmentPlan[]
+  accountReceivables    AccountReceivable[]
 }
 
 enum AuditAction {
@@ -219,6 +221,7 @@ model Doctor {
   appointments Appointment[]
   evolutions   ClinicalEvolution[]
   executedProposals Proposal[] @relation("ExecutedProposals")
+  executedTreatmentItems TreatmentItem[]
 
   @@index([clinicId])
 }
@@ -280,6 +283,8 @@ model Patient {
   prescriptions             Prescription[]
   inventoryUsages           InventoryUsage[]
   proposals                 Proposal[]
+  treatmentPlans            TreatmentPlan[]
+  accountReceivables        AccountReceivable[]
 
   @@index([clinicId, fullName])
   @@index([importBatchId])
@@ -576,6 +581,7 @@ model Procedure {
   supplies      PricingSupply[]
   appointments  Appointment[]
   clinic        Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  treatmentItems TreatmentItem[]
 
   @@index([importBatchId])
 }
@@ -839,4 +845,73 @@ model AdminAuditLog {
 
   @@index([adminId])
   @@index([targetClinicId])
+}
+
+enum TreatmentPlanStatus {
+  DRAFT
+  APPROVED
+  CANCELLED
+  COMPLETED
+}
+
+enum TreatmentItemStatus {
+  PENDING
+  EXECUTED
+}
+
+model TreatmentPlan {
+  id           String              @id @default(uuid())
+  patientId    String
+  clinicId     String
+  totalAmount  Float
+  status       TreatmentPlanStatus @default(DRAFT)
+  notes        String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  
+  patient      Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  clinic       Clinic              @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  items        TreatmentItem[]
+  receivables  AccountReceivable[]
+
+  @@index([clinicId, patientId])
+}
+
+model TreatmentItem {
+  id               String              @id @default(uuid())
+  treatmentPlanId  String
+  procedureId      String
+  procedureName    String              // Denormalizado para histórico persistente
+  unitValue        Float
+  discount         Float               @default(0)
+  finalValue       Float
+  status           TreatmentItemStatus @default(PENDING)
+  executedAt       DateTime?
+  executedById     String?
+  
+  treatmentPlan    TreatmentPlan       @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  procedure        Procedure           @relation(fields: [procedureId], references: [id])
+  executedBy       Doctor?             @relation(fields: [executedById], references: [id])
+
+  @@index([treatmentPlanId])
+}
+
+model AccountReceivable {
+  id              String        @id @default(uuid())
+  treatmentPlanId String
+  clinicId        String
+  patientId       String
+  description     String
+  amount          Float
+  dueDate         DateTime
+  status          String        @default("PENDENTE") // PENDENTE, RECEBIDO, CANCELADO
+  paymentMethod   String?
+  installmentNumber Int?
+  
+  treatmentPlan   TreatmentPlan @relation(fields: [treatmentPlanId], references: [id], onDelete: Cascade)
+  clinic          Clinic        @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  patient         Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([clinicId, treatmentPlanId])
+  @@index([patientId])
 }

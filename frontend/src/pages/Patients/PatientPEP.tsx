@@ -11,9 +11,9 @@ import { HistoryModule } from '../../components/Patients/PEP/Modules/HistoryModu
 import {
     PrescriptionModule,
     InventoryModule,
-    FinancialModule,
     DocumentsModule
 } from '../../components/Patients/PEP/Modules/Placeholders';
+import TreatmentPlanModule from '../../components/Patients/PEP/Modules/TreatmentPlanModule';
 import { OverviewDashboard } from '../../components/Patients/PEP/Modules/OverviewDashboard';
 
 const PatientPEP = () => {
@@ -56,7 +56,7 @@ const PatientPEP = () => {
             case 'prescriptions': return <PrescriptionModule patient={patient} />;
             case 'inventory': return <InventoryModule patient={patient} />;
             case 'history': return <HistoryModule patient={patient} />;
-            case 'financial': return <FinancialModule patient={patient} />;
+            case 'financial': return <TreatmentPlanModule patient={patient} />;
             case 'documents': return <DocumentsModule patient={patient} />;
             default: return <EvolutionModule patient={patient} />;
         }
