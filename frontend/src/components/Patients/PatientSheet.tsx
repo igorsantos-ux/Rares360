@@ -63,9 +63,10 @@ interface Props {
   onClose: () => void;
   onSave: () => void;
   patient?: any; // Para modo edição
+  initialName?: string; // Para pré-cadastro
 }
 
-export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
+export function PatientSheet({ isOpen, onClose, onSave, patient, initialName }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<'pessoais' | 'contato' | 'clinico' | 'execucoes'>('pessoais');
   const [photoPreview, setPhotoPreview] = useState<string | null>(patient?.photoUrl || null);
@@ -109,7 +110,7 @@ export function PatientSheet({ isOpen, onClose, onSave, patient }: Props) {
         } else {
             // Se for novo paciente, limpa tudo
             reset({
-                fullName: '',
+                fullName: initialName || '',
                 socialName: '',
                 cpf: '',
                 rg: '',

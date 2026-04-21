@@ -13,6 +13,8 @@ interface ComboboxProps {
     disabled?: boolean;
     isLoading?: boolean;
     className?: string;
+    onEmptyAction?: (searchTerm: string) => void;
+    emptyActionLabel?: string;
 }
 
 export function Combobox({
@@ -25,6 +27,8 @@ export function Combobox({
     disabled,
     isLoading,
     className,
+    onEmptyAction,
+    emptyActionLabel = "Inserir novo"
 }: ComboboxProps) {
     const [open, setOpen] = React.useState(false)
     const [search, setSearch] = React.useState("")
@@ -74,9 +78,25 @@ export function Combobox({
                     </div>
                     <div className="overflow-y-auto p-2">
                         {filteredOptions.length === 0 ? (
-                            <p className="p-4 text-center text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                                {emptyMessage}
-                            </p>
+                            <div className="flex flex-col items-center justify-center p-4 gap-3">
+                                <p className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
+                                    {emptyMessage}
+                                </p>
+                                {onEmptyAction && search.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            onEmptyAction(search)
+                                            setOpen(false)
+                                            setSearch("")
+                                        }}
+                                        className="w-full py-2.5 px-4 bg-[#8A9A5B] text-white rounded-xl text-[10px] font-black uppercase tracking-[0.1em] shadow-lg shadow-[#8A9A5B]/20 hover:bg-[#697D58] transition-all active:scale-95 flex items-center justify-center gap-2"
+                                    >
+                                        <Plus className="h-3 w-3" />
+                                        {emptyActionLabel}
+                                    </button>
+                                )}
+                            </div>
                         ) : (
                             <div className="space-y-1">
                                 {filteredOptions.map((option) => (

@@ -21,8 +21,9 @@ import { appointmentsApi, coreApi, proceduresApi } from '../../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { useQuery } from '@tanstack/react-query';
-import { Combobox } from '../ui/Combobox';
 import { Controller } from 'react-hook-form';
+import { PatientSheet } from '../Patients/PatientSheet';
+import { useQueryClient } from '@tanstack/react-query';
 
 const appointmentSchema = z.object({
   patientId: z.string().min(1, 'Paciente é obrigatório'),
@@ -49,7 +50,10 @@ interface Props {
 }
 
 const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointment }: Props) => {
+  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPatientSheetOpen, setIsPatientSheetOpen] = useState(false);
+  const [initialPatientName, setInitialPatientName] = useState('');
 
   const { register, handleSubmit, watch, setValue, formState: { errors }, reset, control } = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -242,8 +246,17 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl border border-white/20 flex flex-col max-h-full"
+              className="relative w-full max-w-xl bg-white rounded-[2.5rem] shadow-2xl border border-white/20 flex flex-col max-h-[90vh]"
             >
+              {/* PatientSheet Integration for Quick Registration */}
+              {isPatientSheetOpen && (
+                <PatientSheet 
+                  isOpen={isPatientSheetOpen}
+                  onClose={() => setIsPatientSheetOpen(false)}
+                  onSave={() => queryClient.invalidateQueries({ queryKey: ['patients-list'] })}
+                  initialName={initialPatientName}
+                />
+              )}
               {/* Header */}
               <div className="bg-[#697D58] p-8 text-white relative">
                 <div className="flex items-center gap-4">
@@ -265,10 +278,27 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormGroup label="Paciente" icon={<User size={14} />} error={errors.patientId?.message}>
                       <div className="flex gap-2">
-                        <select {...register('patientId')} className="form-input flex-1">
-                          <option value="">Selecione o paciente</option>
-                          {patients?.map((p: any) => <option key={p.id} value={p.id}>{p.fullName}</option>)}
-                        </select>
+                        <div className="flex-1">
+                          <Controller
+                            control={control}
+                            name="patientId"
+                            render={({ field }) => (
+                              <Combobox
+                                options={patients?.map((p: any) => ({ value: p.id, label: p.fullName })) || []}
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                placeholder="Selecione o paciente"
+                                searchPlaceholder="Digite o nome do paciente..."
+                                emptyMessage="Nenhum resultado encontrado."
+                                onEmptyAction={(searchTerm) => {
+                                  setInitialPatientName(searchTerm);
+                                  setIsPatientSheetOpen(true);
+                                }}
+                                emptyActionLabel="Inserir Novo"
+                              />
+                            )}
+                          />
+                        </div>
                         {watch('patientId') && (
                           <div className="flex gap-1">
                             <button 
