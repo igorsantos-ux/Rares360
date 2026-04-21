@@ -22,7 +22,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Controller } from 'react-hook-form';
 import { PatientSheet } from '../Patients/PatientSheet';
 import { Combobox } from '../ui/Combobox';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'react-hot-toast';
 
 const appointmentSchema = z.object({
   patientId: z.string().min(1, 'Paciente é obrigatório'),
