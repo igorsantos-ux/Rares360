@@ -264,7 +264,7 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                     <Calendar size={28} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-black">{appointment ? 'Detalhes do Agendamento' : 'Novo Agendamento'}</h3>
+                    <h3 className="text-2xl font-black">{appointment ? 'Detalhes do Agendamento' : 'Novo Agendamento - Rares360'}</h3>
                     <p className="text-white/70 text-sm font-medium">Preencha os dados do paciente e aloque os recursos.</p>
                   </div>
                 </div>
@@ -410,11 +410,16 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                   <div className="ml-auto min-w-[150px]">
                     <select {...register('status')} className="form-input py-2 text-xs uppercase bg-[#697D58]/10 border-none text-[#697D58]">
                       <option value="AGUARDANDO">Aguardando</option>
-                      <option value="CONFIRMADO">Confirmado</option>
-                      <option value="CHECK_IN">Check-in</option>
-                      <option value="EXECUTADO">Executado</option>
-                      <option value="FALTA">No-show</option>
-                      <option value="CANCELADO">Cancelado</option>
+                      <option value="AGUARDANDO_PAGAMENTO">Aguardando pagamento</option>
+                      <option value="ATENDIDO">Atendido</option>
+                      <option value="CANCELADO_PROFISSIONAL">Cancelado pelo profissional</option>
+                      <option value="CHAMANDO">Chamando</option>
+                      <option value="DESMARCADO_PACIENTE">Desmarcado pelo paciente</option>
+                      <option value="EM_ATENDIMENTO">Em atendimento</option>
+                      <option value="CONFIRMADO">Marcado - confirmado</option>
+                      <option value="NAO_CONFIRMADO">Marcado - não confirmado</option>
+                      <option value="FALTA">Não compareceu</option>
+                      <option value="REMARCADO">Remarcado</option>
                     </select>
                   </div>
                 </div>
