@@ -19,10 +19,9 @@ import {
 } from 'lucide-react';
 import { appointmentsApi, coreApi, proceduresApi } from '../../services/api';
 import { AnimatePresence, motion } from 'framer-motion';
-import { toast } from 'react-hot-toast';
-import { useQuery } from '@tanstack/react-query';
 import { Controller } from 'react-hook-form';
 import { PatientSheet } from '../Patients/PatientSheet';
+import { Combobox } from '../ui/Combobox';
 import { useQueryClient } from '@tanstack/react-query';
 
 const appointmentSchema = z.object({
@@ -290,7 +289,7 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                                 placeholder="Selecione o paciente"
                                 searchPlaceholder="Digite o nome do paciente..."
                                 emptyMessage="Nenhum resultado encontrado."
-                                onEmptyAction={(searchTerm) => {
+                                onEmptyAction={(searchTerm: string) => {
                                   setInitialPatientName(searchTerm);
                                   setIsPatientSheetOpen(true);
                                 }}
@@ -351,7 +350,7 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                       <Combobox
                         options={procedureOptions}
                         value={field.value || 'null'}
-                        onValueChange={(val) => field.onChange(val === 'null' ? null : val)}
+                        onValueChange={(val: string) => field.onChange(val === 'null' ? null : val)}
                         placeholder="Busque um procedimento..."
                         searchPlaceholder="Digite o nome do procedimento..."
                         emptyMessage="Nenhum procedimento encontrado."

@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Check, ChevronsUpDown, Search, Loader2 } from "lucide-react"
+import { Check, ChevronsUpDown, Search, Loader2, Plus } from "lucide-react"
 import { cn } from "../../lib/utils"
 import { Popover, PopoverContent, PopoverTrigger } from "./Popover"
 
