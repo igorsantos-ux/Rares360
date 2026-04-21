@@ -275,10 +275,10 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
 
               <form onSubmit={handleSubmit(onSubmit)} className="p-8 space-y-8 overflow-y-auto custom-scrollbar">
                 {/* Paciente e Profissional */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                     <FormGroup label="Paciente" icon={<User size={14} />} error={errors.patientId?.message}>
-                      <div className="flex gap-2">
-                        <div className="flex-1">
+                      <div className="flex gap-2 min-w-0">
+                        <div className="flex-1 min-w-0">
                           <Controller
                             control={control}
                             name="patientId"
@@ -485,7 +485,7 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
 };
 
 const FormGroup = ({ label, icon, children, error }: any) => (
-  <div className="space-y-1.5 flex-1 w-full">
+  <div className="space-y-1.5 w-full min-w-0">
     <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-1.5">
       {icon}
       {label}
