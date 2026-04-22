@@ -54,6 +54,7 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPatientSheetOpen, setIsPatientSheetOpen] = useState(false);
   const [initialPatientName, setInitialPatientName] = useState('');
+  const [selectedPatientForEdit, setSelectedPatientForEdit] = useState<any>(null);
 
   const { register, handleSubmit, watch, setValue, formState: { errors }, reset, control } = useForm<AppointmentFormData>({
     resolver: zodResolver(appointmentSchema),
@@ -252,9 +253,13 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
               {isPatientSheetOpen && (
                 <PatientSheet 
                   isOpen={isPatientSheetOpen}
-                  onClose={() => setIsPatientSheetOpen(false)}
+                  onClose={() => {
+                    setIsPatientSheetOpen(false);
+                    setSelectedPatientForEdit(null);
+                  }}
                   onSave={() => queryClient.invalidateQueries({ queryKey: ['patients-list'] })}
                   initialName={initialPatientName}
+                  patient={selectedPatientForEdit}
                 />
               )}
               {/* Header */}
@@ -311,7 +316,13 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                             </button>
                             <button 
                               type="button"
-                              onClick={() => { /* Edit Patient Logic */ }}
+                              onClick={() => { 
+                                const patientObj = patients?.find((p: any) => p.id === watch('patientId'));
+                                if (patientObj) {
+                                  setSelectedPatientForEdit(patientObj);
+                                  setIsPatientSheetOpen(true);
+                                }
+                              }}
                               title="Editar Cadastro"
                               className="p-3 bg-white border border-slate-200 rounded-xl text-blue-500 hover:bg-slate-50 transition-all"
                             >
