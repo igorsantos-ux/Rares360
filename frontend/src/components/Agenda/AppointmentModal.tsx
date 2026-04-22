@@ -407,19 +407,38 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                   </FormGroup>
                 </div>
 
-                {/* Flags e Status */}
-                <div className="flex flex-wrap items-center gap-6 p-4 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" {...register('isOverbook')} className="w-5 h-5 rounded-lg border-slate-300 text-[#697D58] focus:ring-[#697D58]" />
-                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-[#697D58] transition-colors">📦 Encaixe</span>
-                  </label>
-                  <label className="flex items-center gap-3 cursor-pointer group">
-                    <input type="checkbox" {...register('isReturn')} className="w-5 h-5 rounded-lg border-slate-300 text-[#697D58] focus:ring-[#697D58]" />
-                    <span className="text-xs font-black text-slate-500 uppercase tracking-widest group-hover:text-[#697D58] transition-colors">🔄 Retorno</span>
-                  </label>
+                {/* Flags e Status Premium */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setValue('isOverbook', !watch('isOverbook'))}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${
+                        watch('isOverbook') 
+                        ? 'bg-[#697D58] border-[#697D58] text-white shadow-lg shadow-[#697D58]/20' 
+                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
+                      }`}
+                    >
+                      📦 Encaixe
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValue('isReturn', !watch('isReturn'))}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border-2 ${
+                        watch('isReturn') 
+                        ? 'bg-[#3B82F6] border-[#3B82F6] text-white shadow-lg shadow-[#3B82F6]/20' 
+                        : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'
+                      }`}
+                    >
+                      🔄 Retorno
+                    </button>
+                  </div>
 
-                  <div className="ml-auto min-w-[150px]">
-                    <select {...register('status')} className="form-input py-2 text-xs uppercase bg-[#697D58]/10 border-none text-[#697D58]">
+                  <div className="relative">
+                    <select 
+                      {...register('status')} 
+                      className="w-full h-12 rounded-2xl bg-slate-50 border-none px-4 font-black text-[10px] uppercase tracking-widest text-[#697D58] focus:ring-2 focus:ring-[#697D58]/20 outline-none appearance-none cursor-pointer"
+                    >
                       <option value="AGUARDANDO">Aguardando</option>
                       <option value="AGUARDANDO_PAGAMENTO">Aguardando pagamento</option>
                       <option value="ATENDIDO">Atendido</option>
@@ -432,6 +451,12 @@ const AppointmentModal = ({ isOpen, onClose, onSuccess, selectedDate, appointmen
                       <option value="FALTA">Não compareceu</option>
                       <option value="REMARCADO">Remarcado</option>
                     </select>
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#697D58]">
+                      {/* Ícone de chevron customizado */}
+                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </div>
                   </div>
                 </div>
 
