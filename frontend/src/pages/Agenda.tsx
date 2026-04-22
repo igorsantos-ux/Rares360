@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -15,7 +15,8 @@ import {
     Info,
     TrendingUp,
     Stethoscope,
-    WalletCards
+    WalletCards,
+    X
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { appointmentsApi } from '../services/api';
@@ -44,11 +45,20 @@ const Agenda = () => {
     });
 
     // Buscar Agendamentos
-    const { data: appointments, isLoading } = useQuery({
+    const { data: allAppointments, isLoading } = useQuery({
         queryKey: ['appointments', filters],
         queryFn: async () => {
             const res = await appointmentsApi.getAppointments(filters);
-            return res.data.map((app: any) => ({
+            return res.data;
+        }
+    });
+
+    // Separar Ativos de Cancelados
+    const activeAppointments = useMemo(() => {
+        if (!allAppointments) return [];
+        return allAppointments
+            .filter((app: any) => app.status !== 'CANCELADO_PROFISSIONAL' && app.status !== 'DESMARCADO_PACIENTE')
+            .map((app: any) => ({
                 id: app.id,
                 title: app.patient.fullName,
                 start: app.startTime,
@@ -58,8 +68,14 @@ const Agenda = () => {
                 borderColor: 'transparent',
                 textColor: getStatusColor(app.status).text,
             }));
-        }
-    });
+    }, [allAppointments]);
+
+    const cancelledAppointments = useMemo(() => {
+        if (!allAppointments) return [];
+        return allAppointments.filter((app: any) => 
+            app.status === 'CANCELADO_PROFISSIONAL' || app.status === 'DESMARCADO_PACIENTE'
+        );
+    }, [allAppointments]);
 
     // Buscar Recursos para Filtros
     const { data: resources } = useQuery({
@@ -308,11 +324,19 @@ const Agenda = () => {
                     <div className="mt-auto pt-6 border-t border-slate-50">
                         <div className="space-y-3">
                             <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Legenda de Status</h4>
-                            <StatusLegend color="#F5F5DC" label="Aguardando" />
-                            <StatusLegend color="#8FA189" label="Confirmado" />
-                            <StatusLegend color="#556B2F" label="Check-in" />
-                            <StatusLegend color="#A0522D" label="Falta (No-show)" />
-                            <StatusLegend color="#E5E7EB" label="Executado" />
+                            <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto pr-2 custom-scrollbar">
+                                <StatusLegend color="#D97706" label="Aguardando" />
+                                <StatusLegend color="#F59E0B" label="Ag. Pagamento" />
+                                <StatusLegend color="#697D58" label="Confirmado" />
+                                <StatusLegend color="#A8A29E" label="Não Confirmado" />
+                                <StatusLegend color="#8B5CF6" label="Chamando" />
+                                <StatusLegend color="#3B82F6" label="Em Atendimento" />
+                                <StatusLegend color="#10B981" label="Atendido" />
+                                <StatusLegend color="#F43F5E" label="Canc. Profissional" />
+                                <StatusLegend color="#64748B" label="Desm. Paciente" />
+                                <StatusLegend color="#991B1B" label="Não Compareceu" />
+                                <StatusLegend color="#06B6D4" label="Remarcado" />
+                            </div>
                         </div>
                     </div>
                 </aside>
@@ -333,7 +357,7 @@ const Agenda = () => {
                             initialView={view}
                             headerToolbar={false}
                             locale={ptBrLocale}
-                            events={appointments || []}
+                            events={activeAppointments}
                             selectable={true}
                             editable={true}
                             nowIndicator={true}
@@ -350,6 +374,52 @@ const Agenda = () => {
                     </div>
                 </main>
             </div>
+
+            {/* Barra de Cancelados / Desmarcados */}
+            {cancelledAppointments.length > 0 && (
+                <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm animate-in slide-in-from-bottom duration-500">
+                    <div className="flex items-center justify-between mb-4 px-2">
+                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                            <X size={14} className="text-red-400" />
+                            Agendamentos Cancelados / Desmarcados
+                        </h3>
+                        <span className="text-[10px] font-bold text-slate-400 italic">{cancelledAppointments.length} ocorrências encontradas</span>
+                    </div>
+
+                    <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
+                        {cancelledAppointments.map((app: any) => (
+                            <div 
+                                key={app.id}
+                                onClick={() => { setSelectedAppointment(app); setIsModalOpen(true); }}
+                                className="min-w-[280px] p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:border-red-100 hover:bg-white transition-all cursor-pointer group shadow-sm hover:shadow-md"
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <span className="text-[9px] font-black bg-white px-2 py-1 rounded-lg border border-slate-100 text-slate-400 uppercase">
+                                        {new Date(app.startTime).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                    <span className={`text-[8px] font-black uppercase px-2 py-1 rounded-full ${app.status === 'CANCELADO_PROFISSIONAL' ? 'bg-red-50 text-red-500' : 'bg-slate-200 text-slate-600'}`}>
+                                        {app.status === 'CANCELADO_PROFISSIONAL' ? 'Pelo Profissional' : 'Pelo Paciente'}
+                                    </span>
+                                </div>
+                                <p className="text-sm font-black text-slate-700 group-hover:text-[#697D58] transition-colors truncate">
+                                    {app.patient?.fullName}
+                                </p>
+                                <p className="text-[10px] font-bold text-slate-400 mt-0.5 truncate italic">
+                                    Motivo: {app.notes || 'Não informado'}
+                                </p>
+                                <div className="mt-3 pt-3 border-t border-slate-200/50 flex justify-between items-center">
+                                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tight">
+                                        {app.procedure?.name || 'Consulta / Outro'}
+                                    </span>
+                                    <button className="text-[9px] font-black text-[#697D58] uppercase hover:underline">
+                                        Reagendar
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 .custom-calendar .fc {
@@ -460,47 +530,29 @@ const StatusLegend = ({ color, label }: any) => (
 const getStatusColor = (status: string) => {
     switch (status) {
         case 'AGUARDANDO': 
-            return { 
-                headerBg: '#D97706', // Amarelo/Mostarda 
-                bodyBg: '#FEFCE8',    // Creme claro
-                text: '#92400E' 
-            };
+            return { headerBg: '#D97706', bodyBg: '#FEFCE8', text: '#92400E' };
+        case 'AGUARDANDO_PAGAMENTO': 
+            return { headerBg: '#F59E0B', bodyBg: '#FFFBEB', text: '#92400E' };
+        case 'ATENDIDO': 
+            return { headerBg: '#10B981', bodyBg: '#ECFDF5', text: '#065F46' };
+        case 'CANCELADO_PROFISSIONAL': 
+            return { headerBg: '#F43F5E', bodyBg: '#FFF1F2', text: '#9F1239' };
+        case 'CHAMANDO': 
+            return { headerBg: '#8B5CF6', bodyBg: '#F5F3FF', text: '#5B21B6' };
+        case 'DESMARCADO_PACIENTE': 
+            return { headerBg: '#64748B', bodyBg: '#F8FAFC', text: '#1E293B' };
+        case 'EM_ATENDIMENTO': 
+            return { headerBg: '#3B82F6', bodyBg: '#EFF6FF', text: '#1E40AF' };
         case 'CONFIRMADO': 
-            return { 
-                headerBg: '#697D58', // Verde Oliva (Marca)
-                bodyBg: '#F7F8F6',    // Verde bem clarinho
-                text: '#3F4E33' 
-            };
-        case 'CHECK_IN': 
-            return { 
-                headerBg: '#6366F1', // Roxo (Indigo)
-                bodyBg: '#EEF2FF',    // Lilás suave
-                text: '#3730A3' 
-            };
-        case 'EXECUTADO': 
-            return { 
-                headerBg: '#64748B', // Cinza
-                bodyBg: '#F8FAFC',    
-                text: '#1E293B' 
-            };
+            return { headerBg: '#697D58', bodyBg: '#F7F8F6', text: '#3F4E33' };
+        case 'NAO_CONFIRMADO': 
+            return { headerBg: '#A8A29E', bodyBg: '#FAFAF9', text: '#44403C' };
         case 'FALTA': 
-            return { 
-                headerBg: '#991B1B', // Vermelho Escuro
-                bodyBg: '#FEF2F2',    
-                text: '#7F1D1D' 
-            };
-        case 'CANCELADO': 
-            return { 
-                headerBg: '#94A3B8', // Cinza Azulado
-                bodyBg: '#F1F5F9',    
-                text: '#475569' 
-            };
+            return { headerBg: '#991B1B', bodyBg: '#FEF2F2', text: '#7F1D1D' };
+        case 'REMARCADO': 
+            return { headerBg: '#06B6D4', bodyBg: '#ECFEFF', text: '#155E75' };
         default: 
-            return { 
-                headerBg: '#697D58', 
-                bodyBg: '#FFFFFF', 
-                text: '#1e293b' 
-            };
+            return { headerBg: '#697D58', bodyBg: '#FFFFFF', text: '#1e293b' };
     }
 };
 
