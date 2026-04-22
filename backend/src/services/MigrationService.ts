@@ -45,6 +45,40 @@ export class MigrationService {
                     CONSTRAINT "GlobalLead_pkey" PRIMARY KEY ("id")
                 );
             `);
+
+            // Sincronizar Enums de Agendamento (Novos Status Operacionais)
+            const statuses = [
+                'AGUARDANDO_PAGAMENTO',
+                'CANCELADO_PROFISSIONAL',
+                'CHAMANDO',
+                'DESMARCADO_PACIENTE',
+                'EM_ATENDIMENTO',
+                'CONFIRMADO',
+                'NAO_CONFIRMADO',
+                'FALTA',
+                'REMARCADO'
+            ];
+
+            for (const status of statuses) {
+                try {
+                    await prisma.$executeRawUnsafe(`
+                        DO $$
+                        BEGIN
+                            IF NOT EXISTS (
+                                SELECT 1 FROM pg_type t 
+                                JOIN pg_enum e ON t.oid = e.enumtypid 
+                                WHERE t.typname = 'AppointmentStatus' AND e.enumlabel = '${status}'
+                            ) THEN
+                                ALTER TYPE "AppointmentStatus" ADD VALUE '${status}';
+                            END IF;
+                        END
+                        $$;
+                    `);
+                } catch (e) {
+                    console.log(`ℹ️ Enum status check (${status}): ${e.message}`);
+                }
+            }
+            
             
             console.log('✅ Soft Migrations completed successfully.');
         } catch (error) {
