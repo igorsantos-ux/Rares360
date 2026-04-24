@@ -50,7 +50,11 @@ export default function ForceChangePassword() {
 
         setLoading(true);
         try {
-            await authApi.updatePassword({ currentPassword, newPassword });
+            const token = localStorage.getItem('heath_finance_token');
+            await authApi.updatePassword(
+                { currentPassword, newPassword },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
 
             toast.success('Senha atualizada com sucesso!');
             
