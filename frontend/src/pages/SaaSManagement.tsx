@@ -8,6 +8,7 @@ import {
     LayoutDashboard,
     FileDown,
     CreditCard,
+    Edit3,
     X as XIcon,
     Trash2,
     Image as ImageIcon,
