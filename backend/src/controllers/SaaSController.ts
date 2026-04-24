@@ -438,7 +438,14 @@ export class SaaSController {
     static async impersonateClinic(req: any, res: Response) {
         try {
             const adminId = req.user.id;
-            const adminName = req.user.name;
+            let adminName = req.user.name;
+
+            // Fallback: Se o token for antigo e não transportar o 'name', buscamos no banco.
+            if (!adminName) {
+                const adminUser = await basePrisma.user.findUnique({ where: { id: adminId } });
+                adminName = adminUser?.name || 'Administrador Global';
+            }
+
             const { clinicId } = req.params;
 
             // Encontrar o usuário master da clínica (OWNER ou ADMIN) ou pegar o primeiro CLINIC_ADMIN
@@ -461,6 +468,7 @@ export class SaaSController {
             const token = AuthService.generateToken({
                 id: targetUser.id,
                 email: targetUser.email,
+                name: targetUser.name,
                 role: targetUser.role,
                 clinicId: targetUser.clinicId || undefined
             });

@@ -55,6 +55,7 @@ export class AuthController {
                 const token = AuthService.generateToken({
                     id: user.id,
                     email: user.email,
+                    name: user.name,
                     role: user.role,
                     clinicId: user.clinicId || undefined,
                     mustChangePassword: true
@@ -79,6 +80,7 @@ export class AuthController {
             const token = AuthService.generateToken({
                 id: user.id,
                 email: user.email,
+                name: user.name,
                 role: user.role,
                 clinicId: user.clinicId || undefined,
                 mustChangePassword: false
@@ -193,6 +195,7 @@ export class AuthController {
             const newToken = AuthService.generateToken({
                 id: user.id,
                 email: user.email,
+                name: user.name,
                 role: user.role,
                 clinicId: user.clinicId || undefined,
                 mustChangePassword: false // Agora é falso
