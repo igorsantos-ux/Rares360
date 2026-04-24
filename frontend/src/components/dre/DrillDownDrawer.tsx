@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Search, ChevronRight, Activity } from 'lucide-react';
-import { DreRow } from '../../types/Dre';
+import type { DreRow } from '../../types/Dre';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 

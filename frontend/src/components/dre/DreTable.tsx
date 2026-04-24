@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronRight, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { DreRow } from '../../types/Dre';
+import type { DreRow } from '../../types/Dre';
 
 interface Props {
     data: DreRow[];
@@ -89,7 +89,7 @@ export const DreTable: React.FC<Props> = ({ data, onRowClick }) => {
                 </tr>
 
                 {/* Renderização condicional dos filhos */}
-                {hasChildren && isExpanded && row.subRows!.map(child => renderRow(child, level + 1))}
+                {hasChildren && isExpanded && row.subRows!.map((child: DreRow) => renderRow(child, level + 1))}
             </React.Fragment>
         );
     };

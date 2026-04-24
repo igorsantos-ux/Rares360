@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { DreWaterfallData } from '../../types/Dre';
+import type { DreWaterfallData } from '../../types/Dre';
 
 interface Props {
     data: DreWaterfallData[];
@@ -87,20 +87,20 @@ export const WaterfallChart: React.FC<Props> = ({ data }) => {
                     {/* Para funcionar o Waterfall perfeito precisaríamos de bars flutuantes, 
               o Recharts atua melhor com fill range [start, end] */}
                     <Bar dataKey="change" isAnimationActive={true}>
-                        {formattedData.map((entry, index) => (
+                        {formattedData.map((_entry, index) => (
                             <Cell
                                 key={`cell-${index}`}
-                                fill={entry.type === 'total' ? '#3b82f6' : entry.type === 'positive' ? '#22c55e' : '#ef4444'}
-                                radius={[4, 4, 4, 4]}
+                                fill={_entry.type === 'total' ? '#3b82f6' : _entry.type === 'positive' ? '#22c55e' : '#ef4444'}
+                                radius={4 as any}
                             />
                         ))}
                     </Bar>
                     <Bar dataKey="total" isAnimationActive={true}>
-                        {formattedData.map((entry, index) => (
+                        {formattedData.map((_, index) => (
                             <Cell
                                 key={`cell-total-${index}`}
                                 fill={'#3b82f6'}
-                                radius={[4, 4, 4, 4]}
+                                radius={4 as any}
                             />
                         ))}
                     </Bar>

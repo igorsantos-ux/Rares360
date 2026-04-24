@@ -1,6 +1,6 @@
 import React from 'react';
-import { Sparkles, ArrowUpRight, ArrowDownRight, Activity, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { AiInsightsResponse } from '../../types/Dre';
+import { Sparkles, ArrowUpRight, Activity, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import type { AiInsightsResponse } from '../../types/Dre';
 
 interface Props {
     insights: AiInsightsResponse;

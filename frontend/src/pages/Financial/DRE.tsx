@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
     Calculator, Download, Loader2, DollarSign, Percent, TrendingUp, TrendingDown, Activity, Target, Zap, ChevronDown
 } from 'lucide-react';
 import { useDreData, useDreAiInsights, useExportDrePdf } from '../../hooks/useDreData';
-import type { DreWaterfallData, DreRow, AiInsightsResponse, DreReportFilter } from '../../types/Dre';
+import type { DreRow, AiInsightsResponse, DreReportFilter } from '../../types/Dre';
 import { WaterfallChart } from '../../components/dre/WaterfallChart';
 import { AiInsightsCard } from '../../components/dre/AiInsightsCard';
 import { DreTable } from '../../components/dre/DreTable';
 import { DrillDownDrawer } from '../../components/dre/DrillDownDrawer';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend, BarChart, Bar } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import DateFilter from '../../components/DateFilter';
 import { toast } from 'react-hot-toast';
 
