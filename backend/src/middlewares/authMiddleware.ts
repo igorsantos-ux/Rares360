@@ -22,6 +22,12 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
 
         req.user = decoded;
         req.userId = decoded.id;
+        
+        // Bloqueia rotas se precisar trocar a senha e a rota não for a de trocar a senha
+        if (decoded.mustChangePassword && req.path !== '/api/auth/update-password' && !req.path.includes('/auth/update-password') && !req.path.includes('/saas/impersonate')) {
+             return res.status(403).json({ error: 'Troca de senha obrigatória', requirePasswordChange: true });
+        }
+
         next();
     } catch (err: any) {
         console.error('--- ERRO CATASTRÓFICO NO AUTH MIDDLEWARE ---', err);

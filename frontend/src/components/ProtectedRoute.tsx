@@ -20,6 +20,10 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         return <Navigate to="/login" replace />;
     }
 
+    if (user.mustChangePassword) {
+        return <Navigate to="/auth/force-change-password" replace />;
+    }
+
     if (allowedRoles && !allowedRoles.includes(user.role)) {
         return <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace />;
     }

@@ -139,6 +139,11 @@ model User {
   mustChangePassword Boolean          @default(true)
   passwordHistory   PasswordHistory[]
 
+  isFirstAccess     Boolean           @default(true)
+  lastLoginAt       DateTime?
+  createdByAdminId  String?
+  temporaryPasswordExpiresAt DateTime?
+
   closedChapters    DailyClosure[]    @relation("ClosedBy")
   clinic            Clinic?           @relation(fields: [clinicId], references: [id])
 
@@ -739,11 +744,16 @@ model Appointment {
 
 enum AppointmentStatus {
   AGUARDANDO
+  AGUARDANDO_PAGAMENTO
+  ATENDIDO
+  CANCELADO_PROFISSIONAL
+  CHAMANDO
+  DESMARCADO_PACIENTE
+  EM_ATENDIMENTO
   CONFIRMADO
-  CHECK_IN
+  NAO_CONFIRMADO
   FALTA
-  EXECUTADO
-  CANCELADO
+  REMARCADO
 }
 
 model Invoice {

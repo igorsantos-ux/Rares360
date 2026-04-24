@@ -12,6 +12,9 @@ interface User {
     clinic?: {
         name: string;
     };
+    mustChangePassword?: boolean;
+    lastLoginAt?: Date | string | null;
+    isFirstAccess?: boolean;
 }
 
 interface AuthContextType {

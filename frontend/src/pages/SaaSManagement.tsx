@@ -8,7 +8,6 @@ import {
     LayoutDashboard,
     FileDown,
     CreditCard,
-    Edit3,
     X as XIcon,
     Trash2,
     Image as ImageIcon,
@@ -19,7 +18,9 @@ import {
     Cpu,
     Mail,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Lock as LockIcon,
+    TrendingUp
 } from 'lucide-react';
 import { saasApi, leadsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -62,7 +63,7 @@ const SaaSManagement = () => {
     const [users, setUsers] = useState<any[]>([]);
     const [leads, setLeads] = useState<any[]>([]);
     const [billingData, setBillingData] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<'clinics' | 'users' | 'billing' | 'leads'>('clinics');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'clinics' | 'users' | 'billing' | 'leads' | 'reports' | 'settings' | 'audit' | 'security'>('dashboard');
     const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
@@ -424,9 +425,29 @@ const SaaSManagement = () => {
         }
     };
 
+    const handleImpersonate = async (clinicId: string) => {
+        try {
+            toast.loading('Acessando painel da clínica...', { id: 'impersonate' });
+            const response = await saasApi.impersonateClinic(clinicId);
+            const { token } = response.data;
+            
+            // Set the new token
+            localStorage.setItem('heath_finance_token', token);
+            
+            // Força reload completo para resetar estados e aplicar o novo token em todas as instâncias da API e Contexto
+            toast.success(`Acessando como administrador da clínica...`, { id: 'impersonate' });
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1000);
+            
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || 'Erro ao tentar acessar a clínica.', { id: 'impersonate' });
+        }
+    };
+
     // User Management Functions
-    const handleOpenUserManagement = (user: any) => {
-        setSelectedUser({ ...user });
+    const handleOpenUserManagement = (userItem: any) => {
+        setSelectedUser({ ...userItem });
         setUserManagementTab('perfil');
         setIsUserManagementModalOpen(true);
     };
@@ -579,10 +600,13 @@ const SaaSManagement = () => {
 
                 <div>
                     <div className={`p-6 border-b border-[#8A9A5B]/10 transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden py-0 border-0'}`}>
-                        <h1 className="text-xl font-extrabold tracking-tight text-[#697D58]">
-                            Painel <span className="text-[#8A9A5B]">Global</span>
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="px-2 py-0.5 bg-[#8A9A5B] text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm">Admin Global</span>
+                        </div>
+                        <h1 className="text-xl font-extrabold tracking-tight text-[#1A202C]">
+                            Rares360 <span className="text-[#8A9A5B]">HQ</span>
                         </h1>
-                        <p className="text-[#8A9A5B] font-bold text-[10px] mt-1 tracking-widest uppercase opacity-80">Rares360 Admin</p>
+                        <p className="text-slate-400 font-bold text-[10px] mt-1 tracking-widest uppercase">{user?.name}</p>
                     </div>
                     {/* Logo ícone qdo fechado */}
                     {!isSidebarOpen && (
@@ -591,39 +615,51 @@ const SaaSManagement = () => {
                         </div>
                     )}
 
-                    <nav className="p-4 space-y-2 mt-2">
-                        <button
-                            onClick={() => setActiveTab('clinics')}
-                            className={`w-full flex items-center ${isSidebarOpen ? 'justify-start gap-4 px-4' : 'justify-center px-0'} py-3.5 rounded-2xl transition-all duration-300 ${activeTab === 'clinics' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 font-bold' : 'text-[#697D58] opacity-80 hover:bg-white hover:opacity-100 font-medium'}`}
-                            title={!isSidebarOpen ? 'Clínicas' : ''}
-                        >
-                            <Building2 size={isSidebarOpen ? 20 : 22} />
-                            {isSidebarOpen && <span className="text-sm tracking-wide font-bold">Clínicas</span>}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('users')}
-                            className={`w-full flex items-center ${isSidebarOpen ? 'justify-start gap-4 px-4' : 'justify-center px-0'} py-3.5 rounded-2xl transition-all duration-300 ${activeTab === 'users' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 font-bold' : 'text-[#697D58] opacity-80 hover:bg-white hover:opacity-100 font-medium'}`}
-                            title={!isSidebarOpen ? 'Usuários' : ''}
-                        >
-                            <Users size={isSidebarOpen ? 20 : 22} />
-                            {isSidebarOpen && <span className="text-sm tracking-wide font-bold">Usuários</span>}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('billing')}
-                            className={`w-full flex items-center ${isSidebarOpen ? 'justify-start gap-4 px-4' : 'justify-center px-0'} py-3.5 rounded-2xl transition-all duration-300 ${activeTab === 'billing' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 font-bold' : 'text-[#697D58] opacity-80 hover:bg-white hover:opacity-100 font-medium'}`}
-                            title={!isSidebarOpen ? 'Faturamento' : ''}
-                        >
-                            <CreditCard size={isSidebarOpen ? 20 : 22} />
-                            {isSidebarOpen && <span className="text-sm tracking-wide font-bold">Faturamento</span>}
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('leads')}
-                            className={`w-full flex items-center ${isSidebarOpen ? 'justify-start gap-4 px-4' : 'justify-center px-0'} py-3.5 rounded-2xl transition-all duration-300 ${activeTab === 'leads' ? 'bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20 font-bold' : 'text-[#697D58] opacity-80 hover:bg-white hover:opacity-100 font-medium'}`}
-                            title={!isSidebarOpen ? 'Leads' : ''}
-                        >
-                            <MessageSquare size={isSidebarOpen ? 20 : 22} />
-                            {isSidebarOpen && <span className="text-sm tracking-wide font-bold">Leads</span>}
-                        </button>
+                    <nav className="p-4 space-y-6 mt-2 overflow-y-auto custom-scrollbar">
+                        {[
+                            {
+                                label: 'PLATAFORMA', items: [
+                                    { id: 'dashboard', icon: <LayoutDashboard size={isSidebarOpen ? 18 : 22} />, label: 'Dashboard Home' },
+                                    { id: 'clinics', icon: <Building2 size={isSidebarOpen ? 18 : 22} />, label: 'Clínicas' },
+                                    { id: 'users', icon: <Users size={isSidebarOpen ? 18 : 22} />, label: 'Usuários' }
+                                ]
+                            },
+                            {
+                                label: 'FINANCEIRO', items: [
+                                    { id: 'billing', icon: <CreditCard size={isSidebarOpen ? 18 : 22} />, label: 'Faturamento SaaS' },
+                                    { id: 'reports', icon: <FileDown size={isSidebarOpen ? 18 : 22} />, label: 'Relatórios' }
+                                ]
+                            },
+                            {
+                                label: 'COMERCIAL', items: [
+                                    { id: 'leads', icon: <MessageSquare size={isSidebarOpen ? 18 : 22} />, label: 'Pipeline de Leads' }
+                                ]
+                            },
+                            {
+                                label: 'SISTEMA', items: [
+                                    { id: 'settings', icon: <Settings size={isSidebarOpen ? 18 : 22} />, label: 'Configurações' },
+                                    { id: 'audit', icon: <Cpu size={isSidebarOpen ? 18 : 22} />, label: 'Logs de Auditoria' },
+                                    { id: 'security', icon: <LockIcon size={isSidebarOpen ? 18 : 22} />, label: 'Segurança' }
+                                ]
+                            }
+                        ].map((group) => (
+                            <div key={group.label} className="space-y-1">
+                                {isSidebarOpen && (
+                                    <h3 className="px-4 text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] mb-2">{group.label}</h3>
+                                )}
+                                {group.items.map((item) => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setActiveTab(item.id as any)}
+                                        className={`w-full flex items-center ${isSidebarOpen ? 'justify-start gap-3 px-4' : 'justify-center px-0'} py-2.5 rounded-xl transition-all duration-300 ${activeTab === item.id ? 'bg-[#8A9A5B] text-white shadow-md shadow-[#8A9A5B]/20 font-bold' : 'text-slate-500 hover:bg-slate-100 hover:text-[#697D58] font-medium'}`}
+                                        title={!isSidebarOpen ? item.label : ''}
+                                    >
+                                        {item.icon}
+                                        {isSidebarOpen && <span className="text-sm tracking-wide font-bold">{item.label}</span>}
+                                    </button>
+                                ))}
+                            </div>
+                        ))}
                     </nav>
                 </div>
 
@@ -637,7 +673,7 @@ const SaaSManagement = () => {
                             <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-0.5">Total Ativo</p>
                             <div className="flex items-end gap-2">
                                 <span className="text-2xl font-black leading-none">
-                                    {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : leads.length}
+                                    {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : activeTab === 'leads' ? leads.length : 0}
                                 </span>
                             </div>
                         </div>
@@ -646,7 +682,7 @@ const SaaSManagement = () => {
                              <>
                                  <span className="text-[8px] uppercase tracking-widest font-black text-white/70">Total</span>
                                  <span className="text-xl font-black leading-none relative z-10">
-                                     {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : leads.length}
+                                     {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : activeTab === 'leads' ? leads.length : 0}
                                  </span>
                              </>
                         )}
@@ -659,7 +695,7 @@ const SaaSManagement = () => {
                 {/* Header Topo */}
                 <header className="h-20 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0 z-10 shadow-sm">
                     <h2 className="text-3xl font-extrabold text-[#697D58] tracking-tight">
-                        {activeTab === 'clinics' ? 'Gestão de Clínicas' : activeTab === 'users' ? 'Usuários Globais' : activeTab === 'billing' ? 'Faturamento SaaS' : 'Pipeline de Leads'}
+                        {activeTab === 'dashboard' ? 'Visão Geral da Plataforma' : activeTab === 'clinics' ? 'Gestão de Clínicas' : activeTab === 'users' ? 'Usuários Globais' : activeTab === 'billing' ? 'Faturamento SaaS' : activeTab === 'leads' ? 'Pipeline de Leads' : 'Configurações'}
                     </h2>
 
                     <div className="flex items-center gap-4 hover:bg-white/60 p-2 pr-5 rounded-[2rem] transition-all cursor-pointer border border-transparent hover:border-[#8A9A5B]/20 shadow-sm" onClick={logout}>
@@ -736,7 +772,56 @@ const SaaSManagement = () => {
                         )}
                     </div>
 
-                    {activeTab === 'leads' && viewMode === 'kanban' ? (
+                    {activeTab === 'dashboard' ? (
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            {/* Card MRR */}
+                            <div className="bg-gradient-to-br from-[#697D58] to-[#3B6D11] p-6 rounded-3xl shadow-xl shadow-[#697D58]/20 text-white relative overflow-hidden group">
+                                <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-white/70 mb-2">MRR Total Estimado</h3>
+                                <div className="flex items-end gap-2">
+                                    <span className="text-3xl font-extrabold leading-none">
+                                        R$ {billingData.reduce((acc, curr) => acc + (curr.total || 0), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </span>
+                                </div>
+                                <div className="mt-4 flex items-center gap-2 text-xs font-bold text-white/80">
+                                    <TrendingUp size={14} /> Faturamento recorrente
+                                </div>
+                            </div>
+
+                            {/* Card Clínicas */}
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#8A9A5B]/10 hover:shadow-lg transition-shadow">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Clínicas Ativas</h3>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-3xl font-extrabold text-[#1A202C]">{clinics.length}</span>
+                                    <div className="w-10 h-10 rounded-xl bg-[#8A9A5B]/10 flex items-center justify-center text-[#697D58]">
+                                        <Building2 size={20} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card Usuários */}
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#8A9A5B]/10 hover:shadow-lg transition-shadow">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Total de Usuários</h3>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-3xl font-extrabold text-[#1A202C]">{users.length}</span>
+                                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+                                        <Users size={20} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Card Leads */}
+                            <div className="bg-white p-6 rounded-3xl shadow-sm border border-[#8A9A5B]/10 hover:shadow-lg transition-shadow">
+                                <h3 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Leads em Pipeline</h3>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-3xl font-extrabold text-[#1A202C]">{leads.length}</span>
+                                    <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+                                        <MessageSquare size={20} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : activeTab === 'leads' && viewMode === 'kanban' ? (
                         <div className="flex pb-4 gap-6 min-h-[600px] h-[calc(100vh-250px)] overflow-x-auto items-start w-full">
                             {[
                                 { id: 'NOVO', title: 'Novo', color: 'bg-blue-100 text-blue-700 border-blue-200' },
@@ -914,10 +999,20 @@ const SaaSManagement = () => {
                                                             )}
                                                         </div>
                                                     </div>
-                                                    {activeTab === 'users' && <span className="text-[10px] text-slate-400 font-bold block mt-1 uppercase tracking-wider">{item.clinic?.name || 'Acesso Global'}</span>}
-                                                </td>
-                                                <td className="p-6 text-slate-500 font-semibold text-sm">
-                                                    {activeTab === 'clinics' ? (item.cnpj || 'Não info') : activeTab === 'users' ? item.email : activeTab === 'leads' ? (
+                                                        {activeTab === 'users' && (
+                                                            <div className="flex gap-2 mt-1">
+                                                                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">{item.clinic?.name || 'Acesso Global'}</span>
+                                                                {item.mustChangePassword && <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[8px] font-black rounded uppercase tracking-widest border border-yellow-200">Senha Temp. Ativa</span>}
+                                                            </div>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-6 text-slate-500 font-semibold text-sm">
+                                                        {activeTab === 'clinics' ? (item.cnpj || 'Não info') : activeTab === 'users' ? (
+                                                            <div>
+                                                                {item.email}
+                                                                {item.lastLoginAt && <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider mt-1">Último Login: {new Date(item.lastLoginAt).toLocaleDateString()}</span>}
+                                                            </div>
+                                                        ) : activeTab === 'leads' ? (
                                                         <div className="space-y-1">
                                                             <p className="text-slate-800 font-bold flex items-center gap-2"><Mail size={12}/> {item.email}</p>
                                                             <p className="text-[10px] flex items-center gap-2"><Phone size={12}/> {item.whatsapp}</p>
@@ -942,7 +1037,7 @@ const SaaSManagement = () => {
                                                             </div>
                                                         </div>
                                                     ) : (
-                                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-tight uppercase border ${activeTab === 'clinics' ? 'bg-[#8A9A5B]/10 text-[#697D58] border-[#8A9A5B]/20' : 'bg-[#DEB587]/10 text-[#697D58] border-[#DEB587]/20'}`}>
+                                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-tight uppercase border ${activeTab === 'clinics' ? 'bg-[#8A9A5B]/10 text-[#697D58] border-[#8A9A5B]/20' : item.role === 'ADMIN_GLOBAL' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-[#DEB587]/10 text-[#697D58] border-[#DEB587]/20'}`}>
                                                             {activeTab === 'clinics' ? (item.isActive ? 'Ativo' : 'Inativo') : item.role}
                                                         </span>
                                                     )}
@@ -1013,6 +1108,18 @@ const SaaSManagement = () => {
                                                         </div>
                                                     ) : (
                                                         <div className="flex items-center gap-1 justify-end">
+                                                            {activeTab === 'clinics' && (
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleImpersonate(item.id);
+                                                                    }}
+                                                                    className="p-2 hover:bg-blue-500/10 rounded-lg text-slate-400 hover:text-blue-500 transition-all flex items-center gap-2"
+                                                                    title="Acessar como Administrador da Clínica"
+                                                                >
+                                                                    <LayoutDashboard size={18} />
+                                                                </button>
+                                                            )}
                                                             <button
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
@@ -1023,6 +1130,7 @@ const SaaSManagement = () => {
                                                                     }
                                                                 }}
                                                                 className="p-2 hover:bg-[#8A9A5B]/10 rounded-lg text-slate-400 hover:text-[#697D58] transition-all"
+                                                                title="Configurações"
                                                             >
                                                                 <Settings size={18} />
                                                             </button>

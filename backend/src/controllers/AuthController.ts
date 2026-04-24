@@ -42,6 +42,12 @@ export class AuthController {
 
             console.log(`[AUTH] Senha de ${email} tem ${passwordAgeInDays} dias de idade.`);
 
+            // 2. Verificação de Senha Temporária
+            if (user.temporaryPasswordExpiresAt && new Date() > user.temporaryPasswordExpiresAt) {
+                console.warn(`[AUTH] Senha temporária expirada para: ${email}`);
+                return res.status(403).json({ error: 'Sua senha temporária expirou. Solicite uma nova senha ao administrador.' });
+            }
+
             // Se a senha estiver expirada ou o reset for obrigatório
             if (user.mustChangePassword || isPasswordExpired) {
                 console.warn(`[AUTH] Bloqueio de acesso para ${email}: Troca de senha obrigatória.`);
@@ -50,7 +56,8 @@ export class AuthController {
                     id: user.id,
                     email: user.email,
                     role: user.role,
-                    clinicId: user.clinicId || undefined
+                    clinicId: user.clinicId || undefined,
+                    mustChangePassword: true
                 });
 
                 return res.json({
@@ -73,7 +80,14 @@ export class AuthController {
                 id: user.id,
                 email: user.email,
                 role: user.role,
-                clinicId: user.clinicId || undefined
+                clinicId: user.clinicId || undefined,
+                mustChangePassword: false
+            });
+
+            // Atualiza lastLoginAt
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { lastLoginAt: new Date() }
             });
 
             res.json({
@@ -144,6 +158,8 @@ export class AuthController {
                     data: {
                         password: hashedNewPassword,
                         mustChangePassword: false,
+                        isFirstAccess: false,
+                        temporaryPasswordExpiresAt: null,
                         passwordUpdatedAt: new Date()
                     }
                 });

@@ -32,6 +32,7 @@ import PurchaseIntelligence from './pages/PurchaseIntelligence';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
+import ForceChangePassword from './pages/ForceChangePassword';
 import Automations from './pages/Automations';
 import { useAuth } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
@@ -80,6 +81,7 @@ function App() {
                 user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LoginPage />
               } />
               <Route path="/contact" element={<Contact />} />
+              <Route path="/auth/force-change-password" element={<ForceChangePassword />} />
 
               {/* SaaS Admin Routes */}
               <Route element={<ProtectedRoute allowedRoles={['ADMIN_GLOBAL']} />}>

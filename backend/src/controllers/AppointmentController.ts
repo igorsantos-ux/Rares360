@@ -245,8 +245,8 @@ export class AppointmentController {
                 }
             });
 
-            // TRIGGER: Se mudou para EXECUTADO, disparar integrações
-            if (appointment.status === 'EXECUTADO' && oldAppointment?.status !== 'EXECUTADO') {
+            // TRIGGER: Se mudou para ATENDIDO, disparar integrações
+            if (appointment.status === 'ATENDIDO' && oldAppointment?.status !== 'ATENDIDO') {
                 await AppointmentController.handleExecutionTriggers(appointment);
             }
 

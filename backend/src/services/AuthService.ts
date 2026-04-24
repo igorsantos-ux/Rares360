@@ -13,7 +13,7 @@ export class AuthService {
         return bcrypt.compare(password, hash);
     }
 
-    static generateToken(payload: { id: string; email: string; role: string; clinicId?: string }): string {
+    static generateToken(payload: { id: string; email: string; role: string; clinicId?: string; mustChangePassword?: boolean }): string {
         return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
     }
 

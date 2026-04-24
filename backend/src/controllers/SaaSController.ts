@@ -298,9 +298,23 @@ export class SaaSController {
                 return res.status(400).json({ error: 'Email já cadastrado' });
             }
 
-            // Gerar senha temporária caso não seja fornecida
+            // Gerar senha temporária forte (12 chars: maiúsculas + minúsculas + números + símbolo)
             if (!password) {
-                password = crypto.randomBytes(4).toString('hex'); // ex: 8f2g3h1j
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
+                password = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+                
+                // Garantir pelo menos 1 de cada tipo
+                const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                const lower = 'abcdefghijklmnopqrstuvwxyz';
+                const numbers = '0123456789';
+                const symbols = '!@#$%^&*()_+';
+                
+                password = 
+                    upper[Math.floor(Math.random() * upper.length)] +
+                    lower[Math.floor(Math.random() * lower.length)] +
+                    numbers[Math.floor(Math.random() * numbers.length)] +
+                    symbols[Math.floor(Math.random() * symbols.length)] +
+                    password.substring(4);
             }
 
             const hashedPassword = await AuthService.hashPassword(password);
@@ -313,6 +327,9 @@ export class SaaSController {
                     role,
                     clinicId,
                     mustChangePassword: true, // Sempre obrigatório mudar no primeiro acesso
+                    isFirstAccess: true,
+                    temporaryPasswordExpiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000), // expira em 72h
+                    createdByAdminId: req.user?.id,
                     passwordUpdatedAt: new Date()
                 }
             });
@@ -413,6 +430,65 @@ export class SaaSController {
             res.status(500).json({ 
                 error: 'Erro interno ao excluir usuário. Verifique se existem registros vinculados ou tente novamente.' 
             });
+        }
+    }
+
+    static async impersonateClinic(req: any, res: Response) {
+        try {
+            const adminId = req.user.id;
+            const adminName = req.user.name;
+            const { clinicId } = req.params;
+
+            // Encontrar o usuário master da clínica (OWNER ou ADMIN) ou pegar o primeiro CLINIC_ADMIN
+            const targetUser = await basePrisma.user.findFirst({
+                where: {
+                    clinicId,
+                    role: { in: ['OWNER', 'ADMIN', 'CLINIC_ADMIN'] },
+                    isActive: true
+                },
+                orderBy: { createdAt: 'asc' }
+            });
+
+            if (!targetUser) {
+                return res.status(404).json({ error: 'Nenhum usuário administrador ativo encontrado nesta clínica para impersonar.' });
+            }
+
+            const targetClinic = await basePrisma.clinic.findUnique({ where: { id: clinicId } });
+
+            // Gerar token da clínica
+            const token = AuthService.generateToken({
+                id: targetUser.id,
+                email: targetUser.email,
+                role: targetUser.role,
+                clinicId: targetUser.clinicId || undefined
+            });
+
+            // Registrar log de auditoria
+            await basePrisma.adminAuditLog.create({
+                data: {
+                    adminId,
+                    adminName,
+                    targetClinicId: clinicId,
+                    targetClinicName: targetClinic?.name || 'Clínica Desconhecida',
+                    action: 'CONTEXT_SWITCH'
+                }
+            });
+
+            res.json({
+                user: {
+                    id: targetUser.id,
+                    name: targetUser.name,
+                    email: targetUser.email,
+                    role: targetUser.role,
+                    hasSeenOnboarding: targetUser.hasSeenOnboarding,
+                    clinic: targetClinic
+                },
+                token
+            });
+
+        } catch (error) {
+            console.error('Error impersonating clinic:', error);
+            res.status(500).json({ error: 'Erro ao tentar acessar a conta da clínica.' });
         }
     }
     

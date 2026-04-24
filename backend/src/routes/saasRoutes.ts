@@ -12,6 +12,7 @@ router.post('/clinics/upload-logo', upload.single('file'), SaaSController.upload
 router.post('/clinics', SaaSController.createClinic);
 router.patch('/clinics/:id', SaaSController.updateClinic);
 router.delete('/clinics/:id', SaaSController.deleteClinic);
+router.post('/impersonate/:clinicId', SaaSController.impersonateClinic);
 
 router.get('/users', SaaSController.listUsers);
 router.post('/users', SaaSController.createUser);
