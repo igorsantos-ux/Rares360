@@ -13,7 +13,7 @@ export default function ForceChangePassword() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     
-    const { user } = useAuth();
+    const { user, token: authContextToken } = useAuth();
 
     // Validação de força de senha
     const validatePasswordStrength = (password: string) => {
@@ -50,10 +50,9 @@ export default function ForceChangePassword() {
 
         setLoading(true);
         try {
-            const token = localStorage.getItem('heath_finance_token');
             await authApi.updatePassword(
                 { currentPassword, newPassword },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { headers: { Authorization: `Bearer ${authContextToken}` } }
             );
 
             toast.success('Senha atualizada com sucesso!');
