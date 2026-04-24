@@ -4,8 +4,11 @@ import prisma from '../lib/prisma.js';
 
 export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
+    
+    console.log(`[AUTH DEBUG] Path: ${req.originalUrl} | Method: ${req.method} | AuthHeader Present: ${!!authHeader}`);
 
     if (!authHeader) {
+        console.warn(`[AUTH ERROR] Token ausente para a rota: ${req.originalUrl}`);
         return res.status(401).json({ error: 'Token não fornecido', message: 'Token não fornecido' });
     }
 

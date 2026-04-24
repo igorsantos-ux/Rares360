@@ -49,6 +49,7 @@ export default function ForceChangePassword() {
         }
 
         setLoading(true);
+        console.log('[DEBUG] Tentando trocar senha. Token no contexto:', authContextToken);
         try {
             await authApi.updatePassword(
                 { currentPassword, newPassword },
