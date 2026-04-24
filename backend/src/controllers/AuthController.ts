@@ -187,8 +187,31 @@ export class AuthController {
                 }
             });
 
-            console.log(`[AUTH] Senha do usuário ${userId} atualizada com sucesso.`);
-            res.json({ success: true, message: 'Sua senha foi atualizada com sucesso!' });
+            console.log(`[AUTH] Senha do usuário ${userId} atualizada com sucesso. Gerando novo token...`);
+            
+            // Gerar novo token com as flags de segurança atualizadas
+            const newToken = AuthService.generateToken({
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                clinicId: user.clinicId,
+                mustChangePassword: false // Agora é falso
+            });
+
+            res.json({ 
+                success: true, 
+                message: 'Sua senha foi atualizada com sucesso!',
+                token: newToken,
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    clinicId: user.clinicId,
+                    mustChangePassword: false
+                }
+            });
         } catch (error) {
             console.error('Error updating password:', error);
             res.status(500).json({ error: 'Erro interno ao atualizar a senha. Tente novamente mais tarde.' });

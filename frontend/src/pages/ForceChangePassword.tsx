@@ -13,7 +13,7 @@ export default function ForceChangePassword() {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     
-    const { user, token: authContextToken } = useAuth();
+    const { user, token: authContextToken, login } = useAuth();
 
     // Validação de força de senha
     const validatePasswordStrength = (password: string) => {
@@ -49,12 +49,14 @@ export default function ForceChangePassword() {
         }
 
         setLoading(true);
-        console.log('[DEBUG] Tentando trocar senha. Token no contexto:', authContextToken);
         try {
-            await authApi.updatePassword(
+            const response = await authApi.updatePassword(
                 { currentPassword, newPassword },
                 { headers: { Authorization: `Bearer ${authContextToken}` } }
             );
+
+            const { token: newToken, user: updatedUser } = response.data;
+            login(newToken, updatedUser);
 
             toast.success('Senha atualizada com sucesso!');
             
