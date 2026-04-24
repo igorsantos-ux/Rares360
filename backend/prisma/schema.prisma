@@ -754,6 +754,9 @@ enum AppointmentStatus {
   NAO_CONFIRMADO
   FALTA
   REMARCADO
+  CHECK_IN
+  EXECUTADO
+  CANCELADO
 }
 
 model Invoice {
