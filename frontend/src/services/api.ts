@@ -49,6 +49,7 @@ export const authApi = {
     login: (data: any) => api.post('auth/login', data),
     me: () => api.get('auth/me'),
     completeOnboarding: () => api.patch('auth/onboarding'),
+    updatePassword: (data: any) => api.post('auth/update-password', data),
 };
 
 export const saasApi = {

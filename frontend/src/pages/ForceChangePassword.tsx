@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { authApi } from '../services/api';
 import { Input } from '../components/ui/Input';
 import { Label } from '../components/ui/Label';
 import { Button } from '../components/ui/Button';
@@ -49,22 +50,7 @@ export default function ForceChangePassword() {
 
         setLoading(true);
         try {
-            // Assumindo que a API authApi.updatePassword será usada, ou direto no axios
-            const token = localStorage.getItem('heath_finance_token');
-            const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3001/api'}/auth/update-password`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({ currentPassword, newPassword })
-            });
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.error || 'Erro ao atualizar a senha.');
-            }
+            await authApi.updatePassword({ currentPassword, newPassword });
 
             toast.success('Senha atualizada com sucesso!');
             
