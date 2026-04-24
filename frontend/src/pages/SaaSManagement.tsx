@@ -21,7 +21,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Lock as LockIcon,
-    TrendingUp
+    TrendingUp,
+    BarChart3
 } from 'lucide-react';
 import { saasApi, leadsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
@@ -70,6 +71,14 @@ const SaaSManagement = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('Todos');
+    const [planFilter, setPlanFilter] = useState('Todos');
+
+    // Novo Drawer
+    const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const [selectedClinic, setSelectedClinic] = useState<any>(null);
+    const [drawerTab, setDrawerTab] = useState('overview');
+
 
     const [isGenerateBillingModalOpen, setIsGenerateBillingModalOpen] = useState(false);
     const [billingGenerationStatus, setBillingGenerationStatus] = useState<'idle' | 'processing'>('idle');
@@ -90,14 +99,14 @@ const SaaSManagement = () => {
         banco: '', agencia: '', conta: '', tipoConta: '', chavePix: '',
         logo: '', corMarca: '', responsavelAdmin: '', responsavelTecnico: '', crmResponsavel: '',
         registroVigilancia: '', cnes: '', pricePerUser: '50.0',
-        implementationFee: '0', monthlyFee: '0', proposalUrl: ''
+        implementationFee: '0', monthlyFee: '0', proposalUrl: '', plan: 'Essencial'
     });
     const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'CLINIC_ADMIN', clinicId: '' });
-    const [newLead, setNewLead] = useState({ 
-        name: '', 
-        email: '', 
-        whatsapp: '', 
-        subject: 'Contato CRM', 
+    const [newLead, setNewLead] = useState({
+        name: '',
+        email: '',
+        whatsapp: '',
+        subject: 'Contato CRM',
         status: 'NOVO',
         diagnostic: {
             clinicType: '',
@@ -126,7 +135,6 @@ const SaaSManagement = () => {
 
     // Management Modal States
     const [isManagementModalOpen, setIsManagementModalOpen] = useState(false);
-    const [selectedClinic, setSelectedClinic] = useState<any>(null);
     const [managementTab, setManagementTab] = useState<'perfil' | 'precificacao' | 'acesso' | 'usuarios'>('perfil');
 
     // User Management Modal States
@@ -154,7 +162,7 @@ const SaaSManagement = () => {
                 saasApi.getUsers(),
                 saasApi.getBilling()
             ]);
-            
+
             setClinics(clinicsRes.data);
             setUsers(usersRes.data);
             setBillingData(billingRes.data);
@@ -187,7 +195,7 @@ const SaaSManagement = () => {
             setExpandedClinics(prev => ({ ...prev, [clinicId]: false }));
             return;
         }
-        
+
         setExpandedClinics(prev => ({ ...prev, [clinicId]: true }));
         if (!expandedClinicInvoices[clinicId]) {
             setLoadingInvoices(prev => ({ ...prev, [clinicId]: true }));
@@ -254,7 +262,7 @@ const SaaSManagement = () => {
                 banco: '', agencia: '', conta: '', tipoConta: '', chavePix: '',
                 logo: '', corMarca: '', responsavelAdmin: '', responsavelTecnico: '', crmResponsavel: '',
                 registroVigilancia: '', cnes: '', pricePerUser: '50.0',
-                implementationFee: '0', monthlyFee: '0', proposalUrl: ''
+                implementationFee: '0', monthlyFee: '0', proposalUrl: '', plan: 'Essencial'
             });
             fetchData();
         } catch (error: any) {
@@ -291,13 +299,13 @@ const SaaSManagement = () => {
         try {
             await leadsApi.createLead(newLead);
             setIsModalOpen(false);
-            setNewLead({ 
+            setNewLead({
                 name: '', email: '', whatsapp: '', subject: 'Contato CRM', status: 'NOVO',
                 diagnostic: {
                     clinicType: '', operationTime: '', professionalsCount: '', mainChallenge: '', monthlyRevenue: '',
                     hasDRE: '', hasDFC: '', organizedCosts: '', knowsMargin: '', knowsRevenueGoal: '',
-                    knowsHighMarginProcedures: '', identifiedNegativeMargin: '', knowsMonthlyLeads: '', 
-                    monitorsConversion: '', structuredFollowUp: '', reliableInventory: '', knowsSupplyCosts: '', 
+                    knowsHighMarginProcedures: '', identifiedNegativeMargin: '', knowsMonthlyLeads: '',
+                    monitorsConversion: '', structuredFollowUp: '', reliableInventory: '', knowsSupplyCosts: '',
                     patientReturnControl: '', pricingFactors: []
                 }
             });
@@ -310,11 +318,7 @@ const SaaSManagement = () => {
         }
     };
 
-    const handleOpenManagement = (clinic: any) => {
-        setSelectedClinic({ ...clinic });
-        setManagementTab('perfil');
-        setIsManagementModalOpen(true);
-    };
+
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, isNew: boolean = false) => {
         const file = e.target.files?.[0];
@@ -337,7 +341,7 @@ const SaaSManagement = () => {
             alert('Erro ao fazer upload da imagem.');
         }
     };
-    
+
     const handleProposalUpload = async (e: React.ChangeEvent<HTMLInputElement>, isNew: boolean = false) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -431,16 +435,16 @@ const SaaSManagement = () => {
             toast.loading('Acessando painel da clínica...', { id: 'impersonate' });
             const response = await saasApi.impersonateClinic(clinicId);
             const { token } = response.data;
-            
+
             // Set the new token
             localStorage.setItem('heath_finance_token', token);
-            
+
             // Força reload completo para resetar estados e aplicar o novo token em todas as instâncias da API e Contexto
             toast.success(`Acessando como administrador da clínica...`, { id: 'impersonate' });
             setTimeout(() => {
                 window.location.href = '/dashboard';
             }, 1000);
-            
+
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Erro ao tentar acessar a clínica.', { id: 'impersonate' });
         }
@@ -590,9 +594,9 @@ const SaaSManagement = () => {
         <div className="flex h-screen bg-gray-50 text-[#1A202C] overflow-hidden animate-in fade-in duration-700">
             {/* Sidebar Fixa (Esquerda) */}
             <div className={`${isSidebarOpen ? 'w-72' : 'w-24'} bg-white border-r border-gray-200 flex-shrink-0 flex flex-col justify-between z-10 transition-all duration-300 ease-in-out relative relative`}>
-                
+
                 {/* Toggle Seta */}
-                <button 
+                <button
                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                     className="absolute -right-3 top-8 bg-white border border-[#8A9A5B]/30 rounded-full p-1.5 text-[#697D58] hover:bg-[#8A9A5B] hover:text-white transition-all shadow-md z-20"
                 >
@@ -612,7 +616,7 @@ const SaaSManagement = () => {
                     {/* Logo ícone qdo fechado */}
                     {!isSidebarOpen && (
                         <div className="p-6 flex justify-center border-b border-[#8A9A5B]/10">
-                           <LayoutDashboard size={24} className="text-[#697D58]" /> 
+                            <LayoutDashboard size={24} className="text-[#697D58]" />
                         </div>
                     )}
 
@@ -669,7 +673,7 @@ const SaaSManagement = () => {
                         <div className={`absolute top-0 right-0 p-4 opacity-10 transition-opacity ${!isSidebarOpen && 'hidden'}`}>
                             <LayoutDashboard size={40} />
                         </div>
-                        
+
                         <div className={isSidebarOpen ? 'relative z-10' : 'hidden'}>
                             <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-0.5">Total Ativo</p>
                             <div className="flex items-end gap-2">
@@ -678,20 +682,20 @@ const SaaSManagement = () => {
                                 </span>
                             </div>
                         </div>
-                        
+
                         {!isSidebarOpen && (
-                             <>
-                                 <span className="text-[8px] uppercase tracking-widest font-black text-white/70">Total</span>
-                                 <span className="text-xl font-black leading-none relative z-10">
-                                     {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : activeTab === 'leads' ? leads.length : 0}
-                                 </span>
-                             </>
+                            <>
+                                <span className="text-[8px] uppercase tracking-widest font-black text-white/70">Total</span>
+                                <span className="text-xl font-black leading-none relative z-10">
+                                    {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : activeTab === 'leads' ? leads.length : 0}
+                                </span>
+                            </>
                         )}
                     </div>
                 </div>
             </div>
 
-        {/* Main Content Area (Direita) */}
+            {/* Main Content Area (Direita) */}
             <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 {/* Header Topo */}
                 <header className="h-20 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0 z-10 shadow-sm">
@@ -738,6 +742,49 @@ const SaaSManagement = () => {
                                 </motion.div>
                             </button>
                         </div>
+                        {activeTab === 'clinics' && (
+                            <div className="flex bg-slate-100 p-1.5 rounded-2xl border border-slate-200 shadow-inner gap-2 flex-wrap items-center animate-in fade-in slide-in-from-right-4 duration-300">
+                                <span className="text-[10px] font-black uppercase tracking-widest text-[#697D58] ml-2 flex items-center gap-1">
+                                    <Search size={12} /> Filtros:
+                                </span>
+                                <select
+                                    className="bg-white border border-[#8A9A5B]/10 rounded-xl py-1.5 px-3 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all appearance-none cursor-pointer"
+                                    value={statusFilter}
+                                    onChange={e => setStatusFilter(e.target.value)}
+                                >
+                                    <option value="Todos">Status: Todos</option>
+                                    <option value="Ativos">Ativos</option>
+                                    <option value="Inativos">Inativos</option>
+                                </select>
+                                <select
+                                    className="bg-white border border-[#8A9A5B]/10 rounded-xl py-1.5 px-3 text-xs font-bold text-slate-600 focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/50 transition-all appearance-none cursor-pointer"
+                                    value={planFilter}
+                                    onChange={e => setPlanFilter(e.target.value)}
+                                >
+                                    <option value="Todos">Plano: Todos</option>
+                                    <option value="Essencial">Essencial</option>
+                                    <option value="Profissional">Profissional</option>
+                                    <option value="Excellence">Excellence</option>
+                                </select>
+
+                                <div className="text-[10px] font-black text-white bg-[#697D58] px-2 py-1.5 rounded-xl ml-auto mr-2">
+                                    {clinics.filter(item => {
+                                        const matchesStatus = statusFilter === 'Todos' || (statusFilter === 'Ativos' && item.isActive) || (statusFilter === 'Inativos' && !item.isActive);
+                                        const matchesPlan = planFilter === 'Todos' || (item.plan || 'Essencial') === planFilter;
+                                        return matchesStatus && matchesPlan;
+                                    }).length} Resultados
+                                </div>
+
+                                {(statusFilter !== 'Todos' || planFilter !== 'Todos' || searchTerm !== '') && (
+                                    <button
+                                        onClick={() => { setStatusFilter('Todos'); setPlanFilter('Todos'); setSearchTerm(''); }}
+                                        className="text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 px-2 py-1.5 rounded-xl transition-all flex items-center gap-1 border border-red-100"
+                                    >
+                                        <XIcon size={12} /> Limpar
+                                    </button>
+                                )}
+                            </div>
+                        )}
                         {activeTab === 'leads' && (
                             <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
                                 <button
@@ -832,16 +879,16 @@ const SaaSManagement = () => {
                             ].map(col => {
                                 const colLeads = leads
                                     .filter(l => l.status === col.id)
-                                    .filter(item => 
-                                        !searchTerm || 
-                                        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                    .filter(item =>
+                                        !searchTerm ||
+                                        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                         item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                         item.whatsapp?.includes(searchTerm)
                                     );
 
                                 return (
-                                    <div 
-                                        key={col.id} 
+                                    <div
+                                        key={col.id}
                                         className="flex-1 min-w-[280px] bg-gray-200 rounded-lg p-4 flex flex-col h-full overflow-hidden border border-gray-300/50 shadow-sm"
                                         onDragOver={handleDragOver}
                                         onDrop={(e) => handleDrop(e, col.id)}
@@ -856,7 +903,7 @@ const SaaSManagement = () => {
                                         </div>
                                         <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide pb-10">
                                             {colLeads.map(lead => (
-                                                <div 
+                                                <div
                                                     key={lead.id}
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, lead.id)}
@@ -899,7 +946,7 @@ const SaaSManagement = () => {
                                                     </div>
 
                                                     <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
-                                                        <a 
+                                                        <a
                                                             href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}?text=Olá ${lead.name}, tudo bem? Sou consultor da Rares360.`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
@@ -928,294 +975,358 @@ const SaaSManagement = () => {
                                 </div>
                             ) : (
                                 <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-[#8A9A5B]/10 bg-[#8A9A5B]/5">
-                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Nome</th>
-                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
-                                            {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : activeTab === 'leads' ? 'Contato' : 'Status / Setup'}
-                                        </th>
-                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
-                                            {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : 'Mensalidade Vl.'}
-                                        </th>
-                                        <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest text-right">
-                                            {activeTab === 'billing' ? 'Total & Detalhamento' : activeTab === 'leads' ? 'Status e Ações' : 'Ações'}
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <AnimatePresence>
-                                        {(activeTab === 'clinics' ? clinics : activeTab === 'users' ? users : activeTab === 'billing' ? billingData : leads)
-                                            .filter(item => 
-                                                !searchTerm || 
-                                                item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                                item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                item.cnpj?.includes(searchTerm) ||
-                                                item.whatsapp?.includes(searchTerm)
-                                            )
-                                            .map((item) => {
-                                            
-                                            // Renovation Alert Logic
-                                            let isExpiring = false;
-                                            if (activeTab === 'billing' && item.contractStartDate && item.contractDurationMonths) {
-                                                const start = new Date(item.contractStartDate).getTime();
-                                                const now = new Date().getTime();
-                                                const diffMonths = (now - start) / (1000 * 60 * 60 * 24 * 30);
-                                                isExpiring = diffMonths >= (item.contractDurationMonths - 1);
-                                            }
+                                    <thead>
+                                        <tr className="border-b border-[#8A9A5B]/10 bg-[#8A9A5B]/5">
+                                            <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Nome</th>
+                                            <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
+                                                {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : activeTab === 'leads' ? 'Contato' : 'Status / Setup'}
+                                            </th>
+                                            {activeTab === 'clinics' && <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Plano</th>}
+                                            {activeTab === 'clinics' && <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">MRR</th>}
+                                            {activeTab === 'clinics' && <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Usuários Ativos</th>}
+                                            <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
+                                                {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : 'Mensalidade Vl.'}
+                                            </th>
+                                            <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest text-right">
+                                                {activeTab === 'billing' ? 'Total & Detalhamento' : activeTab === 'leads' ? 'Status e Ações' : 'Ações'}
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <AnimatePresence>
+                                            {(activeTab === 'clinics' ? clinics : activeTab === 'users' ? users : activeTab === 'billing' ? billingData : leads)
+                                                .filter(item =>
+                                                    !searchTerm ||
+                                                    item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                    item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                                    item.cnpj?.includes(searchTerm) ||
+                                                    item.whatsapp?.includes(searchTerm)
+                                                )
+                                                .filter((item: any) => {
+                                                    if (activeTab !== 'clinics') return true;
+                                                    const matchesStatus = statusFilter === 'Todos' || (statusFilter === 'Ativos' && item.isActive) || (statusFilter === 'Inativos' && !item.isActive);
+                                                    const matchesPlan = planFilter === 'Todos' || (item.plan || 'Essencial') === planFilter;
+                                                    return matchesStatus && matchesPlan;
+                                                })
+                                                .map((item: any) => {
 
-                                            return (
-                                            <React.Fragment key={item.id}>
-                                            <motion.tr
-                                                onClick={() => activeTab === 'billing' && handleToggleInvoices(item.id)}
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className={`border-b border-[#8A9A5B]/5 transition-colors group ${isExpiring ? 'bg-yellow-50 hover:bg-yellow-100' : ''} ${activeTab === 'billing' ? 'cursor-pointer hover:bg-slate-50' : 'hover:bg-white'}`}
-                                            >
-                                                <td className="p-6">
-                                                    <div className="font-extrabold flex items-center gap-3 text-[#1A202C]">
-                                                        {activeTab === 'leads' ? (
-                                                            <div className="w-10 h-10 rounded-xl bg-slate-50 border border-[#8A9A5B]/10 flex items-center justify-center text-[#697D58]">
-                                                                <Users size={18} />
-                                                            </div>
-                                                        ) : (
-                                                            <div className={`w-2 h-2 rounded-full ${activeTab === 'clinics' ? (item.isActive ? 'bg-[#8A9A5B]' : 'bg-[#DEB587]') : activeTab === 'users' ? 'bg-[#697D58]' : 'bg-[#DEB587]'}`}></div>
-                                                        )}
-                                                        <div>
-                                                            <div className="flex items-center gap-2">
-                                                                <p className="font-extrabold flex items-center gap-2">{item.name}</p>
-                                                                {activeTab === 'billing' && (
-                                                                    <button 
-                                                                        onClick={(e) => { e.stopPropagation(); handleOpenContractModal(item); }}
-                                                                        className="p-1 rounded bg-[#8A9A5B]/10 text-[#697D58] hover:bg-[#8A9A5B] hover:text-white transition-all opacity-0 group-hover:opacity-100"
-                                                                        title="Configurar Contrato e Valores"
-                                                                    >
-                                                                        <Edit3 size={12} />
-                                                                    </button>
-                                                                )}
-                                                            </div>
-                                                            {activeTab === 'leads' && (
-                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                                                                    {new Date(item.createdAt).toLocaleDateString()} às {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                </p>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                        {activeTab === 'users' && (
-                                                            <div className="flex gap-2 mt-1">
-                                                                <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">{item.clinic?.name || 'Acesso Global'}</span>
-                                                                {item.mustChangePassword && <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[8px] font-black rounded uppercase tracking-widest border border-yellow-200">Senha Temp. Ativa</span>}
-                                                            </div>
-                                                        )}
-                                                    </td>
-                                                    <td className="p-6 text-slate-500 font-semibold text-sm">
-                                                        {activeTab === 'clinics' ? (item.cnpj || 'Não info') : activeTab === 'users' ? (
-                                                            <div>
-                                                                {item.email}
-                                                                {item.lastLoginAt && <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider mt-1">Último Login: {new Date(item.lastLoginAt).toLocaleDateString()}</span>}
-                                                            </div>
-                                                        ) : activeTab === 'leads' ? (
-                                                        <div className="space-y-1">
-                                                            <p className="text-slate-800 font-bold flex items-center gap-2"><Mail size={12}/> {item.email}</p>
-                                                            <p className="text-[10px] flex items-center gap-2"><Phone size={12}/> {item.whatsapp}</p>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="space-y-1 text-xs">
-                                                            <p className="font-bold text-slate-700">{item.userCount} usuários ativos</p>
-                                                            {isExpiring && <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 rounded font-black uppercase text-[9px] tracking-widest">Atenção: Renovação &lt; 30d</span>}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="p-6">
-                                                    {activeTab === 'billing' ? (
-                                                        <div className="flex flex-col gap-1">
-                                                            <span className="text-[#1A202C] font-bold">R$ {item.pricePerUser?.toFixed(2)} / mês</span>
-                                                        </div>
-                                                    ) : activeTab === 'leads' ? (
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 border ${item.score >= 80 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                                                                <Star size={12} className={item.score >= 80 ? 'fill-orange-500' : ''} />
-                                                                <span className="text-xs font-black">{item.score}</span>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-tight uppercase border ${activeTab === 'clinics' ? 'bg-[#8A9A5B]/10 text-[#697D58] border-[#8A9A5B]/20' : item.role === 'ADMIN_GLOBAL' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-[#DEB587]/10 text-[#697D58] border-[#DEB587]/20'}`}>
-                                                            {activeTab === 'clinics' ? (item.isActive ? 'Ativo' : 'Inativo') : item.role}
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="p-6">
-                                                    {activeTab === 'billing' ? (
-                                                        <div className="flex items-center justify-between gap-4">
-                                                            <div className="flex flex-col">
-                                                                <span className="font-extrabold text-[#697D58]">R$ {item.total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                                                {item.invoices && item.invoices.length > 0 ? (
-                                                                    <div className="flex flex-col mt-1 gap-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
-                                                                        {item.invoices.map((inv: any) => (
-                                                                            <span key={inv.id} className="text-[#8A9A5B]">
-                                                                                [{inv.type}] {inv.description}: R$ {inv.totalAmount.toFixed(2)}
-                                                                            </span>
-                                                                        ))}
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">S/ Faturas Pendentes</span>
-                                                                )}
-                                                            </div>
-                                                            <div className="flex gap-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleDownloadInvoice(item.id, item.name);
-                                                                    }}
-                                                                    className="p-2 bg-[#697D58] hover:scale-105 rounded-xl transition-all flex items-center gap-1 text-[10px] font-bold shadow-md shadow-[#697D58]/20"
-                                                                >
-                                                                    <FileDown size={14} /> Fatura OnTheFly
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ) : activeTab === 'leads' ? (
-                                                        <div className="flex items-center justify-end gap-4">
-                                                            <select 
-                                                                value={item.status}
-                                                                onChange={(e) => handleUpdateLeadStatus(item.id, e.target.value)}
-                                                                className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border focus:outline-none transition-all cursor-pointer ${getStatusStyles(item.status)}`}
+                                                    // Renovation Alert Logic
+                                                    let isExpiring = false;
+                                                    if (activeTab === 'billing' && item.contractStartDate && item.contractDurationMonths) {
+                                                        const start = new Date(item.contractStartDate).getTime();
+                                                        const now = new Date().getTime();
+                                                        const diffMonths = (now - start) / (1000 * 60 * 60 * 24 * 30);
+                                                        isExpiring = diffMonths >= (item.contractDurationMonths - 1);
+                                                    }
+
+                                                    return (
+                                                        <React.Fragment key={item.id}>
+                                                            <motion.tr
+                                                                onClick={() => activeTab === 'billing' && handleToggleInvoices(item.id)}
+                                                                initial={{ opacity: 0, y: 10 }}
+                                                                animate={{ opacity: 1, y: 0 }}
+                                                                className={`border-b border-[#8A9A5B]/5 transition-colors group ${isExpiring ? 'bg-yellow-50 hover:bg-yellow-100' : ''} ${activeTab === 'billing' ? 'cursor-pointer hover:bg-slate-50' : 'hover:bg-white'}`}
                                                             >
-                                                                <option value="NOVO">Novo</option>
-                                                                <option value="EM_CONTATO">Em Contato</option>
-                                                                <option value="DEMONSTRACAO">Demonstração</option>
-                                                                <option value="FECHADO">Fechado</option>
-                                                                <option value="PERDIDO">Perdido</option>
-                                                            </select>
-                                                            <div className="flex items-center gap-1">
-                                                                <button 
-                                                                        onClick={() => {
-                                                                            setSelectedLead(item);
-                                                                            setIsDiagnosticModalOpen(true);
-                                                                        }}
-                                                                        className="p-2 bg-[#8A9A5B]/10 text-[#697D58] rounded-lg hover:bg-[#8A9A5B] hover:text-white transition-all shadow-sm"
-                                                                        title="Ver Diagnóstico"
-                                                                    >
-                                                                        <Search size={16} />
-                                                                    </button>
-                                                                    <a 
-                                                                        href={`https://wa.me/${item.whatsapp.replace(/\D/g, '')}?text=Olá ${item.name}, tudo bem? Sou consultor da Rares360. Recebi seu interesse no assunto "${item.subject}". Podemos conversar?`}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="p-2 bg-[#25D366] text-white rounded-lg hover:scale-110 transition-all shadow-md shadow-[#25D366]/20"
-                                                                        title="Chamar no WhatsApp"
-                                                                    >
-                                                                        <Phone size={16} />
-                                                                    </a>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex items-center gap-1 justify-end">
-                                                            {activeTab === 'clinics' && (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        handleImpersonate(item.id);
-                                                                    }}
-                                                                    className="p-2 hover:bg-blue-500/10 rounded-lg text-slate-400 hover:text-blue-500 transition-all flex items-center gap-2"
-                                                                    title="Acessar como Administrador da Clínica"
-                                                                >
-                                                                    <LayoutDashboard size={18} />
-                                                                </button>
-                                                            )}
-                                                            <button
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    if (activeTab === 'clinics') {
-                                                                        handleOpenManagement(item);
-                                                                    } else if (activeTab === 'users') {
-                                                                        handleOpenUserManagement(item);
-                                                                    }
-                                                                }}
-                                                                className="p-2 hover:bg-[#8A9A5B]/10 rounded-lg text-slate-400 hover:text-[#697D58] transition-all"
-                                                                title="Configurações"
-                                                            >
-                                                                <Settings size={18} />
-                                                            </button>
-                                                            {/* Menu de Configuração/Configurações individuais podem permanecer se houver */}
-                                                            {(activeTab === 'clinics' || activeTab === 'users') && (
-                                                                <button
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        if (activeTab === 'clinics') {
-                                                                            handleDeleteClinic(item.id, item.name);
-                                                                        } else if (activeTab === 'users') {
-                                                                            handleDeleteUser(item.id, item.name);
-                                                                        }
-                                                                    }}
-                                                                    className="p-2 hover:bg-red-500/10 rounded-lg text-red-400 hover:text-red-500 transition-all"
-                                                                    title={activeTab === 'clinics' ? "Excluir Clínica" : "Excluir Usuário"}
-                                                                >
-                                                                    <Trash2 size={18} />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </td>
-                                            </motion.tr>
-                                            {activeTab === 'billing' && expandedClinics[item.id] && (
-                                                <tr className="bg-slate-50/50 border-b border-[#8A9A5B]/10">
-                                                    <td colSpan={4} className="p-0">
-                                                        <motion.div
-                                                            initial={{ opacity: 0, height: 0 }}
-                                                            animate={{ opacity: 1, height: 'auto' }}
-                                                            exit={{ opacity: 0, height: 0 }}
-                                                            className="p-6 border-l-4 border-l-[#8A9A5B]"
-                                                        >
-                                                            <div className="flex items-center justify-between mb-4">
-                                                                <h5 className="text-[10px] font-black uppercase tracking-widest text-[#697D58]">Histórico de Faturas</h5>
-                                                            </div>
-                                                            {loadingInvoices[item.id] ? (
-                                                                <div className="flex justify-center p-4">
-                                                                    <div className="w-6 h-6 border-2 border-[#8A9A5B]/20 border-t-[#8A9A5B] rounded-full animate-spin"></div>
-                                                                </div>
-                                                            ) : expandedClinicInvoices[item.id]?.length > 0 ? (
-                                                                <div className="space-y-2">
-                                                                    {expandedClinicInvoices[item.id].map(inv => (
-                                                                        <div key={inv.id} className="flex items-center justify-between p-3 bg-white border border-[#8A9A5B]/10 rounded-xl relative group/inv">
-                                                                            <div className="flex-1">
-                                                                                <p className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                                                                                    {inv.month.toString().padStart(2, '0')}/{inv.year} - {inv.description}
-                                                                                    {inv.type.includes('SETUP') && <span className="px-1.5 py-0.5 bg-[#8A9A5B]/10 text-[#697D58] rounded text-[8px] uppercase font-black">Inc. Setup</span>}
-                                                                                </p>
-                                                                                <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">
-                                                                                    Criada em: {new Date(inv.createdAt).toLocaleDateString()} | Vencimento: {new Date(inv.dueDate).toLocaleDateString()}
-                                                                                </p>
-                                                                                {/* Tooltip Split Details */}
-                                                                                <div className="absolute top-10 w-64 p-3 bg-[#1A202C] text-white rounded-xl shadow-xl z-10 opacity-0 group-hover/inv:opacity-100 transition-opacity pointer-events-none text-xs font-bold space-y-1">
-                                                                                    <div className="flex justify-between"><span>Mensalidade:</span><span>R$ {inv.saasAmount.toFixed(2)}</span></div>
-                                                                                    <div className="flex justify-between"><span>Setup:</span><span>R$ {inv.setupAmount.toFixed(2)}</span></div>
-                                                                                    <div className="border-t border-slate-700 my-1"></div>
-                                                                                    <div className="flex justify-between text-[#A0B071]"><span>Total:</span><span>R$ {inv.totalAmount.toFixed(2)}</span></div>
-                                                                                </div>
+                                                                <td className="p-6">
+                                                                    <div className="font-extrabold flex items-center gap-3 text-[#1A202C]">
+                                                                        {activeTab === 'leads' ? (
+                                                                            <div className="w-10 h-10 rounded-xl bg-slate-50 border border-[#8A9A5B]/10 flex items-center justify-center text-[#697D58]">
+                                                                                <Users size={18} />
                                                                             </div>
-                                                                            <div className="flex items-center gap-6">
-                                                                                <span className="font-black text-[#697D58]">R$ {inv.totalAmount.toFixed(2)}</span>
-                                                                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${inv.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                                                                    {inv.status}
-                                                                                </span>
+                                                                        ) : (
+                                                                            <div className={`w-2 h-2 rounded-full ${activeTab === 'clinics' ? (item.isActive ? 'bg-[#8A9A5B]' : 'bg-[#DEB587]') : activeTab === 'users' ? 'bg-[#697D58]' : 'bg-[#DEB587]'}`}></div>
+                                                                        )}
+                                                                        <div>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <p className="font-extrabold flex items-center gap-2">{item.name}</p>
+                                                                                {activeTab === 'billing' && (
+                                                                                    <button
+                                                                                        onClick={(e) => { e.stopPropagation(); handleOpenContractModal(item); }}
+                                                                                        className="p-1 rounded bg-[#8A9A5B]/10 text-[#697D58] hover:bg-[#8A9A5B] hover:text-white transition-all opacity-0 group-hover:opacity-100"
+                                                                                        title="Configurar Contrato e Valores"
+                                                                                    >
+                                                                                        <Edit3 size={12} />
+                                                                                    </button>
+                                                                                )}
+                                                                            </div>
+                                                                            {activeTab === 'leads' && (
+                                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                                                                    {new Date(item.createdAt).toLocaleDateString()} às {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                                </p>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                    {activeTab === 'users' && (
+                                                                        <div className="flex gap-2 mt-1">
+                                                                            <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider">{item.clinic?.name || 'Acesso Global'}</span>
+                                                                            {item.mustChangePassword && <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[8px] font-black rounded uppercase tracking-widest border border-yellow-200">Senha Temp. Ativa</span>}
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-6 text-slate-500 font-semibold text-sm">
+                                                                    {activeTab === 'clinics' ? (item.cnpj || 'Não info') : activeTab === 'users' ? (
+                                                                        <div>
+                                                                            {item.email}
+                                                                            {item.lastLoginAt && <span className="text-[10px] text-slate-400 font-bold block uppercase tracking-wider mt-1">Último Login: {new Date(item.lastLoginAt).toLocaleDateString()}</span>}
+                                                                        </div>
+                                                                    ) : activeTab === 'leads' ? (
+                                                                        <div className="space-y-1">
+                                                                            <p className="text-slate-800 font-bold flex items-center gap-2"><Mail size={12} /> {item.email}</p>
+                                                                            <p className="text-[10px] flex items-center gap-2"><Phone size={12} /> {item.whatsapp}</p>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="space-y-1 text-xs">
+                                                                            <p className="font-bold text-slate-700">{item.userCount} usuários ativos</p>
+                                                                            {isExpiring && <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 rounded font-black uppercase text-[9px] tracking-widest">Atenção: Renovação &lt; 30d</span>}
+                                                                        </div>
+                                                                    )}
+                                                                </td>
+                                                                {activeTab === 'clinics' && (
+                                                                    <>
+                                                                        <td className="p-6">
+                                                                            <span className={`px-2 py-1 rounded-full text-[10px] font-black tracking-tight uppercase border transition-all shadow-sm ${(item.plan || 'Essencial') === 'Essencial' ? 'bg-[#D3D1C7]/30 text-[#5F5E5A] border-[#D3D1C7]/50' :
+                                                                                (item.plan || 'Essencial') === 'Profissional' ? 'bg-[#B5D4F4]/50 text-[#185FA5] border-[#B5D4F4]/70' :
+                                                                                    'bg-[#FAC775]/50 text-[#854F0B] border-[#FAC775]/70'
+                                                                                }`}>
+                                                                                {item.plan || 'Essencial'}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="p-6">
+                                                                            <span className="font-extrabold text-[#3B6D11] bg-[#3B6D11]/10 px-2 py-1 rounded-lg">
+                                                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.monthlyFee || item.pricePerUser || 0)}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="p-6">
+                                                                            <div
+                                                                                className="flex items-center gap-1.5 text-blue-600 bg-blue-50 px-3 py-1.5 rounded-xl w-fit cursor-pointer hover:bg-blue-100 hover:scale-105 transition-all shadow-sm group/users"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    setSearchTerm(item.name.substring(0, 5));
+                                                                                    setActiveTab('users');
+                                                                                }}
+                                                                                title="Filtrar Usuários dessa Clínica"
+                                                                            >
+                                                                                <Users size={14} className="group-hover/users:rotate-12 transition-transform" />
+                                                                                <span className="font-bold text-xs">{item._count?.users || 0} usuários</span>
+                                                                            </div>
+                                                                        </td>
+                                                                    </>
+                                                                )}
+                                                                <td className="p-6">
+                                                                    {activeTab === 'billing' ? (
+                                                                        <div className="flex flex-col gap-1">
+                                                                            <span className="text-[#1A202C] font-bold">R$ {item.pricePerUser?.toFixed(2)} / mês</span>
+                                                                        </div>
+                                                                    ) : activeTab === 'leads' ? (
+                                                                        <div className="flex items-center gap-2">
+                                                                            <div className={`px-3 py-1 rounded-full flex items-center gap-1.5 border ${item.score >= 80 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
+                                                                                <Star size={12} className={item.score >= 80 ? 'fill-orange-500' : ''} />
+                                                                                <span className="text-xs font-black">{item.score}</span>
                                                                             </div>
                                                                         </div>
-                                                                    ))}
-                                                                </div>
-                                                            ) : (
-                                                                <p className="text-xs font-bold text-slate-400 text-center py-4 bg-white rounded-xl border border-dashed border-[#8A9A5B]/20">Nenhuma fatura encontrada no histórico.</p>
-                                                            )}
-                                                        </motion.div>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                            </React.Fragment>
-                                            );
-                                        })}
-                                    </AnimatePresence>
-                                </tbody>
-                            </table>
-                        )}
-                    </div>
+                                                                    ) : (
+                                                                        <span className={`px-3 py-1.5 rounded-full text-[10px] font-black tracking-tight uppercase border flex items-center gap-2 w-fit ${activeTab === 'clinics' ? (item.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200') : item.role === 'ADMIN_GLOBAL' ? 'bg-purple-100 text-purple-700 border-purple-200 shadow-sm' : 'bg-[#DEB587]/10 text-[#697D58] border-[#DEB587]/20 shadow-sm'}`}>
+                                                                            {activeTab === 'clinics' ? (
+                                                                                <>
+                                                                                    <div className={`w-1.5 h-1.5 rounded-full shadow-sm ${item.isActive ? 'bg-green-500 shadow-green-500/50 animate-pulse' : 'bg-red-500'}`}></div>
+                                                                                    {item.isActive ? 'Ativo' : 'Inativo'}
+                                                                                </>
+                                                                            ) : item.role}
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                                <td className="p-6">
+                                                                    {activeTab === 'billing' ? (
+                                                                        <div className="flex items-center justify-between gap-4">
+                                                                            <div className="flex flex-col">
+                                                                                <span className="font-extrabold text-[#697D58]">R$ {item.total?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                                                                {item.invoices && item.invoices.length > 0 ? (
+                                                                                    <div className="flex flex-col mt-1 gap-1 text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                                                                                        {item.invoices.map((inv: any) => (
+                                                                                            <span key={inv.id} className="text-[#8A9A5B]">
+                                                                                                [{inv.type}] {inv.description}: R$ {inv.totalAmount.toFixed(2)}
+                                                                                            </span>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 mt-1">S/ Faturas Pendentes</span>
+                                                                                )}
+                                                                            </div>
+                                                                            <div className="flex gap-2 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        handleDownloadInvoice(item.id, item.name);
+                                                                                    }}
+                                                                                    className="p-2 bg-[#697D58] hover:scale-105 rounded-xl transition-all flex items-center gap-1 text-[10px] font-bold shadow-md shadow-[#697D58]/20"
+                                                                                >
+                                                                                    <FileDown size={14} /> Fatura OnTheFly
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : activeTab === 'leads' ? (
+                                                                        <div className="flex items-center justify-end gap-4">
+                                                                            <select
+                                                                                value={item.status}
+                                                                                onChange={(e) => handleUpdateLeadStatus(item.id, e.target.value)}
+                                                                                className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border focus:outline-none transition-all cursor-pointer ${getStatusStyles(item.status)}`}
+                                                                            >
+                                                                                <option value="NOVO">Novo</option>
+                                                                                <option value="EM_CONTATO">Em Contato</option>
+                                                                                <option value="DEMONSTRACAO">Demonstração</option>
+                                                                                <option value="FECHADO">Fechado</option>
+                                                                                <option value="PERDIDO">Perdido</option>
+                                                                            </select>
+                                                                            <div className="flex items-center gap-1">
+                                                                                <button
+                                                                                    onClick={() => {
+                                                                                        setSelectedLead(item);
+                                                                                        setIsDiagnosticModalOpen(true);
+                                                                                    }}
+                                                                                    className="p-2 bg-[#8A9A5B]/10 text-[#697D58] rounded-lg hover:bg-[#8A9A5B] hover:text-white transition-all shadow-sm"
+                                                                                    title="Ver Diagnóstico"
+                                                                                >
+                                                                                    <Search size={16} />
+                                                                                </button>
+                                                                                <a
+                                                                                    href={`https://wa.me/${item.whatsapp.replace(/\D/g, '')}?text=Olá ${item.name}, tudo bem? Sou consultor da Rares360. Recebi seu interesse no assunto "${item.subject}". Podemos conversar?`}
+                                                                                    target="_blank"
+                                                                                    rel="noopener noreferrer"
+                                                                                    className="p-2 bg-[#25D366] text-white rounded-lg hover:scale-110 transition-all shadow-md shadow-[#25D366]/20"
+                                                                                    title="Chamar no WhatsApp"
+                                                                                >
+                                                                                    <Phone size={16} />
+                                                                                </a>
+                                                                            </div>
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="flex items-center gap-1 justify-end">
+                                                                            {activeTab === 'clinics' ? (
+                                                                                <>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleImpersonate(item.id);
+                                                                                        }}
+                                                                                        className="px-3 py-1.5 bg-blue-50 hover:bg-blue-600 border border-blue-100 rounded-xl text-blue-600 hover:text-white transition-all flex items-center gap-2 text-[10px] font-black uppercase tracking-widest shadow-sm group/imp"
+                                                                                        title="Acessar como Administrador da Clínica"
+                                                                                    >
+                                                                                        <LayoutDashboard size={14} className="group-hover/imp:scale-110 transition-transform" /> Acessar
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            setSelectedClinic(item);
+                                                                                            setNewClinic({ ...newClinic, ...item });
+                                                                                            setIsDrawerOpen(true);
+                                                                                        }}
+                                                                                        className="px-2.5 py-1.5 hover:bg-slate-100 border border-slate-200 rounded-xl text-slate-500 hover:text-slate-700 transition-all text-[10px] font-black uppercase tracking-widest shadow-sm"
+                                                                                        title="Ações e Detalhamento da Clínica"
+                                                                                    >
+                                                                                        Configurar
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleDeleteClinic(item.id, item.name);
+                                                                                        }}
+                                                                                        className="p-1.5 hover:bg-red-50 border border-transparent hover:border-red-100 rounded-xl text-red-400 hover:text-red-600 transition-all shadow-sm"
+                                                                                        title="Excluir Clínica"
+                                                                                    >
+                                                                                        <Trash2 size={16} />
+                                                                                    </button>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleOpenUserManagement(item);
+                                                                                        }}
+                                                                                        className="p-2 hover:bg-[#8A9A5B]/10 rounded-lg text-slate-400 hover:text-[#697D58] transition-all"
+                                                                                        title="Configurações"
+                                                                                    >
+                                                                                        <Settings size={18} />
+                                                                                    </button>
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            handleDeleteUser(item.id, item.name);
+                                                                                        }}
+                                                                                        className="p-2 hover:bg-red-500/10 rounded-lg text-red-400 hover:text-red-500 transition-all"
+                                                                                        title="Excluir Usuário"
+                                                                                    >
+                                                                                        <Trash2 size={18} />
+                                                                                    </button>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
+
+                                                                </td>
+                                                            </motion.tr>
+                                                            {
+                                                                activeTab === 'billing' && expandedClinics[item.id] && (
+                                                                    <tr className="bg-slate-50/50 border-b border-[#8A9A5B]/10">
+                                                                        <td colSpan={4} className="p-0">
+                                                                            <motion.div
+                                                                                initial={{ opacity: 0, height: 0 }}
+                                                                                animate={{ opacity: 1, height: 'auto' }}
+                                                                                exit={{ opacity: 0, height: 0 }}
+                                                                                className="p-6 border-l-4 border-l-[#8A9A5B]"
+                                                                            >
+                                                                                <div className="flex items-center justify-between mb-4">
+                                                                                    <h5 className="text-[10px] font-black uppercase tracking-widest text-[#697D58]">Histórico de Faturas</h5>
+                                                                                </div>
+                                                                                {loadingInvoices[item.id] ? (
+                                                                                    <div className="flex justify-center p-4">
+                                                                                        <div className="w-6 h-6 border-2 border-[#8A9A5B]/20 border-t-[#8A9A5B] rounded-full animate-spin"></div>
+                                                                                    </div>
+                                                                                ) : expandedClinicInvoices[item.id]?.length > 0 ? (
+                                                                                    <div className="space-y-2">
+                                                                                        {expandedClinicInvoices[item.id].map(inv => (
+                                                                                            <div key={inv.id} className="flex items-center justify-between p-3 bg-white border border-[#8A9A5B]/10 rounded-xl relative group/inv">
+                                                                                                <div className="flex-1">
+                                                                                                    <p className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                                                                                                        {inv.month.toString().padStart(2, '0')}/{inv.year} - {inv.description}
+                                                                                                        {inv.type.includes('SETUP') && <span className="px-1.5 py-0.5 bg-[#8A9A5B]/10 text-[#697D58] rounded text-[8px] uppercase font-black">Inc. Setup</span>}
+                                                                                                    </p>
+                                                                                                    <p className="text-[10px] text-slate-400 font-bold tracking-widest uppercase mt-0.5">
+                                                                                                        Criada em: {new Date(inv.createdAt).toLocaleDateString()} | Vencimento: {new Date(inv.dueDate).toLocaleDateString()}
+                                                                                                    </p>
+                                                                                                    {/* Tooltip Split Details */}
+                                                                                                    <div className="absolute top-10 w-64 p-3 bg-[#1A202C] text-white rounded-xl shadow-xl z-10 opacity-0 group-hover/inv:opacity-100 transition-opacity pointer-events-none text-xs font-bold space-y-1">
+                                                                                                        <div className="flex justify-between"><span>Mensalidade:</span><span>R$ {inv.saasAmount.toFixed(2)}</span></div>
+                                                                                                        <div className="flex justify-between"><span>Setup:</span><span>R$ {inv.setupAmount.toFixed(2)}</span></div>
+                                                                                                        <div className="border-t border-slate-700 my-1"></div>
+                                                                                                        <div className="flex justify-between text-[#A0B071]"><span>Total:</span><span>R$ {inv.totalAmount.toFixed(2)}</span></div>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                                <div className="flex items-center gap-6">
+                                                                                                    <span className="font-black text-[#697D58]">R$ {inv.totalAmount.toFixed(2)}</span>
+                                                                                                    <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${inv.status === 'PAGO' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                                                                                        {inv.status}
+                                                                                                    </span>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        ))}
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    <p className="text-xs font-bold text-slate-400 text-center py-4 bg-white rounded-xl border border-dashed border-[#8A9A5B]/20">Nenhuma fatura encontrada no histórico.</p>
+                                                                                )}
+                                                                            </motion.div>
+                                                                        </td>
+                                                                    </tr>
+                                                                )
+                                                            }
+                                                        </React.Fragment>
+                                                    );
+                                                })}
+                                        </AnimatePresence>
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
@@ -1389,11 +1500,11 @@ const SaaSManagement = () => {
                                                     <InputField label="Valor de Implementação" type="number" value={newClinic.implementationFee} onChange={(v: any) => setNewClinic({ ...newClinic, implementationFee: v })} />
                                                     <InputField label="Valor da Mensalidade" type="number" value={newClinic.monthlyFee} onChange={(v: any) => setNewClinic({ ...newClinic, monthlyFee: v })} />
                                                 </div>
-                                                
+
                                                 <div className="p-6 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
                                                     <p className="text-xs font-black text-slate-700 uppercase tracking-widest mb-1">Anexo da Proposta</p>
                                                     <p className="text-[10px] text-slate-400 font-bold mb-3">PDF, Imagens ou Documentos da Proposta Comercial</p>
-                                                    
+
                                                     {newClinic.proposalUrl ? (
                                                         <div className="flex items-center gap-3 p-3 bg-white rounded-xl border border-[#8A9A5B]/20 mb-3">
                                                             <div className="w-10 h-10 bg-[#8A9A5B]/10 rounded-lg flex items-center justify-center text-[#8A9A5B]">
@@ -1403,8 +1514,8 @@ const SaaSManagement = () => {
                                                                 <p className="text-xs font-bold truncate">Proposta Anexada</p>
                                                                 <a href={newClinic.proposalUrl} target="_blank" rel="noreferrer" className="text-[10px] text-[#8A9A5B] font-black uppercase tracking-widest hover:underline">Visualizar Arquivo</a>
                                                             </div>
-                                                            <button 
-                                                                type="button" 
+                                                            <button
+                                                                type="button"
                                                                 onClick={() => setNewClinic({ ...newClinic, proposalUrl: '' })}
                                                                 className="p-2 text-red-400 hover:bg-red-50 rounded-lg"
                                                             >
@@ -1574,9 +1685,9 @@ const SaaSManagement = () => {
                                         className={`flex-1 py-4 text-[10px] font-black uppercase tracking-widest transition-all ${managementTab === tab ? 'text-[#697D58] border-b-2 border-[#697D58] bg-[#697D58]/5' : 'text-slate-400 hover:text-slate-600'
                                             }`}
                                     >
-                                         {tab === 'precificacao' ? 'precificação' : tab}
-                                     </button>
-                                 ))}
+                                        {tab === 'precificacao' ? 'precificação' : tab}
+                                    </button>
+                                ))}
                             </div>
 
                             <div className="p-8 max-h-[60vh] overflow-y-auto">
@@ -2046,7 +2157,7 @@ const SaaSManagement = () => {
                 description={
                     itemToDelete?.type === 'clinic' ? (
                         <>
-                            Você está prestes a excluir a clínica <span className="font-bold text-slate-800">"{itemToDelete.name}"</span>. 
+                            Você está prestes a excluir a clínica <span className="font-bold text-slate-800">"{itemToDelete.name}"</span>.
                             Esta ação é <span className="text-red-500 font-black uppercase tracking-widest text-[10px]">irreversível</span> e todos os dados vinculados (usuários, registros, etc) serão apagados permanentemente.
                         </>
                     ) : (
@@ -2167,7 +2278,7 @@ const SaaSManagement = () => {
                                                 </div>
                                             </div>
                                         )}
-                                        
+
                                     </div>
                                 ) : (
                                     <div className="py-20 text-center">
@@ -2192,7 +2303,7 @@ const SaaSManagement = () => {
                                         Anotações do Vendedor
                                         <span className="text-[9px] text-slate-400">visível apenas aqui</span>
                                     </h4>
-                                    <textarea 
+                                    <textarea
                                         rows={4}
                                         className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-xl py-3 px-4 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-medium text-sm text-slate-700 resize-y"
                                         placeholder="Digite aqui o histórico de conversas e anotações sobre este lead..."
@@ -2211,7 +2322,7 @@ const SaaSManagement = () => {
                                 >
                                     Fechar
                                 </button>
-                                <a 
+                                <a
                                     href={`https://wa.me/${selectedLead.whatsapp.replace(/\D/g, '')}?text=Olá ${selectedLead.name}, analisei seu diagnóstico estratégico...`}
                                     target="_blank"
                                     rel="noopener noreferrer"
@@ -2264,17 +2375,17 @@ const SaaSManagement = () => {
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Mensalidade (SaaS)</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <InputField 
-                                            label="Valor da Mensalidade (R$)" 
-                                            type="number" 
-                                            value={contractConfig.monthlyFee} 
-                                            onChange={(v: any) => setContractConfig({ ...contractConfig, monthlyFee: parseFloat(v) })} 
+                                        <InputField
+                                            label="Valor da Mensalidade (R$)"
+                                            type="number"
+                                            value={contractConfig.monthlyFee}
+                                            onChange={(v: any) => setContractConfig({ ...contractConfig, monthlyFee: parseFloat(v) })}
                                         />
-                                        <InputField 
-                                            label="Duração do Contrato (Meses)" 
-                                            type="number" 
-                                            value={contractConfig.contractDurationMonths} 
-                                            onChange={(v: any) => setContractConfig({ ...contractConfig, contractDurationMonths: parseInt(v) })} 
+                                        <InputField
+                                            label="Duração do Contrato (Meses)"
+                                            type="number"
+                                            value={contractConfig.contractDurationMonths}
+                                            onChange={(v: any) => setContractConfig({ ...contractConfig, contractDurationMonths: parseInt(v) })}
                                         />
                                     </div>
                                 </div>
@@ -2282,11 +2393,11 @@ const SaaSManagement = () => {
                                 <div className="space-y-4">
                                     <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#8A9A5B] border-b border-[#8A9A5B]/10 pb-2">Valor de Implementação (Setup)</h4>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <InputField 
-                                            label="Valor Total de Setup (R$)" 
-                                            type="number" 
-                                            value={contractConfig.setupValue} 
-                                            onChange={(v: any) => setContractConfig({ ...contractConfig, setupValue: parseFloat(v) })} 
+                                        <InputField
+                                            label="Valor Total de Setup (R$)"
+                                            type="number"
+                                            value={contractConfig.setupValue}
+                                            onChange={(v: any) => setContractConfig({ ...contractConfig, setupValue: parseFloat(v) })}
                                         />
                                         <SelectField
                                             label="Parcelamento do Setup"
@@ -2297,11 +2408,11 @@ const SaaSManagement = () => {
                                                 { label: 'Parcelado Separado (2 Faturas)', value: 'PARCELADO_SEPARADO' }
                                             ]}
                                         />
-                                        <InputField 
-                                            label="Nº de Parcelas" 
-                                            type="number" 
-                                            value={contractConfig.setupInstallments} 
-                                            onChange={(v: any) => setContractConfig({ ...contractConfig, setupInstallments: parseInt(v) })} 
+                                        <InputField
+                                            label="Nº de Parcelas"
+                                            type="number"
+                                            value={contractConfig.setupInstallments}
+                                            onChange={(v: any) => setContractConfig({ ...contractConfig, setupInstallments: parseInt(v) })}
                                         />
                                     </div>
                                 </div>
@@ -2352,7 +2463,7 @@ const SaaSManagement = () => {
                                     <Cpu className="text-[#697D58]" size={40} />
                                 )}
                             </div>
-                            
+
                             <h2 className="text-2xl font-black text-[#1A202C] mb-3">Executar Motor de Faturamento</h2>
                             <p className="text-sm font-bold text-slate-500 mb-8 leading-relaxed">
                                 Você está prestes a processar e gerar as faturas do mês atual para todas as clínicas ativas. Esta ação disparará os cálculos de mensalidade e parcelas de setup conforme configurado nos contratos.
@@ -2378,7 +2489,165 @@ const SaaSManagement = () => {
                     </div>
                 )}
             </AnimatePresence>
-        </div>
+
+            {/* Drawer Lateral (Sheet) para Detalhamento da Clínica */}
+            <AnimatePresence>
+                {isDrawerOpen && selectedClinic && (
+                    <div className="fixed inset-0 z-[100] flex justify-end">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
+                            onClick={() => setIsDrawerOpen(false)}
+                        />
+                        <motion.div
+                            initial={{ x: '100%', opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: '100%', opacity: 0 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className="w-full max-w-2xl bg-[#FAFAF9] h-full relative z-10 shadow-2xl flex flex-col border-l border-[#8A9A5B]/20"
+                        >
+                            {/* Drawer Header */}
+                            <div className="bg-white p-8 border-b border-[#8A9A5B]/10 shrink-0">
+                                <button onClick={() => setIsDrawerOpen(false)} className="absolute top-8 right-8 p-2 hover:bg-slate-100 rounded-full transition-all text-slate-400">
+                                    <XIcon size={24} />
+                                </button>
+                                <div className="flex items-center gap-4 mb-6">
+                                    <div className="w-16 h-16 bg-slate-50 border border-[#8A9A5B]/20 rounded-2xl flex items-center justify-center p-2 shadow-sm">
+                                        {selectedClinic.logo ? (
+                                            <img src={selectedClinic.logo} alt="Logo" className="w-full h-full object-contain" />
+                                        ) : (
+                                            <Building2 className="text-[#8A9A5B]" size={28} />
+                                        )}
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-black text-[#697D58] leading-tight">{selectedClinic.name}</h2>
+                                        <p className="text-slate-400 font-bold text-xs uppercase tracking-widest">{selectedClinic.cnpj || 'Sem CNPJ'}</p>
+                                    </div>
+                                </div>
+
+                                {/* Navigator Tabs */}
+                                <div className="flex gap-2 p-1.5 bg-slate-100 rounded-2xl w-fit">
+                                    {[
+                                        { id: 'overview', label: 'Visão Geral', icon: <BarChart3 size={14} /> },
+                                        { id: 'users', label: 'Usuários', icon: <Users size={14} /> },
+                                        { id: 'settings', label: 'Configurações', icon: <Settings size={14} /> }
+                                    ].map(t => (
+                                        <button
+                                            key={t.id}
+                                            onClick={() => setDrawerTab(t.id)}
+                                            className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${drawerTab === t.id ? 'bg-white text-[#8A9A5B] shadow-sm' : 'text-slate-400 hover:text-[#697D58]'}`}
+                                        >
+                                            {t.icon} {t.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Drawer Content */}
+                            <div className="flex-1 overflow-y-auto p-8 scene-content">
+                                {drawerTab === 'overview' && (
+                                    <div className="space-y-6">
+                                        <h3 className="text-sm font-black text-[#1A202C] uppercase tracking-widest border-b border-slate-200 pb-2">Status da Conta</h3>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Plano Atual</p>
+                                                <p className="text-lg font-extrabold text-[#697D58]">{selectedClinic.plan || 'Essencial'}</p>
+                                            </div>
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fee Mensal (MRR)</p>
+                                                <p className="text-lg font-extrabold text-[#3B6D11]">
+                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(selectedClinic.monthlyFee || selectedClinic.pricePerUser || 0)}
+                                                </p>
+                                            </div>
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Usuários Administrativos</p>
+                                                <p className="text-lg font-extrabold text-blue-600">{selectedClinic._count?.users || 0}</p>
+                                            </div>
+                                            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Status Ativo</p>
+                                                <p className="text-lg font-extrabold text-slate-700">{selectedClinic.isActive ? 'Sim' : 'Não'}</p>
+                                            </div>
+                                        </div>
+                                        <div className="mt-8 bg-white p-6 rounded-3xl border border-dashed border-[#8A9A5B]/30 flex flex-col items-center justify-center text-center space-y-3">
+                                            <BarChart3 className="text-[#8A9A5B]/40" size={48} />
+                                            <h4 className="font-bold text-sm text-slate-500">Histórico de Uso</h4>
+                                            <p className="text-xs text-slate-400">O gráfico de faturamento e uso detalhado estará disponível nos próximos relatórios da clínica.</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {drawerTab === 'users' && (
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-end mb-4 border-b border-slate-200 pb-2">
+                                            <h3 className="text-sm font-black text-[#1A202C] uppercase tracking-widest">Acessos</h3>
+                                            <button
+                                                onClick={() => {
+                                                    setNewUser({ name: '', email: '', password: '', role: 'CLINIC_ADMIN', clinicId: selectedClinic.id });
+                                                    setActiveTab('users');
+                                                    setIsDrawerOpen(false);
+                                                    setIsModalOpen(true);
+                                                }}
+                                                className="text-[10px] font-black text-white bg-[#8A9A5B] px-3 py-1.5 rounded-lg hover:bg-[#697D58] transition-colors shadow-sm"
+                                            >
+                                                + Adicionar
+                                            </button>
+                                        </div>
+                                        {users.filter(u => u.clinicId === selectedClinic.id).length > 0 ? (
+                                            users.filter(u => u.clinicId === selectedClinic.id).map(u => (
+                                                <div key={u.id} className="bg-white border border-slate-200 p-4 rounded-xl flex items-center justify-between shadow-sm">
+                                                    <div>
+                                                        <p className="font-extrabold text-sm text-[#1A202C] flex items-center gap-2">
+                                                            {u.name}
+                                                            {u.mustChangePassword && <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[8px] font-black rounded uppercase tracking-widest border border-yellow-200">Senha Temp.</span>}
+                                                        </p>
+                                                        <p className="text-xs font-bold text-slate-500 mt-1">{u.email}</p>
+                                                    </div>
+                                                    <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded text-[9px] font-black uppercase tracking-widest border border-slate-200">
+                                                        {u.role}
+                                                    </span>
+                                                </div>
+                                            ))
+                                        ) : (
+                                            <p className="text-xs font-bold text-slate-400 text-center py-6 bg-white rounded-xl border border-dashed border-slate-200">Nenhum usuário exclusivo associado a esta clínica.</p>
+                                        )}
+                                    </div>
+                                )}
+                                {drawerTab === 'settings' && (
+                                    <form onSubmit={async (e) => {
+                                        e.preventDefault();
+                                        await handleCreateClinic(e);
+                                        setIsDrawerOpen(false);
+                                    }} className="space-y-6">
+                                        <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-6">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-800 mb-1">Atenção</p>
+                                            <p className="text-xs font-semibold text-amber-700">Edições feitas aqui terão impacto direto nos novos faturamentos e em todos os cadastros associados à clínica.</p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <InputField label="Nome de Exibição" required value={newClinic.name} onChange={(v: any) => setNewClinic({ ...newClinic, name: v })} />
+                                            <InputField label="Razão Social" value={newClinic.razaoSocial} onChange={(v: any) => setNewClinic({ ...newClinic, razaoSocial: v })} />
+                                            <InputField label="CNPJ" required value={newClinic.cnpj} onChange={(v: any) => setNewClinic({ ...newClinic, cnpj: v })} />
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <SelectField label="Plano SaaS" value={newClinic.plan || 'Essencial'} onChange={(v: any) => setNewClinic({ ...newClinic, plan: v })} options={[
+                                                    { label: 'Essencial', value: 'Essencial' },
+                                                    { label: 'Profissional', value: 'Profissional' },
+                                                    { label: 'Excellence', value: 'Excellence' }
+                                                ]} />
+                                                <InputField label="Mensalidade(MRR)" type="number" value={newClinic.monthlyFee} onChange={(v: any) => setNewClinic({ ...newClinic, monthlyFee: v })} />
+                                            </div>
+                                            <InputField label="Responsável" value={newClinic.responsavelAdmin} onChange={(v: any) => setNewClinic({ ...newClinic, responsavelAdmin: v })} />
+                                        </div>
+                                        <button type="submit" disabled={isSubmitting} className="w-full mt-4 bg-[#697D58] hover:bg-[#526442] active:scale-[0.98] transition-all text-white font-black uppercase tracking-widest text-xs py-4 rounded-xl shadow-lg shadow-[#697D58]/20 disabled:opacity-50">
+                                            {isSubmitting ? 'Salvando Alterações...' : 'Salvar Configurações'}
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div >
     );
 };
 

@@ -63,7 +63,7 @@ export class SaaSController {
                 codigoServico, aliquotaISS, certificadoDigitalUrl,
                 banco, agencia, conta, tipoConta, chavePix,
                 logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel,
-                registroVigilancia, cnes, pricePerUser
+                registroVigilancia, cnes, pricePerUser, plan
             } = req.body;
 
             const parseDate = (val: any) => {
@@ -115,6 +115,7 @@ export class SaaSController {
                     registroVigilancia,
                     cnes,
                     pricePerUser: parseFloatSafe(pricePerUser) || 50.0,
+                    plan: plan || 'Essencial',
                     implementationFee: parseFloatSafe(req.body.implementationFee) || 0,
                     monthlyFee: parseFloatSafe(req.body.monthlyFee) || 0,
                     proposalUrl: req.body.proposalUrl || null
@@ -174,7 +175,7 @@ export class SaaSController {
                 codigoServico, aliquotaISS, certificadoDigitalUrl,
                 banco, agencia, conta, tipoConta, chavePix,
                 logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel,
-                registroVigilancia, cnes, pricePerUser, isActive
+                registroVigilancia, cnes, pricePerUser, isActive, plan
             } = req.body;
 
             const parseDate = (val: any) => {
@@ -229,6 +230,7 @@ export class SaaSController {
                     registroVigilancia,
                     cnes,
                     pricePerUser: parseFloatSafe(pricePerUser),
+                    plan,
                     implementationFee: parseFloatSafe(req.body.implementationFee),
                     monthlyFee: parseFloatSafe(req.body.monthlyFee),
                     proposalUrl: req.body.proposalUrl,
@@ -302,14 +304,14 @@ export class SaaSController {
             if (!password) {
                 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
                 password = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
-                
+
                 // Garantir pelo menos 1 de cada tipo
                 const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
                 const lower = 'abcdefghijklmnopqrstuvwxyz';
                 const numbers = '0123456789';
                 const symbols = '!@#$%^&*()_+';
-                
-                password = 
+
+                password =
                     upper[Math.floor(Math.random() * upper.length)] +
                     lower[Math.floor(Math.random() * lower.length)] +
                     numbers[Math.floor(Math.random() * numbers.length)] +
@@ -318,7 +320,7 @@ export class SaaSController {
             }
 
             const hashedPassword = await AuthService.hashPassword(password);
-            
+
             const user = await basePrisma.user.create({
                 data: {
                     name,
@@ -407,28 +409,28 @@ export class SaaSController {
         try {
             const { id } = req.params;
             console.log(`[SaaS] Tentando excluir usuário: ${id}`);
-            
+
             await basePrisma.user.delete({ where: { id } });
-            
+
             console.log(`[SaaS] Usuário ${id} excluído com sucesso.`);
             res.json({ message: 'Usuário excluído com sucesso' });
         } catch (error: any) {
             console.error('[SaaS Error] Falha ao excluir usuário:', error);
-            
+
             if (error.code === 'P2003') {
-                return res.status(400).json({ 
-                    error: 'Não é possível excluir este usuário pois ele possui registros financeiros (ex: fechamento de caixa) vinculados.' 
+                return res.status(400).json({
+                    error: 'Não é possível excluir este usuário pois ele possui registros financeiros (ex: fechamento de caixa) vinculados.'
                 });
             }
 
             if (error.code === 'P2025') {
-                return res.status(404).json({ 
-                    error: 'Usuário não encontrado.' 
+                return res.status(404).json({
+                    error: 'Usuário não encontrado.'
                 });
             }
 
-            res.status(500).json({ 
-                error: 'Erro interno ao excluir usuário. Verifique se existem registros vinculados ou tente novamente.' 
+            res.status(500).json({
+                error: 'Erro interno ao excluir usuário. Verifique se existem registros vinculados ou tente novamente.'
             });
         }
     }
@@ -491,7 +493,7 @@ export class SaaSController {
             res.status(500).json({ error: 'Erro ao tentar acessar a conta da clínica.' });
         }
     }
-    
+
     static async getBillingSummary(req: any, res: Response) {
         try {
             const currentMonth = new Date().getMonth() + 1;
@@ -512,7 +514,7 @@ export class SaaSController {
             const summary = clinics.map((c: any) => {
                 const clinicInvoices = invoices.filter(inv => inv.clinicId === c.id);
                 const hasInvoices = clinicInvoices.length > 0;
-                
+
                 const data = {
                     id: c.id,
                     name: c.name,
@@ -560,10 +562,10 @@ export class SaaSController {
                 });
                 if (existing) continue;
 
-                const mensalidade = clinic.monthlyFee && clinic.monthlyFee > 0 
-                                      ? clinic.monthlyFee 
-                                      : (clinic._count.users * clinic.pricePerUser);
-                
+                const mensalidade = clinic.monthlyFee && clinic.monthlyFee > 0
+                    ? clinic.monthlyFee
+                    : (clinic._count.users * clinic.pricePerUser);
+
                 const dueDate = new Date();
                 dueDate.setDate(dueDate.getDate() + 5);
 
@@ -699,8 +701,8 @@ export class SaaSController {
                 contractStartDate: clinic.contractStartDate || clinic.createdAt,
                 contractDuration: clinic.contractDurationMonths || 12,
                 status: 'PENDENTE', // Valor padrão para fatura draft/on-the-fly
-                total: (clinic.monthlyFee || (clinic._count.users * clinic.pricePerUser)) + 
-                       (clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE' && (clinic.setupRemainingInstallments || 0) > 0 
+                total: (clinic.monthlyFee || (clinic._count.users * clinic.pricePerUser)) +
+                    (clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE' && (clinic.setupRemainingInstallments || 0) > 0
                         ? ((clinic.setupValue || 0) / (clinic.setupInstallments || 1)) : 0)
             });
 

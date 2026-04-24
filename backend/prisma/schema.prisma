@@ -49,6 +49,7 @@ model Clinic {
   monthlyFee            Float?               @default(0)
   proposalUrl           String?
   isActive              Boolean              @default(true)
+  plan                  String?              @default("Essencial")
   
   // Campos de Contrato
   contractStartDate       DateTime?
