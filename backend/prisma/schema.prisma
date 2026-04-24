@@ -49,6 +49,12 @@ model Clinic {
   monthlyFee            Float?               @default(0)
   proposalUrl           String?
   isActive              Boolean              @default(true)
+
+  // Plano comercial e status operacional (v16)
+  // plan: Essencial | Profissional | Excellence — rótulo comercial (monthlyFee continua editável)
+  // status: ATIVO | TRIAL | INATIVO — estado operacional para filtros/exibição
+  plan                  String?              @default("Essencial")
+  status                String?              @default("TRIAL")
   
   // Campos de Contrato
   contractStartDate       DateTime?

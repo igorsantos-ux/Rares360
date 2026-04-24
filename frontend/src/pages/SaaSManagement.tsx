@@ -28,6 +28,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import AlertDialog from '../components/ui/AlertDialog';
+import { ClinicsPanel } from '../components/SaaS/ClinicsPanel';
 
 const InputField = ({ label, value, onChange, placeholder = '', type = 'text', required = false }: any) => (
     <div className="space-y-1.5">
@@ -773,7 +774,12 @@ const SaaSManagement = () => {
                         )}
                     </div>
 
-                    {activeTab === 'dashboard' ? (
+                    {/* v16: Aba "clinics" renderizada pelo novo ClinicsPanel (badges,
+                        filtros, drawer e delete com type-to-confirm). As demais abas
+                        continuam no renderer unificado legado abaixo. */}
+                    {activeTab === 'clinics' ? (
+                        <ClinicsPanel onRequestNewClinic={() => setIsModalOpen(true)} />
+                    ) : activeTab === 'dashboard' ? (
                         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             {/* Card MRR */}
                             <div className="bg-gradient-to-br from-[#697D58] to-[#3B6D11] p-6 rounded-3xl shadow-xl shadow-[#697D58]/20 text-white relative overflow-hidden group">
