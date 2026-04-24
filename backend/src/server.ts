@@ -20,6 +20,7 @@ import pricingRoutes from './routes/pricingRoutes.js';
 import complianceRoutes from './routes/complianceRoutes.js';
 import clinicRoutes from './routes/clinicRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
+import integrationRoutes from './routes/integrationRoutes.js';
 
 import importRoutes from './routes/importRoutes.js';
 import cashRoutes from './routes/cashRoutes.js';
@@ -87,6 +88,7 @@ app.use('/api/goals', authMiddleware, tenantMiddleware, goalRoutes);
 app.use('/api/audit', authMiddleware, tenantMiddleware, auditRoutes);
 app.use('/api/management', managementRoutes);
 app.use('/api/leads', leadRoutes);
+app.use('/api/integrations', integrationRoutes);
 
 app.use('/api/import', authMiddleware, tenantMiddleware, importRoutes);
 app.use('/api/inventory', inventoryRoutes);

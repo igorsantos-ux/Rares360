@@ -195,7 +195,7 @@ export class AuthController {
                 name: user.name,
                 email: user.email,
                 role: user.role,
-                clinicId: user.clinicId,
+                clinicId: user.clinicId || undefined,
                 mustChangePassword: false // Agora é falso
             });
 
@@ -208,7 +208,7 @@ export class AuthController {
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    clinicId: user.clinicId,
+                    clinicId: user.clinicId || undefined,
                     mustChangePassword: false
                 }
             });
