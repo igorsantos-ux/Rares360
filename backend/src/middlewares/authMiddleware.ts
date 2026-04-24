@@ -26,8 +26,10 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
         req.user = decoded;
         req.userId = decoded.id;
         
-        // Bloqueia rotas se precisar trocar a senha e a rota não for a de trocar a senha ou impersonate
-        const isSafeRoute = req.originalUrl.includes('/auth/update-password') || req.originalUrl.includes('/saas/impersonate');
+        // Bloqueia rotas se precisar trocar a senha e a rota não for a de trocar a senha, me ou impersonate
+        const isSafeRoute = req.originalUrl.includes('/auth/update-password') || 
+                           req.originalUrl.includes('/auth/me') ||
+                           req.originalUrl.includes('/saas/impersonate');
         
         if (decoded.mustChangePassword && !isSafeRoute) {
              return res.status(403).json({ error: 'Troca de senha obrigatória', requirePasswordChange: true });

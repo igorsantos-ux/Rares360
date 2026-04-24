@@ -39,9 +39,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 try {
                     const response = await authApi.me();
                     setUser(response.data);
-                } catch (error) {
+                } catch (error: any) {
                     console.error('Failed to load user', error);
-                    logout();
+                    // Não desloga se for apenas um erro de 403 (troca de senha necessária)
+                    if (error.response?.status !== 403) {
+                        logout();
+                    }
                 }
             }
             setLoading(false);
