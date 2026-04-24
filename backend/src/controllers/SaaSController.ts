@@ -44,13 +44,92 @@ export class SaaSController {
             const clinics = await basePrisma.clinic.findMany({
                 include: {
                     _count: {
-                        select: { users: true }
+                        select: {
+                            users: { where: { isActive: true } }
+                        }
                     }
-                }
+                },
+                orderBy: { createdAt: 'desc' }
             });
-            res.json(clinics);
+
+            // Enriquecer resposta com MRR computado e contagem de usuários ativos.
+            // MRR = monthlyFee se >0, senão pricePerUser * activeUsersCount.
+            const enriched = clinics.map((c: any) => {
+                const activeUsersCount = c._count?.users ?? 0;
+                const mrr = (c.monthlyFee && c.monthlyFee > 0)
+                    ? c.monthlyFee
+                    : (c.pricePerUser || 0) * activeUsersCount;
+
+                return {
+                    ...c,
+                    activeUsersCount,
+                    mrr,
+                    // Fallback de status para registros anteriores à migração
+                    status: c.status || (c.isActive ? 'ATIVO' : 'INATIVO'),
+                    plan: c.plan || 'Essencial',
+                };
+            });
+
+            res.json(enriched);
         } catch (error) {
+            console.error('Error listing clinics:', error);
             res.status(500).json({ error: 'Erro ao listar clínicas' });
+        }
+    }
+
+    // Histórico de faturamento dos últimos N meses para uma clínica (default 12).
+    // Usado pelo chart do drawer de detalhes na tela de Gestão de Clínicas.
+    static async clinicRevenueHistory(req: any, res: Response) {
+        try {
+            const { id } = req.params;
+            const months = Math.min(parseInt(String(req.query.months || '12'), 10) || 12, 24);
+
+            const now = new Date();
+            const startYear = now.getFullYear();
+            const startMonth = now.getMonth() + 1; // 1-12
+
+            // Gera buckets YYYY-MM dos últimos `months` meses em ordem cronológica
+            const buckets: { key: string; month: number; year: number; label: string }[] = [];
+            for (let i = months - 1; i >= 0; i--) {
+                const d = new Date(startYear, startMonth - 1 - i, 1);
+                const y = d.getFullYear();
+                const m = d.getMonth() + 1;
+                buckets.push({
+                    key: `${y}-${String(m).padStart(2, '0')}`,
+                    month: m,
+                    year: y,
+                    label: d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+                });
+            }
+
+            const oldest = buckets[0];
+            const invoices = await basePrisma.invoice.findMany({
+                where: {
+                    clinicId: id,
+                    OR: [
+                        { year: { gt: oldest.year } },
+                        { year: oldest.year, month: { gte: oldest.month } },
+                    ],
+                },
+                select: { month: true, year: true, totalAmount: true, status: true },
+            });
+
+            const totals = new Map<string, number>();
+            for (const inv of invoices) {
+                const key = `${inv.year}-${String(inv.month).padStart(2, '0')}`;
+                totals.set(key, (totals.get(key) || 0) + (inv.totalAmount || 0));
+            }
+
+            const data = buckets.map(b => ({
+                month: b.label,
+                key: b.key,
+                total: totals.get(b.key) || 0,
+            }));
+
+            res.json(data);
+        } catch (error) {
+            console.error('Error loading revenue history:', error);
+            res.status(500).json({ error: 'Erro ao carregar histórico de faturamento' });
         }
     }
 
@@ -63,7 +142,7 @@ export class SaaSController {
                 codigoServico, aliquotaISS, certificadoDigitalUrl,
                 banco, agencia, conta, tipoConta, chavePix,
                 logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel,
-                registroVigilancia, cnes, pricePerUser
+                registroVigilancia, cnes, pricePerUser, plan, status
             } = req.body;
 
             const parseDate = (val: any) => {
@@ -117,7 +196,10 @@ export class SaaSController {
                     pricePerUser: parseFloatSafe(pricePerUser) || 50.0,
                     implementationFee: parseFloatSafe(req.body.implementationFee) || 0,
                     monthlyFee: parseFloatSafe(req.body.monthlyFee) || 0,
-                    proposalUrl: req.body.proposalUrl || null
+                    proposalUrl: req.body.proposalUrl || null,
+                    // Valida valores; fora do conjunto cai no default do schema.
+                    plan: ['Essencial', 'Profissional', 'Excellence'].includes(plan) ? plan : 'Essencial',
+                    status: ['ATIVO', 'TRIAL', 'INATIVO'].includes(status) ? status : 'TRIAL',
                 }
             });
 
@@ -174,7 +256,7 @@ export class SaaSController {
                 codigoServico, aliquotaISS, certificadoDigitalUrl,
                 banco, agencia, conta, tipoConta, chavePix,
                 logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel,
-                registroVigilancia, cnes, pricePerUser, isActive
+                registroVigilancia, cnes, pricePerUser, isActive, plan, status
             } = req.body;
 
             const parseDate = (val: any) => {
@@ -232,7 +314,13 @@ export class SaaSController {
                     implementationFee: parseFloatSafe(req.body.implementationFee),
                     monthlyFee: parseFloatSafe(req.body.monthlyFee),
                     proposalUrl: req.body.proposalUrl,
-                    isActive
+                    isActive,
+                    plan: plan !== undefined
+                        ? (['Essencial', 'Profissional', 'Excellence'].includes(plan) ? plan : undefined)
+                        : undefined,
+                    status: status !== undefined
+                        ? (['ATIVO', 'TRIAL', 'INATIVO'].includes(status) ? status : undefined)
+                        : undefined,
                 }
             });
             res.json(clinic);

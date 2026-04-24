@@ -61,6 +61,8 @@ export const saasApi = {
     generateMonthlyInvoices: () => api.post('saas/billing/generate'),
     getClinicInvoices: (clinicId: string) => api.get(`saas/billing/${clinicId}/invoices`),
     impersonateClinic: (clinicId: string) => api.post(`saas/impersonate/${clinicId}`),
+    getClinicRevenueHistory: (clinicId: string, months = 12) =>
+        api.get(`saas/clinics/${clinicId}/revenue-history`, { params: { months } }),
     updateClinic: (id: string, data: any) => api.patch(`saas/clinics/${id}`, data),
     deleteClinic: (id: string) => api.delete(`saas/clinics/${id}`),
     updateUser: (id: string, data: any) => api.patch(`saas/users/${id}`, data),

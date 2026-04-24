@@ -8,6 +8,7 @@ const router = Router();
 router.use(authMiddleware, roleMiddleware(['ADMIN_GLOBAL']));
 
 router.get('/clinics', SaaSController.listClinics);
+router.get('/clinics/:id/revenue-history', SaaSController.clinicRevenueHistory);
 router.post('/clinics/upload-logo', upload.single('file'), SaaSController.uploadLogo);
 router.post('/clinics', SaaSController.createClinic);
 router.patch('/clinics/:id', SaaSController.updateClinic);
