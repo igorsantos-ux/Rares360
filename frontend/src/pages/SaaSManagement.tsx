@@ -981,9 +981,14 @@ const SaaSManagement = () => {
                                             <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
                                                 {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : activeTab === 'leads' ? 'Contato' : 'Status / Setup'}
                                             </th>
-                                            {activeTab === 'clinics' && <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Plano</th>}
-                                            {activeTab === 'clinics' && <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">MRR</th>}
-                                            {activeTab === 'clinics' && <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Usuários Ativos</th>}
+                                            {activeTab === 'clinics' && (
+                                                <>
+                                                    <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Plano</th>
+                                                    <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">MRR</th>
+                                                    <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Setup</th>
+                                                    <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Usuários Ativos</th>
+                                                </>
+                                            )}
                                             <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
                                                 {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : 'Mensalidade Vl.'}
                                             </th>
@@ -1094,6 +1099,11 @@ const SaaSManagement = () => {
                                                                         <td className="p-6">
                                                                             <span className="font-extrabold text-[#3B6D11] bg-[#3B6D11]/10 px-2 py-1 rounded-lg">
                                                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.monthlyFee || item.pricePerUser || 0)}
+                                                                            </span>
+                                                                        </td>
+                                                                        <td className="p-6">
+                                                                            <span className="font-extrabold text-[#697D58] bg-[#697D58]/10 px-2 py-1 rounded-lg">
+                                                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.implementationFee || 0)}
                                                                             </span>
                                                                         </td>
                                                                         <td className="p-6">
