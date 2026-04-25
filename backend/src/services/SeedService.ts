@@ -10,17 +10,17 @@ export class SeedService {
         try {
             // Sincroniza o banco em background TOTAL para não travar o loop de eventos
             console.log('Iniciando sincronização de schema em background...');
-            
+
             // Se houver DIRECT_URL (Supabase), usamos ela para o push, pois o Pooler (6543) falha com prepared statements
             let dbUrl = process.env.DIRECT_URL || process.env.DATABASE_URL || '';
-            
+
             // Se for Supabase (6543) e não tiver pgbouncer=true, adicionamos para o Prisma não reclamar
             if (dbUrl.includes('6543') && !dbUrl.includes('pgbouncer=true')) {
                 dbUrl += dbUrl.includes('?') ? '&pgbouncer=true' : '?pgbouncer=true';
             }
 
             const command = `DATABASE_URL="${dbUrl}" npx prisma db push --accept-data-loss`;
-            
+
             execAsync(command)
                 .then(({ stdout, stderr }) => {
                     if (stdout) console.log('[PRISMA DB PUSH OUT]:', stdout);
@@ -32,64 +32,10 @@ export class SeedService {
                     console.error('Stack:', err.stack);
                 });
 
-            console.log('Verificando status do banco de dados...');
-            const adminEmail = 'admin@heathfinance.com.br';
-            const adminPassword = 'admin123';
-            const hashedPassword = await AuthService.hashPassword(adminPassword);
-
-            // Verifica se o admin mestre já existe
-            const existingAdmin = await prisma.user.findUnique({
-                where: { email: adminEmail }
-            });
-
-            if (!existingAdmin) {
-                console.log('Admin global não encontrado. Criando...');
-                await prisma.user.create({
-                    data: {
-                        name: 'Igor Admin',
-                        email: adminEmail,
-                        password: hashedPassword,
-                        role: 'ADMIN_GLOBAL'
-                    }
-                });
-            } else {
-                console.log('Atualizando Admin global para garantir senha padrão...');
-                await prisma.user.update({
-                    where: { email: adminEmail },
-                    data: { password: hashedPassword }
-                });
-            }
-
-            // Verifica Roberta Alamino
-            const robertaEmail = 'roberta@alamino.com';
-            const existingRoberta = await prisma.user.findUnique({
-                where: { email: robertaEmail }
-            });
-
-            if (!existingRoberta) {
-                console.log('Usuário Roberta não encontrado. Criando...');
-                const clinic = await prisma.clinic.findFirst();
-                await prisma.user.create({
-                    data: {
-                        name: 'Roberta Alamino',
-                        email: robertaEmail,
-                        password: hashedPassword,
-                        role: 'CLINIC_ADMIN',
-                        clinicId: clinic?.id
-                    }
-                });
-            } else {
-                console.log('Sincronizando usuário Roberta (Clínica e Senha)...');
-                const clinic = await prisma.clinic.findFirst();
-                await prisma.user.update({
-                    where: { email: robertaEmail },
-                    data: {
-                        password: hashedPassword,
-                        clinicId: clinic?.id
-                    }
-                });
-            }
-            console.log('✅ Sincronização de credenciais de teste concluída.');
+            console.log('Verificando integridade administrativa...');
+            // Removido o seed automático forçado de admin@heathfinance.com.br e roberta@alamino.com
+            // para evitar que usuários excluídos reapareçam no boot.
+            console.log('✅ Verificação de integridade concluída.');
 
             // Se for a primeira vez (sem outras clínicas), roda o seed completo
             // DESABILITADO PARA PRODUÇÃO: Não queremos dados de teste automáticos
