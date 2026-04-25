@@ -1568,13 +1568,33 @@ const SaaSManagement = () => {
                                         <InputField label="E-mail de Acesso" required type="email" value={newUser.email} onChange={(v: any) => setNewUser({ ...newUser, email: v })} />
                                         <InputField label="Senha Inicial" required type="password" value={newUser.password} onChange={(v: any) => setNewUser({ ...newUser, password: v })} />
                                         <div className="space-y-1.5">
+                                            <label className="text-[10px] font-black uppercase tracking-widest text-[#697D58] ml-2 block">Papel do Usuário (Role)</label>
+                                            <select
+                                                className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold text-sm appearance-none"
+                                                value={newUser.role}
+                                                onChange={e => {
+                                                    const newRole = e.target.value;
+                                                    setNewUser({
+                                                        ...newUser,
+                                                        role: newRole,
+                                                        // Se for Admin Global, limpa a clínica obrigatoriamente
+                                                        clinicId: newRole === 'ADMIN_GLOBAL' ? '' : newUser.clinicId
+                                                    });
+                                                }}
+                                            >
+                                                <option value="CLINIC_ADMIN">Administrador da Clínica</option>
+                                                <option value="ADMIN_GLOBAL">Administrador Global (Acesso Total)</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-1.5">
                                             <label className="text-[10px] font-black uppercase tracking-widest text-[#697D58] ml-2 block">Vincular Clínica</label>
                                             <select
                                                 className="w-full bg-slate-50 border border-[#8A9A5B]/10 rounded-xl py-2.5 px-4 focus:ring-2 focus:ring-[#8A9A5B]/50 outline-none transition-all font-bold text-sm appearance-none"
+                                                disabled={newUser.role === 'ADMIN_GLOBAL'}
                                                 value={newUser.clinicId}
                                                 onChange={e => setNewUser({ ...newUser, clinicId: e.target.value })}
                                             >
-                                                <option value="">Acesso Global (Sem Clínica)</option>
+                                                <option value="">{newUser.role === 'ADMIN_GLOBAL' ? 'Acesso Global' : 'Selecione uma Clínica...'}</option>
                                                 {clinics.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                             </select>
                                         </div>
