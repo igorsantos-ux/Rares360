@@ -327,7 +327,7 @@ export class SaaSController {
                     email,
                     password: hashedPassword,
                     role,
-                    clinicId,
+                    clinicId: clinicId === '' ? null : clinicId,
                     mustChangePassword: true, // Sempre obrigatório mudar no primeiro acesso
                     isFirstAccess: true,
                     temporaryPasswordExpiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000), // expira em 72h

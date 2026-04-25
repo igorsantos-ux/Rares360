@@ -1,0 +1,14 @@
+import { Router } from 'express';
+import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.js';
+import { DfcController } from '../controllers/DfcController.js';
+
+const router = Router();
+
+router.use(authMiddleware, tenantMiddleware);
+
+router.post('/report', DfcController.getReport);
+router.post('/projection', DfcController.getProjection);
+router.post('/ai-insights', DfcController.getAiInsights);
+router.post('/simulate', DfcController.simulateScenarios);
+
+export default router;
