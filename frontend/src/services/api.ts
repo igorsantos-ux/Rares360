@@ -61,6 +61,8 @@ export const saasApi = {
     generateMonthlyInvoices: () => api.post('saas/billing/generate'),
     getClinicInvoices: (clinicId: string) => api.get(`saas/billing/${clinicId}/invoices`),
     impersonateClinic: (clinicId: string) => api.post(`saas/impersonate/${clinicId}`),
+    adminClinicAccess: (clinicId: string) => api.post(`saas/admin/clinic-access`, { clinicId }),
+    getAuditLogs: () => api.get('saas/audit-logs'),
     updateClinic: (id: string, data: any) => api.patch(`saas/clinics/${id}`, data),
     deleteClinic: (id: string) => api.delete(`saas/clinics/${id}`),
     updateUser: (id: string, data: any) => api.patch(`saas/users/${id}`, data),
@@ -114,9 +116,9 @@ export const coreApi = {
     createDoctor: (data: any) => api.post('core/doctors', data),
     updateDoctor: (id: string, data: any) => api.patch(`core/doctors/${id}`, data),
     deleteDoctor: (id: string) => api.delete(`core/doctors/${id}`),
-    
+
     logSensitiveView: (data: { entity: string, entityId: string, targetField: string }) => api.post('audit/sensitive', data),
-    
+
     getStock: () => api.get('core/stock'),
     getProductivity: () => api.get('core/productivity'),
     createStockItem: (data: any) => api.post('core/stock', data),

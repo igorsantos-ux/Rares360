@@ -101,6 +101,8 @@ enum AuditAction {
   DELETE
   EXPORT
   VIEW_SENSITIVE
+  ADMIN_CLINIC_ACCESS
+  ADMIN_CLINIC_EXIT
 }
 
 model AuditLog {

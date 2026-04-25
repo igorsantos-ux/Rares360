@@ -764,4 +764,158 @@ export class SaaSController {
             res.status(500).json({ error: error.message });
         }
     }
+
+    // Acesso Administrativo (Admin Access)
+    static async adminClinicAccess(req: any, res: Response) {
+        try {
+            const { clinicId } = req.body;
+            const user = req.user;
+
+            if (user.role !== 'ADMIN_GLOBAL') {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+
+            const clinic = await basePrisma.clinic.findUnique({
+                where: { id: clinicId }
+            });
+
+            if (!clinic) {
+                return res.status(404).json({ error: 'Clínica não encontrada' });
+            }
+
+            if (!clinic.isActive) {
+                return res.status(403).json({ error: 'Acesso negado: Clínica inativa ou suspensa' });
+            }
+
+            const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+
+            // Logs in AuditLog
+            await basePrisma.auditLog.create({
+                data: {
+                    action: 'ADMIN_CLINIC_ACCESS' as any,
+                    entity: 'Clinic',
+                    entityId: clinicId,
+                    clinicId: clinicId,
+                    userId: user.id,
+                    ipAddress: ipAddress,
+                    newValues: {
+                        adminEmail: user.email,
+                        userAgent: req.headers['user-agent']
+                    }
+                }
+            });
+
+            // Gerar novo token com adminAccessContext
+            const adminAccessContext = {
+                clinicId: clinic.id,
+                clinicName: clinic.name,
+                accessStartedAt: new Date().toISOString(),
+                adminUserId: user.id,
+                adminName: user.name,
+                adminEmail: user.email
+            };
+
+            const token = AuthService.generateToken({
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                clinicId: user.clinicId,
+                mustChangePassword: user.mustChangePassword,
+                adminAccessContext
+            });
+
+            res.json({
+                token,
+                clinic: { id: clinic.id, name: clinic.name, plan: clinic.plan, status: clinic.isActive },
+                redirectTo: '/dashboard'
+            });
+
+        } catch (error) {
+            console.error('[ADMIN_ACCESS_ERROR]', error);
+            res.status(500).json({ error: 'Erro ao iniciar acesso administrativo' });
+        }
+    }
+
+    static async adminClinicExit(req: any, res: Response) {
+        try {
+            const user = req.user;
+
+            if (!user.adminAccessContext) {
+                return res.status(400).json({ error: 'Sessão administrativa não encontrada no token' });
+            }
+
+            const { clinicId, accessStartedAt } = user.adminAccessContext;
+            const sessionDurationMinutes = Math.round((new Date().getTime() - new Date(accessStartedAt).getTime()) / 60000);
+
+            // Registrar saída
+            await basePrisma.auditLog.create({
+                data: {
+                    action: 'ADMIN_CLINIC_EXIT' as any,
+                    entity: 'Clinic',
+                    entityId: clinicId,
+                    clinicId: clinicId,
+                    userId: user.id,
+                    ipAddress: req.ip || req.connection?.remoteAddress || 'unknown',
+                    newValues: {
+                        sessionDurationMinutes
+                    }
+                }
+            });
+
+            // Reemitir token original do admin
+            const token = AuthService.generateToken({
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                clinicId: user.clinicId,
+                mustChangePassword: user.mustChangePassword
+            });
+
+            res.json({ redirectTo: '/saas-dashboard', token });
+
+        } catch (error) {
+            console.error('[ADMIN_EXIT_ERROR]', error);
+            res.status(500).json({ error: 'Erro ao encerrar acesso administrativo' });
+        }
+    }
+
+    static async getAuditLogs(req: any, res: Response) {
+        try {
+            if (req.user?.role !== 'ADMIN_GLOBAL') {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+
+            const logs = await prisma.auditLog.findMany({
+                orderBy: { timestamp: 'desc' },
+                take: 100, // limite de exibição
+            });
+
+            // Buscando nomes para enriquecer (visto que a relação não é estrita)
+            const clinicIds = [...new Set(logs.map(l => l.clinicId))];
+            const userIds = [...new Set(logs.map(l => l.userId).filter(Boolean) as string[])];
+
+            const [clinics, users] = await Promise.all([
+                prisma.clinic.findMany({ where: { id: { in: clinicIds } }, select: { id: true, name: true } }),
+                prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true, email: true, role: true } })
+            ]);
+
+            const clinicMap = new Map(clinics.map(c => [c.id, c.name]));
+            const userMap = new Map(users.map(u => [u.id, u]));
+
+            const enrichedLogs = logs.map(log => ({
+                ...log,
+                clinicName: clinicMap.get(log.clinicId) || 'Desconhecida',
+                user: log.userId ? userMap.get(log.userId) : null
+            }));
+
+            res.status(200).json(enrichedLogs);
+        } catch (error) {
+            console.error('Error fetching audit logs:', error);
+            res.status(500).json({ error: 'Erro interno ao buscar logs de auditoria' });
+        }
+    }
 }
+
+export default new SaaSController();

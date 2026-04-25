@@ -146,6 +146,9 @@ const SaaSManagement = () => {
     const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<any>(null);
 
+    // Audit Logs State
+    const [auditLogs, setAuditLogs] = useState<any[]>([]);
+
     useEffect(() => {
         fetchData();
     }, []);
@@ -157,15 +160,17 @@ const SaaSManagement = () => {
         setIsLoading(true);
         try {
             // Buscamos dados essenciais primeiro
-            const [clinicsRes, usersRes, billingRes] = await Promise.all([
+            const [clinicsRes, usersRes, billingRes, auditRes] = await Promise.all([
                 saasApi.getClinics(),
                 saasApi.getUsers(),
-                saasApi.getBilling()
+                saasApi.getBilling(),
+                saasApi.getAuditLogs().catch(() => ({ data: [] }))
             ]);
 
             setClinics(clinicsRes.data);
             setUsers(usersRes.data);
             setBillingData(billingRes.data);
+            setAuditLogs(auditRes.data);
 
             try {
                 const leadsRes = await leadsApi.getLeads();
@@ -432,21 +437,20 @@ const SaaSManagement = () => {
 
     const handleImpersonate = async (clinicId: string) => {
         try {
-            toast.loading('Acessando painel da clínica...', { id: 'impersonate' });
-            const response = await saasApi.impersonateClinic(clinicId);
-            const { token } = response.data;
+            toast.loading('Iniciando Sessão Administrativa...', { id: 'impersonate' });
+            const response = await saasApi.adminClinicAccess(clinicId);
+            const { token, clinic } = response.data;
 
-            // Set the new token
-            localStorage.setItem('heath_finance_token', token);
+            // Set the new contextual token
+            localStorage.setItem('token', token);
 
-            // Força reload completo para resetar estados e aplicar o novo token em todas as instâncias da API e Contexto
-            toast.success(`Acessando como administrador da clínica...`, { id: 'impersonate' });
+            toast.success(`Entrando em ${clinic.name}...`, { id: 'impersonate' });
             setTimeout(() => {
                 window.location.href = '/dashboard';
-            }, 1000);
+            }, 1500);
 
         } catch (error: any) {
-            toast.error(error.response?.data?.error || 'Erro ao tentar acessar a clínica.', { id: 'impersonate' });
+            toast.error(error.response?.data?.error || 'Erro ao tentar iniciar acesso administrativo.', { id: 'impersonate' });
         }
     };
 
@@ -678,7 +682,7 @@ const SaaSManagement = () => {
                             <p className="text-white/70 text-[10px] font-black uppercase tracking-widest mb-0.5">Total Ativo</p>
                             <div className="flex items-end gap-2">
                                 <span className="text-2xl font-black leading-none">
-                                    {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : activeTab === 'leads' ? leads.length : 0}
+                                    {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : activeTab === 'leads' ? leads.length : activeTab === 'audit' ? auditLogs.length : 0}
                                 </span>
                             </div>
                         </div>
@@ -687,7 +691,7 @@ const SaaSManagement = () => {
                             <>
                                 <span className="text-[8px] uppercase tracking-widest font-black text-white/70">Total</span>
                                 <span className="text-xl font-black leading-none relative z-10">
-                                    {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : activeTab === 'leads' ? leads.length : 0}
+                                    {activeTab === 'clinics' ? clinics.length : activeTab === 'users' ? users.length : activeTab === 'billing' ? billingData.length : activeTab === 'leads' ? leads.length : activeTab === 'audit' ? auditLogs.length : 0}
                                 </span>
                             </>
                         )}
@@ -700,7 +704,7 @@ const SaaSManagement = () => {
                 {/* Header Topo */}
                 <header className="h-20 bg-white border-b border-gray-200 px-8 flex items-center justify-between shrink-0 z-10 shadow-sm">
                     <h2 className="text-3xl font-extrabold text-[#697D58] tracking-tight">
-                        {activeTab === 'dashboard' ? 'Visão Geral da Plataforma' : activeTab === 'clinics' ? 'Gestão de Clínicas' : activeTab === 'users' ? 'Usuários Globais' : activeTab === 'billing' ? 'Faturamento SaaS' : activeTab === 'leads' ? 'Pipeline de Leads' : 'Configurações'}
+                        {activeTab === 'dashboard' ? 'Visão Geral da Plataforma' : activeTab === 'clinics' ? 'Gestão de Clínicas' : activeTab === 'users' ? 'Usuários Globais' : activeTab === 'billing' ? 'Faturamento SaaS' : activeTab === 'leads' ? 'Pipeline de Leads' : activeTab === 'audit' ? 'Logs de Auditoria' : 'Configurações'}
                     </h2>
 
                     <div className="flex items-center gap-4 hover:bg-white/60 p-2 pr-5 rounded-[2rem] transition-all cursor-pointer border border-transparent hover:border-[#8A9A5B]/20 shadow-sm" onClick={logout}>
@@ -722,7 +726,7 @@ const SaaSManagement = () => {
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8A9A5B]" size={18} />
                                 <input
                                     type="text"
-                                    placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : activeTab === 'users' ? 'usuário' : activeTab === 'leads' ? 'lead' : 'fatura'}...`}
+                                    placeholder={`Buscar ${activeTab === 'clinics' ? 'clínica' : activeTab === 'users' ? 'usuário' : activeTab === 'leads' ? 'lead' : activeTab === 'audit' ? 'logs' : 'fatura'}...`}
                                     className="bg-white border border-[#8A9A5B]/10 rounded-2xl py-3 pl-12 pr-6 focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/50 w-64 text-sm font-medium shadow-sm transition-all"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -810,7 +814,7 @@ const SaaSManagement = () => {
                                 <Settings size={20} /> Processar Motor Faturas
                             </button>
                         )}
-                        {activeTab !== 'billing' && (
+                        {(activeTab !== 'billing' && activeTab !== 'audit' && activeTab !== 'dashboard') && (
                             <button
                                 onClick={() => setIsModalOpen(true)}
                                 className="bg-[#8A9A5B] hover:scale-[1.02] active:scale-95 text-white p-4 rounded-2xl shadow-xl shadow-[#8A9A5B]/20 transition-all flex items-center gap-2 font-black uppercase text-xs tracking-widest"
@@ -977,9 +981,11 @@ const SaaSManagement = () => {
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="border-b border-[#8A9A5B]/10 bg-[#8A9A5B]/5">
-                                            <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">Nome</th>
                                             <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
-                                                {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : activeTab === 'leads' ? 'Contato' : 'Status / Setup'}
+                                                {activeTab === 'audit' ? 'Data / Hora' : 'Nome'}
+                                            </th>
+                                            <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
+                                                {activeTab === 'clinics' ? 'CNPJ' : activeTab === 'users' ? 'E-mail' : activeTab === 'leads' ? 'Contato' : activeTab === 'audit' ? 'Ação' : 'Status / Setup'}
                                             </th>
                                             {activeTab === 'clinics' && (
                                                 <>
@@ -990,22 +996,24 @@ const SaaSManagement = () => {
                                                 </>
                                             )}
                                             <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest">
-                                                {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : 'Mensalidade Vl.'}
+                                                {activeTab === 'clinics' ? 'Status' : activeTab === 'users' ? 'Role' : activeTab === 'leads' ? 'Score' : activeTab === 'audit' ? 'Usuário Logado' : 'Mensalidade Vl.'}
                                             </th>
                                             <th className="p-6 text-xs font-black text-[#697D58] uppercase tracking-widest text-right">
-                                                {activeTab === 'billing' ? 'Total & Detalhamento' : activeTab === 'leads' ? 'Status e Ações' : 'Ações'}
+                                                {activeTab === 'billing' ? 'Total & Detalhamento' : activeTab === 'leads' ? 'Status e Ações' : activeTab === 'audit' ? 'Alvo / IP' : 'Ações'}
                                             </th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <AnimatePresence>
-                                            {(activeTab === 'clinics' ? clinics : activeTab === 'users' ? users : activeTab === 'billing' ? billingData : leads)
+                                            {(activeTab === 'clinics' ? clinics : activeTab === 'users' ? users : activeTab === 'billing' ? billingData : activeTab === 'audit' ? auditLogs : leads)
                                                 .filter(item =>
                                                     !searchTerm ||
-                                                    item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                    item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                                    item.cnpj?.includes(searchTerm) ||
-                                                    item.whatsapp?.includes(searchTerm)
+                                                    (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                                                    (item.email && item.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                                                    (item.cnpj && item.cnpj.includes(searchTerm)) ||
+                                                    (item.whatsapp && item.whatsapp.includes(searchTerm)) ||
+                                                    (item.action && item.action.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                                                    (item.entity && item.entity.toLowerCase().includes(searchTerm.toLowerCase()))
                                                 )
                                                 .filter((item: any) => {
                                                     if (activeTab !== 'clinics') return true;
@@ -1038,12 +1046,18 @@ const SaaSManagement = () => {
                                                                             <div className="w-10 h-10 rounded-xl bg-slate-50 border border-[#8A9A5B]/10 flex items-center justify-center text-[#697D58]">
                                                                                 <Users size={18} />
                                                                             </div>
+                                                                        ) : activeTab === 'audit' ? (
+                                                                            <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400">
+                                                                                <Activity size={14} />
+                                                                            </div>
                                                                         ) : (
                                                                             <div className={`w-2 h-2 rounded-full ${activeTab === 'clinics' ? (item.isActive ? 'bg-[#8A9A5B]' : 'bg-[#DEB587]') : activeTab === 'users' ? 'bg-[#697D58]' : 'bg-[#DEB587]'}`}></div>
                                                                         )}
                                                                         <div>
                                                                             <div className="flex items-center gap-2">
-                                                                                <p className="font-extrabold flex items-center gap-2">{item.name}</p>
+                                                                                <p className="font-extrabold flex items-center gap-2">
+                                                                                    {activeTab === 'audit' ? new Date(item.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : item.name}
+                                                                                </p>
                                                                                 {activeTab === 'billing' && (
                                                                                     <button
                                                                                         onClick={(e) => { e.stopPropagation(); handleOpenContractModal(item); }}
@@ -1079,6 +1093,8 @@ const SaaSManagement = () => {
                                                                             <p className="text-slate-800 font-bold flex items-center gap-2"><Mail size={12} /> {item.email}</p>
                                                                             <p className="text-[10px] flex items-center gap-2"><Phone size={12} /> {item.whatsapp}</p>
                                                                         </div>
+                                                                    ) : activeTab === 'audit' ? (
+                                                                        <span className="px-2 py-1 bg-slate-100 border border-slate-200 text-slate-700 rounded text-xs font-bold uppercase">{item.action} - {item.entity}</span>
                                                                     ) : (
                                                                         <div className="space-y-1 text-xs">
                                                                             <p className="font-bold text-slate-700">{item.userCount} usuários ativos</p>
@@ -1134,6 +1150,10 @@ const SaaSManagement = () => {
                                                                                 <span className="text-xs font-black">{item.score}</span>
                                                                             </div>
                                                                         </div>
+                                                                    ) : activeTab === 'audit' ? (
+                                                                        <span className="px-3 py-1.5 rounded-full text-[10px] font-black tracking-tight uppercase border flex items-center gap-2 w-fit bg-slate-50 text-slate-600 border-slate-200 shadow-sm">
+                                                                            {item.user ? `${item.user.name} (${item.user.role})` : 'Sistema'}
+                                                                        </span>
                                                                     ) : (
                                                                         <span className={`px-3 py-1.5 rounded-full text-[10px] font-black tracking-tight uppercase border flex items-center gap-2 w-fit ${activeTab === 'clinics' ? (item.isActive ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200') : item.role === 'ADMIN_GLOBAL' ? 'bg-purple-100 text-purple-700 border-purple-200 shadow-sm' : 'bg-[#DEB587]/10 text-[#697D58] border-[#DEB587]/20 shadow-sm'}`}>
                                                                             {activeTab === 'clinics' ? (
@@ -1208,6 +1228,12 @@ const SaaSManagement = () => {
                                                                                     <Phone size={16} />
                                                                                 </a>
                                                                             </div>
+                                                                        </div>
+                                                                    ) : activeTab === 'audit' ? (
+                                                                        <div className="flex flex-col text-right">
+                                                                            <span className="font-extrabold text-[#1A202C]">{item.clinicName}</span>
+                                                                            <span className="text-[10px] uppercase font-bold text-slate-400">IP: {item.ipAddress || 'Interno'}</span>
+                                                                            <span className="text-[10px] uppercase font-bold text-slate-400">Ref ID: {item.entityId.substring(0, 8) || 'N/A'}</span>
                                                                         </div>
                                                                     ) : (
                                                                         <div className="flex items-center gap-1 justify-end">

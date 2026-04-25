@@ -37,13 +37,17 @@ import Automations from './pages/Automations';
 import { useAuth } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import { OnboardingTour } from './components/OnboardingTour';
+import AdminAccessBanner from './components/AdminAccessBanner';
+import { useAdminContext } from './hooks/useAdminContext';
 
 function App() {
   const location = useLocation();
   const { user, loading } = useAuth();
+  const { isAdminAccess } = useAdminContext();
   const isPublicPage = ['/', '/about', '/login', '/contact'].includes(location.pathname);
-  // Mostra Header se o usuário estiver logado, não for página pública e não for ADMIN_GLOBAL
-  const showHeader = !isPublicPage && !loading && user && user.role !== 'ADMIN_GLOBAL';
+  // Mostra Header se o usuário estiver logado, não for página pública e não for ADMIN_GLOBAL 
+  // (A não ser que o ADMIN_GLOBAL esteja operando num acesso a clínica específico)
+  const showHeader = !isPublicPage && !loading && user && (user.role !== 'ADMIN_GLOBAL' || isAdminAccess);
 
   // Loading global para rotas privadas durante a recuperação da sessão
   if (loading && !isPublicPage) {
@@ -55,75 +59,78 @@ function App() {
   }
 
   return (
-    <div className={`flex min-h-screen ${isPublicPage ? 'bg-white' : 'bg-[#F0EAD6]'}`}>
-      <Toaster position="top-right" />
-      <OnboardingTour />
+    <>
+      <AdminAccessBanner />
+      <div className={`flex min-h-screen ${isPublicPage ? 'bg-white' : 'bg-[#F0EAD6]'} ${isAdminAccess ? 'pt-[48px]' : ''}`}>
+        <Toaster position="top-right" />
+        <OnboardingTour />
 
-      {/* Sidebar Fixa para Desktop */}
-      {showHeader && (
-        <div className="hidden lg:block w-72 shrink-0 h-screen sticky top-0">
-          <Sidebar />
-        </div>
-      )}
-
-      <div className="flex-1 flex flex-col min-w-0">
-        {showHeader && <Header />}
-
-        <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'p-0' : (showHeader ? (location.pathname.startsWith('/patients/') ? 'p-4 lg:p-6' : 'p-8 lg:p-12') : 'p-0')}`}>
-          <div className={isPublicPage ? '' : (showHeader ? (location.pathname === '/agenda' || location.pathname.startsWith('/patients/') ? 'max-w-[98%] mx-auto' : 'max-w-7xl mx-auto') : '')}>
-            <Routes>
-              {/* Public Routes - Auto-redirect if logged in */}
-              <Route path="/" element={
-                user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LandingPage />
-              } />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/login" element={
-                user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LoginPage />
-              } />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/auth/force-change-password" element={<ForceChangePassword />} />
-
-              {/* SaaS Admin Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['ADMIN_GLOBAL']} />}>
-                <Route path="/saas-dashboard" element={<SaaSManagement />} />
-              </Route>
-
-              {/* Clinic Private Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'DOCTOR', 'RECEPTIONIST', 'CLINIC_ADMIN', 'USER']} />}>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/billing" element={<BillingPage />} />
-                <Route path="/patients" element={<PatientsPage />} />
-                <Route path="/patients/:id" element={<PatientPEP />} />
-                <Route path="/equipe-acessos" element={<TeamPage />} />
-                <Route path="/despesas-faturamento" element={<ExpensesBilling />} />
-                <Route path="/cash-flow" element={<CashFlow />} />
-                <Route path="/pendenciais" element={<PendenciaisPage />} />
-                <Route path="/payables" element={<PayablesPage />} />
-                <Route path="/income" element={<IncomePage />} />
-                <Route path="/dre" element={<DREPage />} />
-                <Route path="/fechamento-caixa" element={<DailyClosure />} />
-                <Route path="/dfc" element={<DFCPage />} />
-                <Route path="/pricing" element={<Pricing />} />
-                <Route path="/procedures" element={<Procedures />} />
-                <Route path="/tasks" element={<CRMPage />} />
-                <Route path="/goals" element={<Goals />} />
-                <Route path="/inventory" element={<Inventory />} />
-                <Route path="/pge" element={<PurchaseIntelligence />} />
-                <Route path="/agenda" element={<Agenda />} />
-                <Route path="/documents" element={<DocumentsPage />} />
-                <Route path="/automations" element={<Automations />} />
-                <Route path="/my-clinic" element={<MyClinic />} />
-                <Route path="/medicos" element={<DoctorsPage />} />
-                <Route path="/imports" element={<ImportHistory />} />
-              </Route>
-
-              {/* Redirects */}
-              <Route path="*" element={<Navigate to={user?.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace />} />
-            </Routes>
+        {/* Sidebar Fixa para Desktop */}
+        {showHeader && (
+          <div className="hidden lg:block w-72 shrink-0 h-screen sticky top-0">
+            <Sidebar />
           </div>
-        </main>
+        )}
+
+        <div className="flex-1 flex flex-col min-w-0">
+          {showHeader && <Header />}
+
+          <main className={`flex-1 transition-all duration-300 ${isPublicPage ? 'p-0' : (showHeader ? (location.pathname.startsWith('/patients/') ? 'p-4 lg:p-6' : 'p-8 lg:p-12') : 'p-0')}`}>
+            <div className={isPublicPage ? '' : (showHeader ? (location.pathname === '/agenda' || location.pathname.startsWith('/patients/') ? 'max-w-[98%] mx-auto' : 'max-w-7xl mx-auto') : '')}>
+              <Routes>
+                {/* Public Routes - Auto-redirect if logged in */}
+                <Route path="/" element={
+                  user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LandingPage />
+                } />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/login" element={
+                  user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LoginPage />
+                } />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/auth/force-change-password" element={<ForceChangePassword />} />
+
+                {/* SaaS Admin Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['ADMIN_GLOBAL']} />}>
+                  <Route path="/saas-dashboard" element={<SaaSManagement />} />
+                </Route>
+
+                {/* Clinic Private Routes */}
+                <Route element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'DOCTOR', 'RECEPTIONIST', 'CLINIC_ADMIN', 'USER']} />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/billing" element={<BillingPage />} />
+                  <Route path="/patients" element={<PatientsPage />} />
+                  <Route path="/patients/:id" element={<PatientPEP />} />
+                  <Route path="/equipe-acessos" element={<TeamPage />} />
+                  <Route path="/despesas-faturamento" element={<ExpensesBilling />} />
+                  <Route path="/cash-flow" element={<CashFlow />} />
+                  <Route path="/pendenciais" element={<PendenciaisPage />} />
+                  <Route path="/payables" element={<PayablesPage />} />
+                  <Route path="/income" element={<IncomePage />} />
+                  <Route path="/dre" element={<DREPage />} />
+                  <Route path="/fechamento-caixa" element={<DailyClosure />} />
+                  <Route path="/dfc" element={<DFCPage />} />
+                  <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/procedures" element={<Procedures />} />
+                  <Route path="/tasks" element={<CRMPage />} />
+                  <Route path="/goals" element={<Goals />} />
+                  <Route path="/inventory" element={<Inventory />} />
+                  <Route path="/pge" element={<PurchaseIntelligence />} />
+                  <Route path="/agenda" element={<Agenda />} />
+                  <Route path="/documents" element={<DocumentsPage />} />
+                  <Route path="/automations" element={<Automations />} />
+                  <Route path="/my-clinic" element={<MyClinic />} />
+                  <Route path="/medicos" element={<DoctorsPage />} />
+                  <Route path="/imports" element={<ImportHistory />} />
+                </Route>
+
+                {/* Redirects */}
+                <Route path="*" element={<Navigate to={user?.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace />} />
+              </Routes>
+            </div>
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

@@ -4,7 +4,7 @@ import prisma from '../lib/prisma.js';
 
 export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
-    
+
     console.log(`[AUTH DEBUG] Path: ${req.originalUrl} | Method: ${req.method} | AuthHeader Present: ${!!authHeader}`);
 
     if (!authHeader) {
@@ -25,14 +25,14 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
 
         req.user = decoded;
         req.userId = decoded.id;
-        
+
         // Bloqueia rotas se precisar trocar a senha e a rota não for a de trocar a senha, me ou impersonate
-        const isSafeRoute = req.originalUrl.includes('/auth/update-password') || 
-                           req.originalUrl.includes('/auth/me') ||
-                           req.originalUrl.includes('/saas/impersonate');
-        
+        const isSafeRoute = req.originalUrl.includes('/auth/update-password') ||
+            req.originalUrl.includes('/auth/me') ||
+            req.originalUrl.includes('/saas/impersonate');
+
         if (decoded.mustChangePassword && !isSafeRoute) {
-             return res.status(403).json({ error: 'Troca de senha obrigatória', requirePasswordChange: true });
+            return res.status(403).json({ error: 'Troca de senha obrigatória', requirePasswordChange: true });
         }
 
         next();
@@ -54,7 +54,9 @@ export const roleMiddleware = (allowedRoles: string[]) => {
 import { tenantContext } from '../lib/context.js';
 
 export const tenantMiddleware = async (req: any, res: Response, next: NextFunction) => {
-    if (req.user.role !== 'ADMIN_GLOBAL') {
+    if (req.user?.adminAccessContext?.clinicId) {
+        req.clinicId = req.user.adminAccessContext.clinicId;
+    } else if (req.user.role !== 'ADMIN_GLOBAL') {
         if (!req.user.clinicId) {
             return res.status(403).json({ error: 'Usuário sem clínica vinculada', message: 'Usuário sem clínica vinculada' });
         }
@@ -64,7 +66,7 @@ export const tenantMiddleware = async (req: any, res: Response, next: NextFuncti
     const clinicId = req.clinicId;
     const userId = req.user?.id;
     const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
-    
+
     tenantContext.run({ clinicId, userId, ipAddress }, () => {
         next();
     });
