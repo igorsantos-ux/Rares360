@@ -36,6 +36,7 @@ import goalRoutes from './routes/goalRoutes.js';
 import managementRoutes from './routes/managementRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import treatmentPlanRoutes from './routes/treatmentPlanRoutes.js';
+import privacyRoutes from './routes/privacyRoutes.js';
 import { SeedService } from './services/SeedService.js';
 import { MigrationService } from './services/MigrationService.js';
 
@@ -136,6 +137,9 @@ app.use('/api/dfc', dfcRoutes);
 app.use('/api/import', authMiddleware, tenantMiddleware, importRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/treatment-plans', authMiddleware, tenantMiddleware, treatmentPlanRoutes);
+
+// ═══ LGPD: Rotas de privacidade e direitos dos titulares ═══
+app.use('/api/privacy', authMiddleware, privacyRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
