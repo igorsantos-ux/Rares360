@@ -1,11 +1,31 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'heath_finance_secret_key_2026';
+// SEC-001: JWT_SECRET obrigatório — nunca usar fallback hardcoded
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error('FATAL: JWT_SECRET não está definido nas variáveis de ambiente. Encerrando o servidor.');
+    process.exit(1);
+}
+
+// SEC-006: Salt rounds mínimo de 12
+const BCRYPT_ROUNDS = Math.max(parseInt(process.env.BCRYPT_ROUNDS || '12', 10), 12);
+
+export interface JwtPayload {
+    id: string;
+    email: string;
+    name?: string;
+    role: string;
+    clinicId?: string;
+    mustChangePassword?: boolean;
+    adminAccessContext?: any;
+    impersonatedBy?: string;
+    isImpersonation?: boolean;
+}
 
 export class AuthService {
     static async hashPassword(password: string): Promise<string> {
-        const salt = await bcrypt.genSalt(10);
+        const salt = await bcrypt.genSalt(BCRYPT_ROUNDS);
         return bcrypt.hash(password, salt);
     }
 
@@ -13,15 +33,24 @@ export class AuthService {
         return bcrypt.compare(password, hash);
     }
 
-    static generateToken(payload: { id: string; email: string; name?: string; role: string; clinicId?: string; mustChangePassword?: boolean; adminAccessContext?: any }): string {
-        return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+    static generateToken(payload: JwtPayload): string {
+        return jwt.sign(payload, JWT_SECRET!, {
+            expiresIn: '7d',
+            algorithm: 'HS256',
+            issuer: 'rares360',
+            audience: 'rares360-api',
+        });
     }
 
-    static verifyToken(token: string): any {
+    static verifyToken(token: string): JwtPayload | null {
         try {
-            return jwt.verify(token, JWT_SECRET);
+            return jwt.verify(token, JWT_SECRET!, {
+                algorithms: ['HS256'],
+                issuer: 'rares360',
+                audience: 'rares360-api',
+            }) as JwtPayload;
         } catch (error: any) {
-            console.error('--- JWT VERIFY ERROR ---', error.message);
+            console.error('[AUTH] Falha na verificação do token:', error.message);
             return null;
         }
     }

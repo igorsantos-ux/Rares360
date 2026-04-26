@@ -281,8 +281,20 @@ export class SaaSController {
     // Gestão de Usuários
     static async listUsers(req: any, res: Response) {
         try {
+            // SEC-010: NUNCA retornar password hash ou dados sensíveis
             const users = await basePrisma.user.findMany({
-                include: { clinic: { select: { name: true } } }
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    isActive: true,
+                    clinicId: true,
+                    lastLoginAt: true,
+                    createdAt: true,
+                    mustChangePassword: true,
+                    clinic: { select: { name: true } }
+                }
             });
             res.json(users);
         } catch (error) {
@@ -300,22 +312,24 @@ export class SaaSController {
                 return res.status(400).json({ error: 'Email já cadastrado' });
             }
 
-            // Gerar senha temporária forte (12 chars: maiúsculas + minúsculas + números + símbolo)
+            // SEC-021: Gerar senha temporária com crypto (criptograficamente seguro)
             if (!password) {
                 const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
-                password = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+                const bytes = crypto.randomBytes(12);
+                password = Array.from(bytes).map(b => chars[b % chars.length]).join('');
 
                 // Garantir pelo menos 1 de cada tipo
                 const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
                 const lower = 'abcdefghijklmnopqrstuvwxyz';
                 const numbers = '0123456789';
                 const symbols = '!@#$%^&*()_+';
+                const rb = crypto.randomBytes(4);
 
                 password =
-                    upper[Math.floor(Math.random() * upper.length)] +
-                    lower[Math.floor(Math.random() * lower.length)] +
-                    numbers[Math.floor(Math.random() * numbers.length)] +
-                    symbols[Math.floor(Math.random() * symbols.length)] +
+                    upper[rb[0] % upper.length] +
+                    lower[rb[1] % lower.length] +
+                    numbers[rb[2] % numbers.length] +
+                    symbols[rb[3] % symbols.length] +
                     password.substring(4);
             }
 
@@ -351,13 +365,14 @@ export class SaaSController {
                 console.error('[SaaS] Alerta: Usuário criado, mas falha ao enviar e-mail:', mailError);
             }
 
+            // SEC-016: Não retornar senha na resposta da API, apenas via e-mail
             res.status(201).json({
                 id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
                 clinicId: user.clinicId,
-                tempPassword: password // Retorna para o Admin também
+                message: 'Usuário criado. Senha temporária enviada por e-mail.'
             });
         } catch (error) {
             console.error('Error creating user:', error);
@@ -464,13 +479,15 @@ export class SaaSController {
 
             const targetClinic = await basePrisma.clinic.findUnique({ where: { id: clinicId } });
 
-            // Gerar token da clínica
+            // SEC-013: Token com marcador de impersonação para auditoria
             const token = AuthService.generateToken({
                 id: targetUser.id,
                 email: targetUser.email,
                 name: targetUser.name,
                 role: targetUser.role,
-                clinicId: targetUser.clinicId || undefined
+                clinicId: targetUser.clinicId || undefined,
+                impersonatedBy: adminId,
+                isImpersonation: true,
             });
 
             // Registrar log de auditoria

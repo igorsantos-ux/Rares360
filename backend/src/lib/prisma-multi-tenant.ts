@@ -34,7 +34,7 @@ export const extendPrisma = (prisma: PrismaClient) => {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
           const clinicId = getClinicId();
-          
+
           // Se não houver clinicId (ex: scripts, seed, ou rotas públicas), executa normal
           if (!clinicId) return query(args);
 
@@ -43,7 +43,7 @@ export const extendPrisma = (prisma: PrismaClient) => {
             return query(args);
           }
 
-          // Aplicar filtros de isolamento
+          // === LEITURA: Injetar clinicId no where ===
           if (['findMany', 'findFirst', 'count', 'aggregate', 'groupBy'].includes(operation)) {
             (args as any).where = { ...(args as any).where, clinicId };
             return query(args);
@@ -56,6 +56,7 @@ export const extendPrisma = (prisma: PrismaClient) => {
             return (prisma as any)[model].findFirst(args);
           }
 
+          // === CRIAÇÃO: Injetar clinicId nos dados ===
           if (['create', 'createMany'].includes(operation)) {
             if (operation === 'create') {
               (args as any).data = { ...(args as any).data, clinicId };
@@ -64,20 +65,51 @@ export const extendPrisma = (prisma: PrismaClient) => {
                 (args as any).data = (args as any).data.map((item: any) => ({ ...item, clinicId }));
               }
             }
+            return query(args);
           }
 
-          if (['update', 'updateMany', 'upsert', 'delete', 'deleteMany'].includes(operation)) {
-            // Para operações de escrita que usam o 'where', injetamos o clinicId.
-            // Nota: Se for 'update' ou 'delete' via ID, o Prisma pode reclamar se adicionarmos o clinicId
-            // na cláusula 'where' se este não fizer parte de um índice único composto.
-            // Como usamos UUIDs, o risco de colisão/acesso indevido é baixíssimo, 
-            // mas para garantir segurança, injetamos apenas se não for um 'id' simples ou se for 'Many'.
-            
-            const isSingleIdOperation = ['update', 'delete', 'upsert'].includes(operation) && (args as any).where?.id;
-            
-            if (!isSingleIdOperation || operation.endsWith('Many')) {
-              (args as any).where = { ...(args as any).where, clinicId };
+          // === SEC-004: ESCRITA (update/delete/upsert) — SEMPRE injetar clinicId ===
+          // Para operações de update/delete por ID único, o Prisma exige apenas campos
+          // @unique no where. Convertemos para updateMany/deleteMany que aceita clinicId,
+          // ou usamos findFirst + update para manter o isolamento de tenant.
+          if (operation === 'update') {
+            // Converter para findFirst + verificação, para garantir isolamento
+            const record = await (prisma as any)[model].findFirst({
+              where: { ...(args as any).where, clinicId },
+              select: { id: true }
+            });
+            if (!record) {
+              throw new Error(`Registro não encontrado ou acesso negado (tenant isolation)`);
             }
+            return query(args);
+          }
+
+          if (operation === 'updateMany') {
+            (args as any).where = { ...(args as any).where, clinicId };
+            return query(args);
+          }
+
+          if (operation === 'delete') {
+            // Verificar ownership antes de deletar
+            const record = await (prisma as any)[model].findFirst({
+              where: { ...(args as any).where, clinicId },
+              select: { id: true }
+            });
+            if (!record) {
+              throw new Error(`Registro não encontrado ou acesso negado (tenant isolation)`);
+            }
+            return query(args);
+          }
+
+          if (operation === 'deleteMany') {
+            (args as any).where = { ...(args as any).where, clinicId };
+            return query(args);
+          }
+
+          if (operation === 'upsert') {
+            (args as any).where = { ...(args as any).where, clinicId };
+            (args as any).create = { ...(args as any).create, clinicId };
+            return query(args);
           }
 
           return query(args);
@@ -86,3 +118,4 @@ export const extendPrisma = (prisma: PrismaClient) => {
     },
   });
 };
+

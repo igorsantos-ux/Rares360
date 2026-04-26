@@ -5,10 +5,7 @@ import prisma from '../lib/prisma.js';
 export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
-    console.log(`[AUTH DEBUG] Path: ${req.originalUrl} | Method: ${req.method} | AuthHeader Present: ${!!authHeader}`);
-
     if (!authHeader) {
-        console.warn(`[AUTH ERROR] Token ausente para a rota: ${req.originalUrl}`);
         return res.status(401).json({ error: 'Token não fornecido', message: 'Token não fornecido' });
     }
 
@@ -18,8 +15,7 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
         const decoded = AuthService.verifyToken(token);
 
         if (!decoded) {
-            console.error('--- FALHA NA VERIFICAÇÃO DO TOKEN ---');
-            console.error('Token capturado:', token.substring(0, 20) + '...');
+            // SEC-014: Nunca logar trechos do token
             return res.status(401).json({ error: 'Token inválido ou expirado', message: 'Token inválido ou expirado' });
         }
 
@@ -37,8 +33,8 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
 
         next();
     } catch (err: any) {
-        console.error('--- ERRO CATASTRÓFICO NO AUTH MIDDLEWARE ---', err);
-        return res.status(401).json({ error: 'Erro de autenticação', message: err.message });
+        console.error('[AUTH] Erro no middleware de autenticação');
+        return res.status(401).json({ error: 'Erro de autenticação' });
     }
 };
 

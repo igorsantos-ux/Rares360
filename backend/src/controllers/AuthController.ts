@@ -2,13 +2,14 @@ import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { AuthService } from '../services/AuthService.js';
 
+// SEC-019: Regex de validação de força de senha
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=]).{8,128}$/;
+
 export class AuthController {
     static async login(req: Request, res: Response) {
         try {
             const { email: rawEmail, password } = req.body;
             const email = rawEmail?.toLowerCase().trim();
-
-            console.log(`Tentativa de login para: ${email}`);
 
             const user = await prisma.user.findUnique({
                 where: { email },
@@ -25,7 +26,6 @@ export class AuthController {
                 return res.status(403).json({ error: 'Sua conta está desativada. Entre em contato com a TI RARES.' });
             }
 
-            console.log(`[AUTH] Comparando senhas para ${email}...`);
             const isPasswordValid = await AuthService.comparePasswords(password, user.password);
 
             if (!isPasswordValid) {
@@ -40,7 +40,7 @@ export class AuthController {
             const passwordAgeInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
             const isPasswordExpired = passwordAgeInDays >= 90;
 
-            console.log(`[AUTH] Senha de ${email} tem ${passwordAgeInDays} dias de idade.`);
+
 
             // 2. Verificação de Senha Temporária
             if (user.temporaryPasswordExpiresAt && new Date() > user.temporaryPasswordExpiresAt) {
@@ -50,7 +50,6 @@ export class AuthController {
 
             // Se a senha estiver expirada ou o reset for obrigatório
             if (user.mustChangePassword || isPasswordExpired) {
-                console.warn(`[AUTH] Bloqueio de acesso para ${email}: Troca de senha obrigatória.`);
 
                 const token = AuthService.generateToken({
                     id: user.id,
@@ -75,7 +74,7 @@ export class AuthController {
                 });
             }
 
-            console.log(`Login bem-sucedido: ${email} (${user.role})`);
+
 
             const token = AuthService.generateToken({
                 id: user.id,
@@ -114,14 +113,22 @@ export class AuthController {
             const userId = req.user.id;
             const { currentPassword, newPassword } = req.body;
 
-            console.log(`[AUTH] Tentativa de atualização de senha para o usuário: ${userId}`);
+            console.log(`[AUTH] Atualização de senha solicitada para usuário: ${userId}`);
+
+            // SEC-019: Validar força da nova senha
+            if (!PASSWORD_REGEX.test(newPassword)) {
+                return res.status(400).json({
+                    error: 'A senha deve conter no mínimo 8 caracteres, incluindo maiúscula, minúscula, número e caractere especial.'
+                });
+            }
 
             const user = await prisma.user.findUnique({
                 where: { id: userId },
                 include: {
+                    // SEC-017: Verificar últimas 5 senhas (não 3)
                     passwordHistory: {
                         orderBy: { createdAt: 'desc' },
-                        take: 3
+                        take: 5
                     }
                 }
             });
@@ -146,7 +153,7 @@ export class AuthController {
                 const isReused = await AuthService.comparePasswords(newPassword, historyEntry.hash);
                 if (isReused) {
                     return res.status(400).json({
-                        error: 'Por motivos de segurança, você não pode reutilizar nenhuma das suas últimas 3 senhas.'
+                        error: 'Por motivos de segurança, você não pode reutilizar nenhuma das suas últimas 5 senhas.'
                     });
                 }
             }
@@ -176,11 +183,11 @@ export class AuthController {
 
                 // 3. Manter apenas as 3 últimas entradas no histórico para este usuário
                 const historyCount = await tx.passwordHistory.count({ where: { userId } });
-                if (historyCount > 3) {
+                if (historyCount > 5) {
                     const oldestEntries = await tx.passwordHistory.findMany({
                         where: { userId },
                         orderBy: { createdAt: 'asc' },
-                        take: historyCount - 3
+                        take: historyCount - 5
                     });
 
                     await tx.passwordHistory.deleteMany({

@@ -2,6 +2,9 @@ import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { AuthService } from '../services/AuthService.js';
 
+// SEC-005: Roles que OWNER/ADMIN de clínica podem atribuir (NUNCA ADMIN_GLOBAL)
+const ALLOWED_CLINIC_ROLES = ['OWNER', 'ADMIN', 'CLINIC_ADMIN', 'VIEWER', 'STAFF', 'DOCTOR'];
+
 export class UserManagementController {
     static async listUsers(req: any, res: Response) {
         try {
@@ -35,6 +38,11 @@ export class UserManagementController {
         try {
             const { clinicId } = req.user;
             const { name, email, role, permissions, password } = req.body;
+
+            // SEC-005: Impedir privilege escalation
+            if (!ALLOWED_CLINIC_ROLES.includes(role)) {
+                return res.status(403).json({ error: 'Role não permitido para criação de usuário nesta clínica.' });
+            }
 
             const existingUser = await prisma.user.findUnique({
                 where: { email: email.toLowerCase().trim() }
@@ -76,6 +84,11 @@ export class UserManagementController {
             const { id } = req.params;
             const { clinicId } = req.user;
             const { name, role, permissions, isActive } = req.body;
+
+            // SEC-005: Impedir escalação para ADMIN_GLOBAL via update
+            if (role && !ALLOWED_CLINIC_ROLES.includes(role)) {
+                return res.status(403).json({ error: 'Role não permitido.' });
+            }
 
             // Segurança: Não permitir que o usuário logado desative a si mesmo ou mude seu próprio papel para algo inferior se for o único OWNER
             if (id === req.user.id && (isActive === false || role !== 'OWNER')) {

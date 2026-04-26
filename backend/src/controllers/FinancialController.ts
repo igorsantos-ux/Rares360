@@ -5,7 +5,7 @@ export class FinancialController {
     static async getSummary(req: any, res: Response) {
         try {
             const { startDate, endDate } = req.query;
-            
+
             let start = startDate ? new Date(startDate as string) : undefined;
             let end = endDate ? new Date(endDate as string) : undefined;
 
@@ -20,11 +20,7 @@ export class FinancialController {
             res.json(summary);
         } catch (error: any) {
             console.error('[FinancialController] Error:', error);
-            res.status(500).json({ 
-                error: 'Internal server error', 
-                message: error.message,
-                code: error.code 
-            });
+            res.status(500).json({ error: 'Erro interno ao processar dados financeiros.' });
         }
     }
 
@@ -37,11 +33,7 @@ export class FinancialController {
             res.json(breakEven);
         } catch (error: any) {
             console.error('[FinancialController] Error:', error);
-            res.status(500).json({ 
-                error: 'Internal server error', 
-                message: error.message,
-                code: error.code 
-            });
+            res.status(500).json({ error: 'Erro interno ao processar dados financeiros.' });
         }
     }
 
@@ -54,11 +46,7 @@ export class FinancialController {
             res.json(evolution);
         } catch (error: any) {
             console.error('[FinancialController] Error:', error);
-            res.status(500).json({ 
-                error: 'Internal server error', 
-                message: error.message,
-                code: error.code 
-            });
+            res.status(500).json({ error: 'Erro interno ao processar dados financeiros.' });
         }
     }
 
@@ -71,11 +59,7 @@ export class FinancialController {
             res.json(daily);
         } catch (error: any) {
             console.error('[FinancialController] Error:', error);
-            res.status(500).json({ 
-                error: 'Internal server error', 
-                message: error.message,
-                code: error.code 
-            });
+            res.status(500).json({ error: 'Erro interno ao processar dados financeiros.' });
         }
     }
 
@@ -93,11 +77,7 @@ export class FinancialController {
             res.status(201).json(data);
         } catch (error: any) {
             console.error('[FinancialController] Error:', error);
-            res.status(500).json({ 
-                error: 'Internal server error', 
-                message: error.message,
-                code: error.code 
-            });
+            res.status(500).json({ error: 'Erro interno ao processar dados financeiros.' });
         }
     }
 
@@ -110,11 +90,7 @@ export class FinancialController {
             res.json(transactions);
         } catch (error: any) {
             console.error('[FinancialController] Error:', error);
-            res.status(500).json({ 
-                error: 'Internal server error', 
-                message: error.message,
-                code: error.code 
-            });
+            res.status(500).json({ error: 'Erro interno ao processar dados financeiros.' });
         }
     }
 }

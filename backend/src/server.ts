@@ -4,6 +4,7 @@ dotenv.config();
 
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import path from 'path';
 
 import authRoutes from './routes/authRoutes.js';
@@ -38,20 +39,55 @@ import treatmentPlanRoutes from './routes/treatmentPlanRoutes.js';
 import { SeedService } from './services/SeedService.js';
 import { MigrationService } from './services/MigrationService.js';
 
-
+import { authMiddleware, tenantMiddleware } from './middlewares/authMiddleware.js';
+import { loginLimiter, apiLimiter, adminLimiter } from './middlewares/rateLimiter.js';
+import { errorHandler } from './middlewares/errorHandler.js';
 
 const app = express();
 
-// Logger de requisições - MOVIDO PARA O TOPO para capturar tudo (inclusive OPTIONS/CORS)
+// ═══ SEC-008: Security Headers (Helmet.js) ═══
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            imgSrc: ["'self'", "data:", "blob:", "https:"],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            objectSrc: ["'none'"],
+            frameAncestors: ["'none'"],
+        },
+    },
+    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    crossOriginEmbedderPolicy: false, // Necessário para uploads de imagens
+}));
+
+// Logger de requisições (sem dados sensíveis)
 app.use((req, res, next) => {
-    const origin = req.headers.origin || 'No Origin';
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url} - Origin: ${origin}`);
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
     next();
 });
 
-// Configuração robusta de CORS
+// ═══ SEC-003: CORS com allowlist (sem wildcard em produção) ═══
+const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
+
 app.use(cors({
-    origin: '*',
+    origin: (origin, callback) => {
+        // Permitir requests sem origin (mobile apps, Postman, server-to-server)
+        if (!origin) return callback(null, true);
+        // Em dev (sem CORS_ORIGINS definido), permitir tudo
+        if (ALLOWED_ORIGINS.length === 0) return callback(null, true);
+        // Produção: checar allowlist
+        if (ALLOWED_ORIGINS.includes(origin)) {
+            return callback(null, true);
+        }
+        callback(new Error('Origem não permitida pelo CORS'));
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-clinic-id'],
     credentials: true,
@@ -59,17 +95,22 @@ app.use(cors({
     optionsSuccessStatus: 204
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 app.get('/', (req, res) => {
     res.json({ message: 'Rares360 API is online' });
 });
 
-import { authMiddleware, tenantMiddleware } from './middlewares/authMiddleware.js';
+// ═══ Rotas públicas ═══
+app.use('/api/auth', loginLimiter, authRoutes);
+app.use('/api/leads', leadRoutes);
 
-app.use('/api/auth', authRoutes);
-app.use('/api/saas', authMiddleware, tenantMiddleware, saasRoutes);
+// ═══ SEC-007: Rate limiting na API geral ═══
+app.use('/api', apiLimiter);
+
+// ═══ Rotas protegidas (auth + tenant) ═══
+app.use('/api/saas', authMiddleware, tenantMiddleware, adminLimiter, saasRoutes);
 app.use('/api/financial', authMiddleware, tenantMiddleware, financialRoutes);
 app.use('/api/cash', authMiddleware, tenantMiddleware, cashRoutes);
 app.use('/api/core', authMiddleware, tenantMiddleware, coreRoutes);
@@ -89,14 +130,20 @@ app.use('/api/pep', authMiddleware, tenantMiddleware, pepRoutes);
 app.use('/api/goals', authMiddleware, tenantMiddleware, goalRoutes);
 app.use('/api/audit', authMiddleware, tenantMiddleware, auditRoutes);
 app.use('/api/management', managementRoutes);
-app.use('/api/leads', leadRoutes);
 app.use('/api/integrations', integrationRoutes);
 app.use('/api/dre', dreRoutes);
 app.use('/api/dfc', dfcRoutes);
-
 app.use('/api/import', authMiddleware, tenantMiddleware, importRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/treatment-plans', authMiddleware, tenantMiddleware, treatmentPlanRoutes);
+
+// Health check
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', message: 'Rares360 API is running' });
+});
+
+// ═══ SEC-009/SEC-022: Global Error Handler (DEVE ser o último middleware) ═══
+app.use(errorHandler);
 
 process.on('SIGTERM', () => {
     console.log('SIGTERM recebido. Encerrando graciosamente...');
@@ -107,10 +154,6 @@ process.on('uncaughtException', (err) => {
     console.error('Exceção não capturada:', err);
 });
 
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Rares360 API is running' });
-});
-
 const port = 3001;
 
 app.listen(port, '0.0.0.0', () => {
@@ -119,3 +162,4 @@ app.listen(port, '0.0.0.0', () => {
         SeedService.autoSeedIfEmpty().catch(err => console.error('Erro no auto-seed background:', err));
     }).catch(err => console.error('Erro no soft-migration background:', err));
 });
+
