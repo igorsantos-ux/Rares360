@@ -22,7 +22,8 @@ import {
     ChevronRight,
     Lock as LockIcon,
     TrendingUp,
-    BarChart3
+    BarChart3,
+    Activity
 } from 'lucide-react';
 import { saasApi, leadsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
