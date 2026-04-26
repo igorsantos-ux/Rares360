@@ -26,6 +26,12 @@ const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
         return <Navigate to="/auth/force-change-password" replace />;
     }
 
+    // Se estiver em modo AdminAccess, bloqueia o painel SaaS
+    const location = window.location.pathname;
+    if (isAdminAccess && location === '/saas-dashboard') {
+        return <Navigate to="/dashboard" replace />;
+    }
+
     if (allowedRoles) {
         if (!allowedRoles.includes(user.role)) {
             // Se for um ADMIN_GLOBAL tentando acessar rotas que não tem,
