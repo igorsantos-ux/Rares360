@@ -11,7 +11,7 @@ export const loginLimiter = rateLimit({
     message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => req.ip || req.connection?.remoteAddress || 'unknown',
+    validate: { xForwardedForHeader: false },
 });
 
 // API geral: 100 req/min por IP
@@ -21,6 +21,7 @@ export const apiLimiter = rateLimit({
     message: { error: 'Limite de requisições atingido. Tente novamente em breve.' },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
 });
 
 // Admin/SaaS: 30 req/min por IP
@@ -30,4 +31,5 @@ export const adminLimiter = rateLimit({
     message: { error: 'Limite de requisições administrativas atingido.' },
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false },
 });
