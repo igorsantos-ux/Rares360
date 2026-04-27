@@ -24,17 +24,24 @@ export const createAuditLog = async (data: {
         _meta: { country, userAgent }
     };
 
-    return basePrisma.auditLog.create({
-        data: {
-            action: data.action,
-            userId: data.userId,
-            clinicId: data.clinicId,
-            entity: data.entity,
-            entityId: data.entityId,
-            ipAddress: ip,
-            oldValues: data.oldValues ? data.oldValues : undefined,
-            newValues: enrichedNewValues,
-            timestamp: new Date(),
-        }
-    });
+    try {
+        return await basePrisma.auditLog.create({
+            data: {
+                action: data.action,
+                userId: data.userId,
+                clinicId: data.clinicId,
+                entity: data.entity,
+                entityId: data.entityId,
+                ipAddress: ip,
+                oldValues: data.oldValues ? data.oldValues : undefined,
+                newValues: enrichedNewValues,
+                timestamp: new Date(),
+            }
+        });
+    } catch (error) {
+        console.error('[AUDIT_LOGGER_ERROR] Falha ao criar log de auditoria:', error);
+        // Não travar a execução principal se o log falhar em ambiente de produção (opcional)
+        // Por enquanto vamos deixar o erro subir para o controller pegar no catch dele
+        throw error;
+    }
 };

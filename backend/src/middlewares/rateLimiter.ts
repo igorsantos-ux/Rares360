@@ -28,10 +28,10 @@ export const loginLimiter = rateLimit({
   }) : undefined,
 });
 
-// Rate limit para API geral
+// Rate limit para API geral — Aumentado para suportar dashboards complexos
 export const apiLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minuto
-  max: 100,
+  max: 300, // Aumentado de 100 para 300
   keyGenerator: getClientIp,
   message: { error: 'Limite de requisições excedido.' },
   store: redis ? new RedisStore({
@@ -39,10 +39,10 @@ export const apiLimiter = rateLimit({
   }) : undefined,
 });
 
-// Rate limit para endpoints admin — mais restritivo
+// Rate limit para endpoints admin — Aumentado para suportar carga do modo Global
 export const adminLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 30,
+  max: 150, // Aumentado de 30 para 150
   keyGenerator: getClientIp,
   message: { error: 'Limite de requisições admin excedido.' },
   store: redis ? new RedisStore({
