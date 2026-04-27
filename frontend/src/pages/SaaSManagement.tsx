@@ -610,13 +610,13 @@ const SaaSManagement = () => {
 
                 <div>
                     <div className={`p-6 border-b border-[#8A9A5B]/10 transition-all duration-300 ${isSidebarOpen ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden py-0 border-0'}`}>
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-2 mb-3">
                             <span className="px-2 py-0.5 bg-[#8A9A5B] text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm">Admin Global</span>
                         </div>
-                        <h1 className="text-xl font-extrabold tracking-tight text-[#1A202C]">
-                            Rares360 <span className="text-[#8A9A5B]">HQ</span>
-                        </h1>
-                        <p className="text-slate-400 font-bold text-[10px] mt-1 tracking-widest uppercase">{user?.name}</p>
+                        <div className="flex items-center gap-2">
+                            <img src="/rares360-logo.png" alt="Rares360" className="h-10 w-auto object-contain" />
+                        </div>
+                        <p className="text-slate-400 font-bold text-[10px] mt-2 tracking-widest uppercase">{user?.name}</p>
                     </div>
                     {/* Logo ícone qdo fechado */}
                     {!isSidebarOpen && (

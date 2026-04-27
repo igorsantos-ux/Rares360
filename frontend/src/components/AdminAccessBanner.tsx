@@ -75,7 +75,7 @@ const AdminAccessBanner: React.FC = () => {
                 onClose={() => setIsExitAlertOpen(false)}
                 onConfirm={handleConfirmExit}
                 title="Sair do acesso administrativo?"
-                description={<>Você será redirecionado para o <strong>Painel Global (Rares360 HQ)</strong>. A sessão de acesso à <strong>{clinicName}</strong> será encerrada e o tempo total logado será registrado em auditoria.</>}
+                description={<>Você será redirecionado para o <strong>Painel Global Rares360</strong>. A sessão de acesso à <strong>{clinicName}</strong> será encerrada e o tempo total logado será registrado em auditoria.</>}
                 confirmText={isExiting ? "Saindo..." : "Confirmar saída"}
                 cancelText="Cancelar"
                 icon={ShieldAlert}
