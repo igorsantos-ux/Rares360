@@ -116,6 +116,7 @@ app.use(helmet({
 const allowedOrigins = [
   'https://rares360.com.br',
   'https://www.rares360.com.br',
+  'https://app.rares360.com.br',
   'https://api.rares360.com.br',
   ...(process.env.NODE_ENV === 'development' ? [
     'http://localhost:3000',
