@@ -168,11 +168,12 @@ app.get('/', (req, res) => {
 });
 
 // ═══ Rotas públicas ═══
-app.use('/api/auth', authRoutes);
-app.use('/api/leads', leadRoutes);
+app.use('/api/auth', apiLimiter, authRoutes);
+app.use('/api/leads', apiLimiter, leadRoutes);
 
 // ═══ SEC-007: Rate limiting na API geral ═══
-app.use('/api', apiLimiter);
+// Removido o global para evitar 'Double Count' em rotas que já tem adminLimiter
+// app.use('/api', apiLimiter); 
 
 // ═══ PERF-007: Distributed Tracing & Logging ═══
 app.use(requestIdMiddleware);
@@ -181,31 +182,31 @@ app.use(prometheusMiddleware);
 
 // ═══ Rotas protegidas (auth + tenant) ═══
 app.use('/api/saas', authMiddleware, tenantMiddleware, adminLimiter, saasRoutes);
-app.use('/api/financial', authMiddleware, tenantMiddleware, financialRoutes);
-app.use('/api/cash', authMiddleware, tenantMiddleware, cashRoutes);
-app.use('/api/core', authMiddleware, tenantMiddleware, coreRoutes);
-app.use('/api/reporting', authMiddleware, tenantMiddleware, reportingRoutes);
-app.use('/api/analytics', authMiddleware, tenantMiddleware, analyticsRoutes);
-app.use('/api/history', authMiddleware, tenantMiddleware, historyRoutes);
-app.use('/api/contas-a-pagar', authMiddleware, tenantMiddleware, accountPayableRoutes);
-app.use('/api/pendenciais', authMiddleware, tenantMiddleware, receivableRoutes);
-app.use('/api/procedures', authMiddleware, tenantMiddleware, procedureRoutes);
-app.use('/api/tasks', authMiddleware, tenantMiddleware, taskRoutes);
-app.use('/api/upload', authMiddleware, tenantMiddleware, uploadRoutes);
-app.use('/api/pricing', authMiddleware, tenantMiddleware, pricingRoutes);
-app.use('/api/compliance', authMiddleware, tenantMiddleware, complianceRoutes);
-app.use('/api/appointments', authMiddleware, tenantMiddleware, appointmentRoutes);
-app.use('/api/clinic', authMiddleware, tenantMiddleware, clinicRoutes);
-app.use('/api/pep', authMiddleware, tenantMiddleware, pepRoutes);
-app.use('/api/goals', authMiddleware, tenantMiddleware, goalRoutes);
-app.use('/api/audit', authMiddleware, tenantMiddleware, auditRoutes);
-app.use('/api/management', managementRoutes);
-app.use('/api/integrations', integrationRoutes);
-app.use('/api/dre', dreRoutes);
-app.use('/api/dfc', dfcRoutes);
-app.use('/api/import', authMiddleware, tenantMiddleware, importRoutes);
-app.use('/api/inventory', inventoryRoutes);
-app.use('/api/treatment-plans', authMiddleware, tenantMiddleware, treatmentPlanRoutes);
+app.use('/api/financial', authMiddleware, tenantMiddleware, apiLimiter, financialRoutes);
+app.use('/api/cash', authMiddleware, tenantMiddleware, apiLimiter, cashRoutes);
+app.use('/api/core', authMiddleware, tenantMiddleware, apiLimiter, coreRoutes);
+app.use('/api/reporting', authMiddleware, tenantMiddleware, apiLimiter, reportingRoutes);
+app.use('/api/analytics', authMiddleware, tenantMiddleware, apiLimiter, analyticsRoutes);
+app.use('/api/history', authMiddleware, tenantMiddleware, apiLimiter, historyRoutes);
+app.use('/api/contas-a-pagar', authMiddleware, tenantMiddleware, apiLimiter, accountPayableRoutes);
+app.use('/api/pendenciais', authMiddleware, tenantMiddleware, apiLimiter, receivableRoutes);
+app.use('/api/procedures', authMiddleware, tenantMiddleware, apiLimiter, procedureRoutes);
+app.use('/api/tasks', authMiddleware, tenantMiddleware, apiLimiter, taskRoutes);
+app.use('/api/upload', authMiddleware, tenantMiddleware, apiLimiter, uploadRoutes);
+app.use('/api/pricing', authMiddleware, tenantMiddleware, apiLimiter, pricingRoutes);
+app.use('/api/compliance', authMiddleware, tenantMiddleware, apiLimiter, complianceRoutes);
+app.use('/api/appointments', authMiddleware, tenantMiddleware, apiLimiter, appointmentRoutes);
+app.use('/api/clinic', authMiddleware, tenantMiddleware, apiLimiter, clinicRoutes);
+app.use('/api/pep', authMiddleware, tenantMiddleware, apiLimiter, pepRoutes);
+app.use('/api/goals', authMiddleware, tenantMiddleware, apiLimiter, goalRoutes);
+app.use('/api/audit', authMiddleware, tenantMiddleware, apiLimiter, auditRoutes);
+app.use('/api/management', authMiddleware, tenantMiddleware, apiLimiter, managementRoutes);
+app.use('/api/integrations', authMiddleware, tenantMiddleware, apiLimiter, integrationRoutes);
+app.use('/api/dre', authMiddleware, tenantMiddleware, apiLimiter, dreRoutes);
+app.use('/api/dfc', authMiddleware, tenantMiddleware, apiLimiter, dfcRoutes);
+app.use('/api/import', authMiddleware, tenantMiddleware, apiLimiter, importRoutes);
+app.use('/api/inventory', authMiddleware, tenantMiddleware, apiLimiter, inventoryRoutes);
+app.use('/api/treatment-plans', authMiddleware, tenantMiddleware, apiLimiter, treatmentPlanRoutes);
 
 // ═══ LGPD: Rotas de privacidade e direitos dos titulares ═══
 app.use('/api/privacy', authMiddleware, privacyRoutes);

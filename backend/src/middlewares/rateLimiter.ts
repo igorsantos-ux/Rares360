@@ -7,12 +7,11 @@ import RedisStore from 'rate-limit-redis';
 import { redis } from '../lib/redis.js';
 import { Request } from 'express';
 
-// Função para extrair IP real
+// Função para extrair IP real de forma compatível com as validações de IPv6 da lib
 const getClientIp = (req: Request): string => {
-  return (req as any).realIp || 
-         req.headers['cf-connecting-ip'] as string || 
-         req.ip || 
-         'unknown';
+  // Se estivermos atrás do Cloudflare, o realIp (extraído do header cf-connecting-ip) é o mais confiável
+  // Caso contrário, usamos o req.ip que já foi validado pelo 'trust proxy' do Express
+  return (req as any).realIp || req.ip || 'unknown';
 }
 
 // Rate limit para login — mais restritivo
