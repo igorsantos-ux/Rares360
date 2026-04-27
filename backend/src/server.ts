@@ -49,6 +49,10 @@ import { getRedisHealth } from './lib/redis.js';
 import { geminiCircuitBreaker, emailCircuitBreaker } from './lib/circuitBreaker.js';
 import { basePrisma } from './lib/prisma.js';
 
+import { requestIdMiddleware } from './middlewares/requestId.js';
+import { jsonLoggerMiddleware } from './middlewares/jsonLogger.js';
+import { prometheusMiddleware, getPrometheusMetrics } from './middlewares/metricsMiddleware.js';
+
 const app = express();
 
 // ═══ SEC-011: Confiar no Proxy (Easypanel/Nginx) para IP Real ═══
@@ -78,12 +82,6 @@ app.use(helmet({
     referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     crossOriginEmbedderPolicy: false, // Necessário para uploads de imagens
 }));
-
-// Logger de requisições (sem dados sensíveis)
-app.use((req, res, next) => {
-    console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-    next();
-});
 
 // ═══ SEC-003: CORS com allowlist (sem wildcard em produção) ═══
 const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || '')
@@ -123,6 +121,11 @@ app.use('/api/leads', leadRoutes);
 
 // ═══ SEC-007: Rate limiting na API geral ═══
 app.use('/api', apiLimiter);
+
+// ═══ PERF-007: Distributed Tracing & Logging ═══
+app.use(requestIdMiddleware);
+app.use(jsonLoggerMiddleware);
+app.use(prometheusMiddleware);
 
 // ═══ Rotas protegidas (auth + tenant) ═══
 app.use('/api/saas', authMiddleware, tenantMiddleware, adminLimiter, saasRoutes);
@@ -200,37 +203,14 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ═══ PERF-003: Prometheus Metrics Endpoint ═══
-app.get('/api/metrics', (req, res) => {
-    const mem = process.memoryUsage();
-    const geminiStats = geminiCircuitBreaker.getStats();
-    const emailStats = emailCircuitBreaker.getStats();
-
-    const metrics = [
-        `# HELP process_heap_used_bytes Heap usado em bytes`,
-        `# TYPE process_heap_used_bytes gauge`,
-        `process_heap_used_bytes ${mem.heapUsed}`,
-        `# HELP process_rss_bytes RSS em bytes`,
-        `# TYPE process_rss_bytes gauge`,
-        `process_rss_bytes ${mem.rss}`,
-        `# HELP process_uptime_seconds Uptime do processo`,
-        `# TYPE process_uptime_seconds gauge`,
-        `process_uptime_seconds ${Math.round(process.uptime())}`,
-        `# HELP circuit_breaker_state Estado do circuit breaker (0=closed, 1=open, 2=half_open)`,
-        `# TYPE circuit_breaker_state gauge`,
-        `circuit_breaker_state{service="gemini"} ${geminiStats.state === 'CLOSED' ? 0 : geminiStats.state === 'OPEN' ? 1 : 2}`,
-        `circuit_breaker_state{service="email"} ${emailStats.state === 'CLOSED' ? 0 : emailStats.state === 'OPEN' ? 1 : 2}`,
-        `# HELP circuit_breaker_requests_total Total de requests`,
-        `# TYPE circuit_breaker_requests_total counter`,
-        `circuit_breaker_requests_total{service="gemini"} ${geminiStats.totalRequests}`,
-        `circuit_breaker_requests_total{service="email"} ${emailStats.totalRequests}`,
-        `# HELP circuit_breaker_failures_total Total de falhas`,
-        `# TYPE circuit_breaker_failures_total counter`,
-        `circuit_breaker_failures_total{service="gemini"} ${geminiStats.totalFailures}`,
-        `circuit_breaker_failures_total{service="email"} ${emailStats.totalFailures}`,
-    ].join('\n');
-
-    res.setHeader('Content-Type', 'text/plain; version=0.0.4');
-    res.send(metrics);
+app.get('/api/metrics', async (req, res) => {
+    try {
+        const metrics = await getPrometheusMetrics();
+        res.setHeader('Content-Type', 'text/plain; version=0.0.4');
+        res.send(metrics);
+    } catch (err) {
+        res.status(500).send('Erro ao gerar métricas');
+    }
 });
 
 // ═══ SEC-009/SEC-022: Global Error Handler (DEVE ser o último middleware) ═══

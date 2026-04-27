@@ -1,17 +1,23 @@
 services:
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
+    # Removido ports para não expor à internet, acessível apenas na rede interna
+    networks:
+      - rares-internal
     volumes:
       - redis-data:/data
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: [ "CMD", "redis-cli", "ping" ]
       interval: 10s
       timeout: 3s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
 
   backend:
     build:
@@ -23,18 +29,38 @@ services:
       PORT: 3001
       NODE_ENV: production
       REDIS_URL: redis://redis:6379
+    networks:
+      - rares-internal
+      - rares-public
     depends_on:
       redis:
         condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
 
   frontend:
     build:
       context: ./frontend
       dockerfile: ../infra/Dockerfile.frontend
     ports:
-      - "3000:3000"
+      - "3000:80"
+    networks:
+      - rares-public
     depends_on:
       - backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+
+networks:
+  rares-internal:
+    internal: true
+  rares-public:
 
 volumes:
   redis-data:

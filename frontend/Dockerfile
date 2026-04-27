@@ -1,9 +1,10 @@
 # Etapa 1: Build
-FROM node:20-slim AS build
+FROM node:20.18-slim AS build
 
 WORKDIR /app
 
 COPY package*.json ./
+# Usando npm ci no React é mais seguro, mas a base usava legacy-peer-deps.
 RUN npm install --legacy-peer-deps
 
 COPY . .
@@ -14,21 +15,28 @@ ENV VITE_API_URL=$VITE_API_URL
 
 RUN npm run build
 
-# Etapa 2: Servidor de Produção (Nginx)
-FROM nginx:stable-alpine
+# Etapa 2: Servidor de Produção (Nginx Seguro)
+FROM nginx:1.24-alpine
+
+# Limpar default html
+RUN rm -rf /usr/share/nginx/html/*
 
 # Copia os arquivos compilados do estágio anterior
 COPY --from=build /app/dist /usr/share/nginx/html
 
-# Configuração customizada do Nginx para suportar React Router (Single Page App)
-RUN echo 'server { \
-    listen 80; \
-    location / { \
-    root /usr/share/nginx/html; \
-    index index.html index.htm; \
-    try_files $uri $uri/ /index.html; \
-    } \
-    }' > /etc/nginx/conf.d/default.conf
+# Copia a configuração segura do Nginx
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Adicionar permissões corretas para rodar Nginx como non-root (alpine)
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
+
+# Trocar para usuário não privilegiado
+USER nginx
 
 EXPOSE 80
 

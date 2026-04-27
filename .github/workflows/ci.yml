@@ -1,0 +1,88 @@
+name: DevSecOps CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  quality-and-security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install Dependencies (Backend)
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Type Checking (Backend)
+        working-directory: ./backend
+        run: npx tsc --noEmit
+
+      - name: Security Check (npm audit)
+        working-directory: ./backend
+        run: npm audit --audit-level=high
+
+      # Opcional: Adicionar ESLint e unit tests aqui no futuro
+      # - run: npm run lint
+      # - run: npm test
+
+  container-security:
+    needs: quality-and-security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image (Backend)
+        run: docker build -t rares360-backend:test ./backend
+
+      - name: Build Docker Image (Frontend)
+        run: docker build -t rares360-frontend:test ./frontend
+
+      - name: Run Trivy Vulnerability Scanner (Backend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'rares360-backend:test'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
+
+      - name: Run Trivy Vulnerability Scanner (Frontend)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'rares360-frontend:test'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL'
+
+  deploy-to-easypanel:
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    needs: container-security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Easypanel Webhook
+        run: |
+          echo "Disparando deploy no Easypanel..."
+          # Substituir com o hook do Easypanel do usuário
+          # curl -X POST ${{ secrets.EASYPANEL_WEBHOOK_URL }}
+
+      - name: Smoke Test (Health Endpoint)
+        run: |
+          echo "Aguardando 30s para o container subir..."
+          sleep 30
+          # Substituir com a URL base real no futuro
+          # curl --fail https://rares360.com.br/api/health || exit 1
