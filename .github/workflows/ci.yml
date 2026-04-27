@@ -78,7 +78,7 @@ jobs:
         run: |
           echo "Disparando deploy no Easypanel..."
           # Substituir com o hook do Easypanel do usuário
-          # curl -X POST ${{ secrets.EASYPANEL_WEBHOOK_URL }}
+          # curl -X POST <sua-url-do-easypanel-aqui>
 
       - name: Smoke Test (Health Endpoint)
         run: |
