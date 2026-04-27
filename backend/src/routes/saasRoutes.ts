@@ -5,7 +5,8 @@ import { authMiddleware, roleMiddleware } from '../middlewares/authMiddleware.js
 const router = Router();
 
 // Apenas ADMIN_GLOBAL pode acessar essas rotas
-router.use(authMiddleware, roleMiddleware(['ADMIN_GLOBAL']));
+// Apenas ADMIN_GLOBAL pode acessar essas rotas (authMiddleware já aplicado no server.ts)
+router.use(roleMiddleware(['ADMIN_GLOBAL']));
 
 router.get('/clinics', SaaSController.listClinics);
 router.post('/clinics/upload-logo', upload.single('file'), SaaSController.uploadLogo);

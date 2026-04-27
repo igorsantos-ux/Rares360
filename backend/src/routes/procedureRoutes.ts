@@ -4,7 +4,8 @@ import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.
 
 const router = Router();
 
-router.use(authMiddleware, tenantMiddleware);
+// Middlewares já aplicados no server.ts
+// router.use(authMiddleware, tenantMiddleware);
 
 // Catálogo de Procedimentos (CRUD e Precificação)
 router.get('/', ProcedureController.list);

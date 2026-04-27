@@ -5,7 +5,7 @@ import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.
 const router = Router();
 
 // Todas as rotas de contas a pagar são protegidas
-router.use(authMiddleware);
+// Removido router.use redundante
 router.use(tenantMiddleware);
 
 // Rota de listagem de contas a pagar
