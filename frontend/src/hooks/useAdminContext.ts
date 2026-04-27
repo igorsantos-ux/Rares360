@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
 import api from '../services/api';
+
+const TOKEN_KEY = 'heath_finance_token';
 
 export interface AdminAccessContextData {
     isAdminAccess: boolean;
@@ -12,61 +14,72 @@ export interface AdminAccessContextData {
     sessionDuration: string;
 }
 
+const EMPTY_CONTEXT: AdminAccessContextData = {
+    isAdminAccess: false,
+    clinicId: null,
+    clinicName: null,
+    accessStartedAt: null,
+    adminName: '',
+    adminEmail: '',
+    sessionDuration: '0min'
+};
+
 export function useAdminContext() {
-    const [context, setContext] = useState<AdminAccessContextData>({
-        isAdminAccess: false,
-        clinicId: null,
-        clinicName: null,
-        accessStartedAt: null,
-        adminName: '',
-        adminEmail: '',
-        sessionDuration: '0min'
-    });
+    const [context, setContext] = useState<AdminAccessContextData>(EMPTY_CONTEXT);
+
+    const updateContext = useCallback(() => {
+        const token = localStorage.getItem(TOKEN_KEY);
+        if (!token) {
+            setContext(EMPTY_CONTEXT);
+            return;
+        }
+
+        try {
+            const decoded: any = jwtDecode(token);
+            const adminAccess = decoded?.adminAccessContext;
+
+            if (adminAccess) {
+                const startedAtDate = new Date(adminAccess.accessStartedAt);
+
+                setContext(prev => ({
+                    ...prev,
+                    isAdminAccess: true,
+                    clinicId: adminAccess.clinicId,
+                    clinicName: adminAccess.clinicName,
+                    accessStartedAt: startedAtDate,
+                    adminName: adminAccess.adminName,
+                    adminEmail: adminAccess.adminEmail,
+                }));
+            } else {
+                setContext(EMPTY_CONTEXT);
+            }
+        } catch (error) {
+            console.error('Erro ao decodificar token', error);
+            setContext(EMPTY_CONTEXT);
+        }
+    }, []);
 
     useEffect(() => {
-        const updateContext = () => {
-            const token = localStorage.getItem('token');
-            if (!token) return;
+        updateContext();
 
-            try {
-                const decoded: any = jwtDecode(token);
-                const adminAccess = decoded?.adminAccessContext;
-
-                if (adminAccess) {
-                    const startedAtDate = new Date(adminAccess.accessStartedAt);
-
-                    setContext(prev => ({
-                        ...prev,
-                        isAdminAccess: true,
-                        clinicId: adminAccess.clinicId,
-                        clinicName: adminAccess.clinicName,
-                        accessStartedAt: startedAtDate,
-                        adminName: adminAccess.adminName,
-                        adminEmail: adminAccess.adminEmail,
-                    }));
-                } else {
-                    setContext({
-                        isAdminAccess: false,
-                        clinicId: null,
-                        clinicName: null,
-                        accessStartedAt: null,
-                        adminName: '',
-                        adminEmail: '',
-                        sessionDuration: '0min'
-                    });
-                }
-            } catch (error) {
-                console.error('Erro ao decodificar token', error);
+        // Reavaliar quando o storage muda (logout em outra aba, etc.)
+        const handleStorage = (e: StorageEvent) => {
+            if (e.key === TOKEN_KEY || e.key === null) {
+                updateContext();
             }
         };
 
-        updateContext();
-        window.addEventListener('storage', updateContext);
+        // Polling para detectar mudanças no token na mesma aba
+        // (storage event não dispara na mesma aba que fez a mudança)
+        const intervalId = setInterval(updateContext, 2000);
+
+        window.addEventListener('storage', handleStorage);
 
         return () => {
-            window.removeEventListener('storage', updateContext);
+            window.removeEventListener('storage', handleStorage);
+            clearInterval(intervalId);
         };
-    }, []);
+    }, [updateContext]);
 
     useEffect(() => {
         if (!context.isAdminAccess || !context.accessStartedAt) return;
@@ -89,8 +102,8 @@ export function useAdminContext() {
             }));
         };
 
-        updateTimer(); // Initial call
-        const intervalId = setInterval(updateTimer, 60000); // 1 minuto
+        updateTimer();
+        const intervalId = setInterval(updateTimer, 60000);
 
         return () => clearInterval(intervalId);
     }, [context.isAdminAccess, context.accessStartedAt]);
@@ -99,12 +112,19 @@ export function useAdminContext() {
         try {
             const res = await api.post('/api/admin/clinic-exit');
             if (res.data.token) {
-                localStorage.setItem('token', res.data.token);
+                localStorage.setItem(TOKEN_KEY, res.data.token);
+                // Limpar estado imediatamente
+                setContext(EMPTY_CONTEXT);
                 window.location.href = res.data.redirectTo || '/saas-dashboard';
+            } else {
+                // Token não retornado — limpar e redirecionar
+                setContext(EMPTY_CONTEXT);
+                window.location.href = '/saas-dashboard';
             }
         } catch (error) {
             console.error('Falha ao encerrar acesso admin:', error);
-            // Fallback em caso de erro de rede ou sessão já expirada no servidor
+            // Fallback: limpar estado de impersonação e redirecionar
+            setContext(EMPTY_CONTEXT);
             window.location.href = '/saas-dashboard';
         }
     };
