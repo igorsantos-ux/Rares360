@@ -95,11 +95,16 @@ export class CoreController {
                 crm: validation.data.crm ?? undefined,
                 phone: validation.data.phone ?? undefined,
                 cpf: validation.data.cpf ?? undefined,
-                email: validation.data.email ?? undefined,
+                email: (validation.data.email === '' || validation.data.email === null) ? undefined : validation.data.email,
                 crmUf: validation.data.crmUf ?? undefined,
                 rqe: validation.data.rqe ?? undefined,
                 pixKey: validation.data.pixKey ?? undefined,
                 birthDate: validation.data.birthDate ?? undefined,
+                consultationValue: validation.data.consultationValue ?? undefined,
+                repasseType: validation.data.repasseType ?? undefined,
+                repasseValue: validation.data.repasseValue ?? undefined,
+                availability: validation.data.availability ?? undefined,
+                defaultDuration: validation.data.defaultDuration ?? undefined,
                 clinicId: req.clinicId
             });
             res.status(201).json(data);

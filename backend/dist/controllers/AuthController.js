@@ -1,11 +1,12 @@
 import prisma from '../lib/prisma.js';
 import { AuthService } from '../services/AuthService.js';
+// SEC-019: Regex de validação de força de senha
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=]).{8,128}$/;
 export class AuthController {
     static async login(req, res) {
         try {
             const { email: rawEmail, password } = req.body;
             const email = rawEmail?.toLowerCase().trim();
-            console.log(`Tentativa de login para: ${email}`);
             const user = await prisma.user.findUnique({
                 where: { email },
                 include: { clinic: true }
@@ -18,7 +19,6 @@ export class AuthController {
                 console.warn(`[AUTH ERROR] Usuário inativo tentando login: ${email}`);
                 return res.status(403).json({ error: 'Sua conta está desativada. Entre em contato com a TI RARES.' });
             }
-            console.log(`[AUTH] Comparando senhas para ${email}...`);
             const isPasswordValid = await AuthService.comparePasswords(password, user.password);
             if (!isPasswordValid) {
                 console.warn(`[AUTH ERROR] Senha incorreta para o usuário: ${email}`);
@@ -29,15 +29,20 @@ export class AuthController {
             const diffInMs = Date.now() - new Date(user.passwordUpdatedAt).getTime();
             const passwordAgeInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
             const isPasswordExpired = passwordAgeInDays >= 90;
-            console.log(`[AUTH] Senha de ${email} tem ${passwordAgeInDays} dias de idade.`);
+            // 2. Verificação de Senha Temporária
+            if (user.temporaryPasswordExpiresAt && new Date() > user.temporaryPasswordExpiresAt) {
+                console.warn(`[AUTH] Senha temporária expirada para: ${email}`);
+                return res.status(403).json({ error: 'Sua senha temporária expirou. Solicite uma nova senha ao administrador.' });
+            }
             // Se a senha estiver expirada ou o reset for obrigatório
             if (user.mustChangePassword || isPasswordExpired) {
-                console.warn(`[AUTH] Bloqueio de acesso para ${email}: Troca de senha obrigatória.`);
                 const token = AuthService.generateToken({
                     id: user.id,
                     email: user.email,
+                    name: user.name,
                     role: user.role,
-                    clinicId: user.clinicId || undefined
+                    clinicId: user.clinicId || undefined,
+                    mustChangePassword: true
                 });
                 return res.json({
                     user: {
@@ -52,12 +57,18 @@ export class AuthController {
                     requirePasswordChange: true // Flag extra para o frontend facilitar o redirecionamento
                 });
             }
-            console.log(`Login bem-sucedido: ${email} (${user.role})`);
             const token = AuthService.generateToken({
                 id: user.id,
                 email: user.email,
+                name: user.name,
                 role: user.role,
-                clinicId: user.clinicId || undefined
+                clinicId: user.clinicId || undefined,
+                mustChangePassword: false
+            });
+            // Atualiza lastLoginAt
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { lastLoginAt: new Date() }
             });
             res.json({
                 user: {
@@ -80,13 +91,20 @@ export class AuthController {
         try {
             const userId = req.user.id;
             const { currentPassword, newPassword } = req.body;
-            console.log(`[AUTH] Tentativa de atualização de senha para o usuário: ${userId}`);
+            console.log(`[AUTH] Atualização de senha solicitada para usuário: ${userId}`);
+            // SEC-019: Validar força da nova senha
+            if (!PASSWORD_REGEX.test(newPassword)) {
+                return res.status(400).json({
+                    error: 'A senha deve conter no mínimo 8 caracteres, incluindo maiúscula, minúscula, número e caractere especial.'
+                });
+            }
             const user = await prisma.user.findUnique({
                 where: { id: userId },
                 include: {
+                    // SEC-017: Verificar últimas 5 senhas (não 3)
                     passwordHistory: {
                         orderBy: { createdAt: 'desc' },
-                        take: 3
+                        take: 5
                     }
                 }
             });
@@ -108,7 +126,7 @@ export class AuthController {
                 const isReused = await AuthService.comparePasswords(newPassword, historyEntry.hash);
                 if (isReused) {
                     return res.status(400).json({
-                        error: 'Por motivos de segurança, você não pode reutilizar nenhuma das suas últimas 3 senhas.'
+                        error: 'Por motivos de segurança, você não pode reutilizar nenhuma das suas últimas 5 senhas.'
                     });
                 }
             }
@@ -120,6 +138,8 @@ export class AuthController {
                     data: {
                         password: hashedNewPassword,
                         mustChangePassword: false,
+                        isFirstAccess: false,
+                        temporaryPasswordExpiresAt: null,
                         passwordUpdatedAt: new Date()
                     }
                 });
@@ -132,19 +152,40 @@ export class AuthController {
                 });
                 // 3. Manter apenas as 3 últimas entradas no histórico para este usuário
                 const historyCount = await tx.passwordHistory.count({ where: { userId } });
-                if (historyCount > 3) {
+                if (historyCount > 5) {
                     const oldestEntries = await tx.passwordHistory.findMany({
                         where: { userId },
                         orderBy: { createdAt: 'asc' },
-                        take: historyCount - 3
+                        take: historyCount - 5
                     });
                     await tx.passwordHistory.deleteMany({
                         where: { id: { in: oldestEntries.map(e => e.id) } }
                     });
                 }
             });
-            console.log(`[AUTH] Senha do usuário ${userId} atualizada com sucesso.`);
-            res.json({ success: true, message: 'Sua senha foi atualizada com sucesso!' });
+            console.log(`[AUTH] Senha do usuário ${userId} atualizada com sucesso. Gerando novo token...`);
+            // Gerar novo token com as flags de segurança atualizadas
+            const newToken = AuthService.generateToken({
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                clinicId: user.clinicId || undefined,
+                mustChangePassword: false // Agora é falso
+            });
+            res.json({
+                success: true,
+                message: 'Sua senha foi atualizada com sucesso!',
+                token: newToken,
+                user: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    role: user.role,
+                    clinicId: user.clinicId || undefined,
+                    mustChangePassword: false
+                }
+            });
         }
         catch (error) {
             console.error('Error updating password:', error);

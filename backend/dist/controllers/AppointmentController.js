@@ -96,13 +96,15 @@ export class AppointmentController {
                     const totalInvested = pTransactions.reduce((acc, t) => acc + t.amount, 0);
                     const avgTicket = pTransactions.length > 0 ? totalInvested / pTransactions.length : 0;
                     const provisionalRevenue = pProposals.reduce((acc, p) => acc + p.totalValue, 0);
+                    const lastVisit = app.patient.lastVisit;
                     return {
                         ...app,
                         patientStats: {
                             totalInvested,
                             avgTicket,
                             provisionalRevenue,
-                            isRecurring: pAppCount > 1
+                            isRecurring: pAppCount > 1,
+                            lastVisit
                         }
                     };
                 });
@@ -215,8 +217,8 @@ export class AppointmentController {
                     endTime: endTime,
                 }
             });
-            // TRIGGER: Se mudou para EXECUTADO, disparar integrações
-            if (appointment.status === 'EXECUTADO' && oldAppointment?.status !== 'EXECUTADO') {
+            // TRIGGER: Se mudou para ATENDIDO, disparar integrações
+            if (appointment.status === 'ATENDIDO' && oldAppointment?.status !== 'ATENDIDO') {
                 await AppointmentController.handleExecutionTriggers(appointment);
             }
             res.json(appointment);
@@ -250,7 +252,7 @@ export class AppointmentController {
             });
             // 2. Trigger Estoque: Baixa de insumos (se houver procedimento vinculado)
             if (appointment.procedureId) {
-                const procedure = await prisma.procedurePricing.findUnique({
+                const procedure = await prisma.procedure.findUnique({
                     where: { id: appointment.procedureId },
                     include: { supplies: true }
                 });
@@ -267,7 +269,7 @@ export class AppointmentController {
                             // Criar movimento de saída
                             await prisma.stockMovement.create({
                                 data: {
-                                    type: 'SAIDA',
+                                    type: 'OUT',
                                     quantity: supply.quantity,
                                     reason: `Uso em agendamento: ${appointment.id}`,
                                     itemId: inventoryItem.id,
@@ -278,7 +280,7 @@ export class AppointmentController {
                             await prisma.inventoryItem.update({
                                 where: { id: inventoryItem.id },
                                 data: {
-                                    quantity: { decrement: supply.quantity }
+                                    currentStock: { decrement: supply.quantity }
                                 }
                             });
                         }

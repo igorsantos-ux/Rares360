@@ -27,62 +27,10 @@ export class SeedService {
                 console.error('❌ ERRO CRÍTICO na sincronização do banco:', err.message);
                 console.error('Stack:', err.stack);
             });
-            console.log('Verificando status do banco de dados...');
-            const adminEmail = 'admin@heathfinance.com.br';
-            const adminPassword = 'admin123';
-            const hashedPassword = await AuthService.hashPassword(adminPassword);
-            // Verifica se o admin mestre já existe
-            const existingAdmin = await prisma.user.findUnique({
-                where: { email: adminEmail }
-            });
-            if (!existingAdmin) {
-                console.log('Admin global não encontrado. Criando...');
-                await prisma.user.create({
-                    data: {
-                        name: 'Igor Admin',
-                        email: adminEmail,
-                        password: hashedPassword,
-                        role: 'ADMIN_GLOBAL'
-                    }
-                });
-            }
-            else {
-                console.log('Atualizando Admin global para garantir senha padrão...');
-                await prisma.user.update({
-                    where: { email: adminEmail },
-                    data: { password: hashedPassword }
-                });
-            }
-            // Verifica Roberta Alamino
-            const robertaEmail = 'roberta@alamino.com';
-            const existingRoberta = await prisma.user.findUnique({
-                where: { email: robertaEmail }
-            });
-            if (!existingRoberta) {
-                console.log('Usuário Roberta não encontrado. Criando...');
-                const clinic = await prisma.clinic.findFirst();
-                await prisma.user.create({
-                    data: {
-                        name: 'Roberta Alamino',
-                        email: robertaEmail,
-                        password: hashedPassword,
-                        role: 'CLINIC_ADMIN',
-                        clinicId: clinic?.id
-                    }
-                });
-            }
-            else {
-                console.log('Sincronizando usuário Roberta (Clínica e Senha)...');
-                const clinic = await prisma.clinic.findFirst();
-                await prisma.user.update({
-                    where: { email: robertaEmail },
-                    data: {
-                        password: hashedPassword,
-                        clinicId: clinic?.id
-                    }
-                });
-            }
-            console.log('✅ Sincronização de credenciais de teste concluída.');
+            console.log('Verificando integridade administrativa...');
+            // Removido o seed automático forçado de admin@heathfinance.com.br e roberta@alamino.com
+            // para evitar que usuários excluídos reapareçam no boot.
+            console.log('✅ Verificação de integridade concluída.');
             // Se for a primeira vez (sem outras clínicas), roda o seed completo
             // DESABILITADO PARA PRODUÇÃO: Não queremos dados de teste automáticos
             /*

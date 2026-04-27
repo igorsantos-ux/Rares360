@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { emailCircuitBreaker } from '../lib/circuitBreaker.js';
 export class MailService {
     static transporter = null;
     /**
@@ -20,14 +21,33 @@ export class MailService {
                     ciphers: 'SSLv3',
                     rejectUnauthorized: false
                 },
-                debug: true,
-                logger: true
+                debug: false,
+                logger: false
             });
         }
         return this.transporter;
     }
     /**
+     * Retry com backoff exponencial (1s, 2s, 4s)
+     */
+    static async withRetry(fn, maxRetries = 3) {
+        let lastError = null;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                return await fn();
+            }
+            catch (err) {
+                lastError = err;
+                const delay = Math.pow(2, attempt) * 1000;
+                console.warn(`[MailService] Tentativa ${attempt + 1}/${maxRetries} falhou. Retry em ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+        throw lastError;
+    }
+    /**
      * Envia o e-mail de onboarding para novos usuários
+     * Protegido com Circuit Breaker + Retry com backoff exponencial
      */
     static async sendOnboardingEmail(to, name, tempPassword) {
         const subject = '🚀 Bem-vindo à RARES – Sua Jornada Estratégica Começa Agora';
@@ -70,7 +90,8 @@ export class MailService {
             </body>
             </html>
         `;
-        try {
+        // ═══ PERF-006: Circuit Breaker + Retry para Email ═══
+        return emailCircuitBreaker.execute(() => this.withRetry(async () => {
             const transporter = this.getTransporter();
             const info = await transporter.sendMail({
                 from: '"TI RARES" <ti.rares@rares360.com.br>',
@@ -78,12 +99,11 @@ export class MailService {
                 subject,
                 html,
             });
-            console.log('[MailService] Sucesso!', info.messageId);
+            console.log('[MailService] ✅ E-mail enviado:', info.messageId);
             return info;
-        }
-        catch (error) {
-            console.error('[MailService Error]:', error);
-            throw error;
-        }
+        }), () => {
+            console.warn('[MailService] ⚠️ Circuit Breaker OPEN — e-mail enfileirado para retry posterior');
+            return { messageId: 'queued', status: 'circuit_open' };
+        });
     }
 }

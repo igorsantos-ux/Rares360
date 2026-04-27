@@ -42,7 +42,7 @@ export class ProcedureExecutionService {
                             }
                             await InventoryService.registerMovement({
                                 itemId: item.id,
-                                type: 'SAIDA',
+                                type: 'OUT',
                                 quantity: supply.quantity,
                                 reason: `Execução: ${execution.procedureName}`,
                                 clinicId

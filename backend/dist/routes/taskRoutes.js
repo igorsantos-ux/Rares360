@@ -5,5 +5,7 @@ const router = Router();
 router.use(authMiddleware, tenantMiddleware);
 router.get('/daily', TaskController.getDailyTasks);
 router.get('/summary', TaskController.getSummary);
+router.get('/crm', TaskController.getCRMTasks);
 router.patch('/:id/complete', TaskController.completeTask);
+router.patch('/:id/status', TaskController.updateTaskStatus);
 export default router;

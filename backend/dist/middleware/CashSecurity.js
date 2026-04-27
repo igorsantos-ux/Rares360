@@ -1,5 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-const prisma = new PrismaClient();
+// SEC-020: Usar instância Prisma com tenant isolation e audit
+import prisma from '../lib/prisma.js';
 export class CashSecurity {
     static async validateClosure(clinicId, date) {
         const targetDate = new Date(date);

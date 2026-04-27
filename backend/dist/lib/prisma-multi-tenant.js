@@ -38,7 +38,7 @@ export const extendPrisma = (prisma) => {
                     if (!TENANT_MODELS.includes(model)) {
                         return query(args);
                     }
-                    // Aplicar filtros de isolamento
+                    // === LEITURA: Injetar clinicId no where ===
                     if (['findMany', 'findFirst', 'count', 'aggregate', 'groupBy'].includes(operation)) {
                         args.where = { ...args.where, clinicId };
                         return query(args);
@@ -49,6 +49,7 @@ export const extendPrisma = (prisma) => {
                         args.where = { ...args.where, clinicId };
                         return prisma[model].findFirst(args);
                     }
+                    // === CRIAÇÃO: Injetar clinicId nos dados ===
                     if (['create', 'createMany'].includes(operation)) {
                         if (operation === 'create') {
                             args.data = { ...args.data, clinicId };
@@ -58,17 +59,46 @@ export const extendPrisma = (prisma) => {
                                 args.data = args.data.map((item) => ({ ...item, clinicId }));
                             }
                         }
+                        return query(args);
                     }
-                    if (['update', 'updateMany', 'upsert', 'delete', 'deleteMany'].includes(operation)) {
-                        // Para operações de escrita que usam o 'where', injetamos o clinicId.
-                        // Nota: Se for 'update' ou 'delete' via ID, o Prisma pode reclamar se adicionarmos o clinicId
-                        // na cláusula 'where' se este não fizer parte de um índice único composto.
-                        // Como usamos UUIDs, o risco de colisão/acesso indevido é baixíssimo, 
-                        // mas para garantir segurança, injetamos apenas se não for um 'id' simples ou se for 'Many'.
-                        const isSingleIdOperation = ['update', 'delete', 'upsert'].includes(operation) && args.where?.id;
-                        if (!isSingleIdOperation || operation.endsWith('Many')) {
-                            args.where = { ...args.where, clinicId };
+                    // === SEC-004: ESCRITA (update/delete/upsert) — SEMPRE injetar clinicId ===
+                    // Para operações de update/delete por ID único, o Prisma exige apenas campos
+                    // @unique no where. Convertemos para updateMany/deleteMany que aceita clinicId,
+                    // ou usamos findFirst + update para manter o isolamento de tenant.
+                    if (operation === 'update') {
+                        // Converter para findFirst + verificação, para garantir isolamento
+                        const record = await prisma[model].findFirst({
+                            where: { ...args.where, clinicId },
+                            select: { id: true }
+                        });
+                        if (!record) {
+                            throw new Error(`Registro não encontrado ou acesso negado (tenant isolation)`);
                         }
+                        return query(args);
+                    }
+                    if (operation === 'updateMany') {
+                        args.where = { ...args.where, clinicId };
+                        return query(args);
+                    }
+                    if (operation === 'delete') {
+                        // Verificar ownership antes de deletar
+                        const record = await prisma[model].findFirst({
+                            where: { ...args.where, clinicId },
+                            select: { id: true }
+                        });
+                        if (!record) {
+                            throw new Error(`Registro não encontrado ou acesso negado (tenant isolation)`);
+                        }
+                        return query(args);
+                    }
+                    if (operation === 'deleteMany') {
+                        args.where = { ...args.where, clinicId };
+                        return query(args);
+                    }
+                    if (operation === 'upsert') {
+                        args.where = { ...args.where, clinicId };
+                        args.create = { ...args.create, clinicId };
+                        return query(args);
                     }
                     return query(args);
                 },

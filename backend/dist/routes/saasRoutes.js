@@ -9,6 +9,10 @@ router.post('/clinics/upload-logo', upload.single('file'), SaaSController.upload
 router.post('/clinics', SaaSController.createClinic);
 router.patch('/clinics/:id', SaaSController.updateClinic);
 router.delete('/clinics/:id', SaaSController.deleteClinic);
+router.post('/impersonate/:clinicId', SaaSController.impersonateClinic);
+router.post('/admin/clinic-access', SaaSController.adminClinicAccess);
+router.post('/admin/clinic-exit', SaaSController.adminClinicExit);
+router.get('/audit-logs', SaaSController.getAuditLogs);
 router.get('/users', SaaSController.listUsers);
 router.post('/users', SaaSController.createUser);
 router.patch('/users/:id', SaaSController.updateUser);

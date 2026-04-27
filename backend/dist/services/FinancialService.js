@@ -1,4 +1,5 @@
 import prisma from '../lib/prisma.js';
+import { TaskService } from './TaskService.js';
 export class FinancialService {
     static async getSummary(clinicId, startDate, endDate) {
         const where = { clinicId };
@@ -211,9 +212,9 @@ export class FinancialService {
                     date: new Date()
                 }
             });
-            // Se for faturamento de procedimento, criamos a execução pendente
+            // Se for faturamento de procedimento, criamos a execução pendente e gatilho de CRM
             if (data.type === 'INCOME' && data.category === 'Procedimentos' && data.patientId) {
-                const pricing = await tx.procedurePricing.findFirst({
+                const procedure = await tx.procedure.findFirst({
                     where: {
                         name: { equals: data.procedureName || data.description, mode: 'insensitive' },
                         clinicId: data.clinicId
@@ -223,12 +224,18 @@ export class FinancialService {
                     data: {
                         clinicId: data.clinicId,
                         patientId: data.patientId,
-                        procedureId: pricing?.id || null,
+                        procedureId: procedure?.id || null,
                         procedureName: data.procedureName || data.description,
                         transactionId: transaction.id,
                         status: 'PENDENTE',
                         billedAt: new Date()
                     }
+                });
+                // GATILHO CRM: Follow-up automático
+                await TaskService.triggerFollowUp(data.clinicId, {
+                    patientId: data.patientId,
+                    procedureName: data.procedureName || data.description,
+                    transactionDate: new Date()
                 });
             }
             return transaction;

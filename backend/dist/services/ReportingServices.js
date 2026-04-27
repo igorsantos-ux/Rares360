@@ -194,13 +194,22 @@ export class BillingService {
         currentTransactions.forEach(t => {
             // Procedimentos
             const proc = t.procedureName || 'Sem Procedimento';
-            procMap[proc] = (procMap[proc] || 0) + t.amount;
+            if (!procMap[proc])
+                procMap[proc] = { total: 0, count: 0 };
+            procMap[proc].total += t.amount;
+            procMap[proc].count += 1;
             // Médicos
-            const doc = t.doctor?.name || 'Clínica';
-            doctorMap[doc] = (doctorMap[doc] || 0) + t.amount;
+            const doc = t.doctorName || t.doctor?.name || 'Clínica';
+            if (!doctorMap[doc])
+                doctorMap[doc] = { total: 0, count: 0 };
+            doctorMap[doc].total += t.amount;
+            doctorMap[doc].count += 1;
             // Categorias (usaremos como Vendedores/Sellers proxy pois a regra de Vendedor não está clara no BD)
             const cat = t.category || 'Outros';
-            categoryMap[cat] = (categoryMap[cat] || 0) + t.amount;
+            if (!categoryMap[cat])
+                categoryMap[cat] = { total: 0, count: 0 };
+            categoryMap[cat].total += t.amount;
+            categoryMap[cat].count += 1;
             // Pacientes (VIPs)
             if (t.patient) {
                 const pId = t.patient.id;
@@ -218,9 +227,13 @@ export class BillingService {
             }
         });
         const sortRank = (map) => Object.entries(map)
-            .map(([name, value]) => ({ name, value }))
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 10); // Top 10
+            .map(([name, data]) => ({
+            name,
+            value: data.total,
+            count: data.count,
+            average: data.count > 0 ? data.total / data.count : 0
+        }))
+            .sort((a, b) => b.value - a.value);
         // Processando Ranking VIP e verificando Novo/Recorrente
         const patientIds = Object.keys(patientMap);
         let previousPurchasers = new Set();
@@ -242,6 +255,7 @@ export class BillingService {
             name: p.name,
             value: p.value,
             count: p.count,
+            average: p.count > 0 ? p.value / p.count : 0,
             id: p.id,
             avatarUrl: p.avatarUrl,
             isNew: !previousPurchasers.has(p.id)
@@ -252,12 +266,14 @@ export class BillingService {
         const originMap = {};
         const paymentMap = {};
         currentTransactions.forEach(t => {
-            const origin = t.patient?.origin || 'Outros';
-            originMap[origin] = (originMap[origin] || 0) + 1; // Usando Count para Origem (quantos pacientes vieram)
-            const pay = t.paymentMethod || 'Não Informado';
-            paymentMap[pay] = (paymentMap[pay] || 0) + t.amount; // Usando Faturamento para Formas de Recebimento
+            const origin = (t.patient?.origin || 'Outros').trim().toUpperCase();
+            originMap[origin] = (originMap[origin] || 0) + 1;
+            const pay = (t.paymentMethod || 'Não Informado').trim().toUpperCase();
+            paymentMap[pay] = (paymentMap[pay] || 0) + t.amount;
         });
-        const buildDist = (map) => Object.entries(map).map(([name, value]) => ({ name, value }));
+        const buildDist = (map) => Object.entries(map)
+            .map(([name, value]) => ({ name, value }))
+            .sort((a, b) => b.value - a.value);
         return {
             kpis: {
                 totalBilling,
@@ -278,93 +294,82 @@ export class BillingService {
             }
         };
     }
-}
-export class GoalService {
-    static async getGoals(clinicId) {
+    static async getDrillDown({ clinicId, type, value, startDate, endDate }) {
         const now = new Date();
-        const month = now.getMonth() + 1;
-        const year = now.getFullYear();
-        const goals = await prisma.financialGoal.findMany({
-            where: { clinicId }
-        });
-        // Para metas de faturamento do mês atual, calculamos o progresso real
-        const currentMonthFaturamento = await prisma.transaction.aggregate({
-            where: {
-                clinicId,
-                type: 'INCOME',
-                status: 'PAID',
-                date: {
-                    gte: new Date(year, month - 1, 1),
-                    lte: new Date(year, month, 0, 23, 59, 59)
+        const start = startDate || new Date(now.getFullYear(), now.getMonth(), 1);
+        const end = endDate || now;
+        // Build dynamic where clause based on drill-down type
+        const baseWhere = {
+            clinicId,
+            type: 'INCOME',
+            status: 'PAID',
+            date: { gte: start, lte: end }
+        };
+        switch (type.toUpperCase()) {
+            case 'PROCEDURE':
+                baseWhere.procedureName = value;
+                break;
+            case 'DOCTOR':
+                baseWhere.OR = [
+                    { doctorName: value },
+                    { doctor: { name: value } }
+                ];
+                break;
+            case 'CATEGORY':
+                baseWhere.category = value;
+                break;
+            case 'ORIGIN':
+                baseWhere.patient = { origin: value };
+                break;
+            case 'PAYMENT_METHOD':
+                baseWhere.paymentMethod = value;
+                break;
+            default:
+                baseWhere.description = { contains: value, mode: 'insensitive' };
+        }
+        const transactions = await prisma.transaction.findMany({
+            where: baseWhere,
+            include: {
+                patient: {
+                    select: {
+                        id: true,
+                        fullName: true,
+                        phone: true,
+                        photoUrl: true
+                    }
+                },
+                doctor: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
                 }
             },
-            _sum: { amount: true }
+            orderBy: { date: 'desc' },
+            take: 50
         });
-        const actualFaturamento = currentMonthFaturamento._sum.amount || 0;
-        const remainingBusinessDays = this.getRemainingBusinessDays();
-        return goals.map(goal => {
-            const isCurrentMonth = goal.month === month && goal.year === year;
-            const isFaturamento = goal.type.toUpperCase() === 'FATURAMENTO' || goal.type.toUpperCase() === 'FINANCE';
-            return {
-                ...goal,
-                current: (isCurrentMonth && isFaturamento) ? actualFaturamento : goal.achieved,
-                remainingBusinessDays: isCurrentMonth ? remainingBusinessDays : 0,
-                status: (goal.achieved >= goal.target) ? 'CONCLUIDA' : 'EM_ANDAMENTO'
-            };
-        });
-    }
-    static getRemainingBusinessDays() {
-        const today = new Date();
-        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-        let businessDays = 0;
-        for (let day = today.getDate() + 1; day <= lastDayOfMonth; day++) {
-            const date = new Date(today.getFullYear(), today.getMonth(), day);
-            const dayOfWeek = date.getDay();
-            if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Sunday, 6 = Saturday
-                businessDays++;
-            }
-        }
-        return Math.max(businessDays, 0);
-    }
-    static async calculateSmartGoal(clinicId, targetProfit) {
-        const now = new Date();
-        const month = now.getMonth() + 1;
-        const year = now.getFullYear();
-        const transactions = await prisma.transaction.findMany({ where: { clinicId } });
-        const revenue = transactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0) || 0;
-        const expenses = transactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0) || 0;
-        const currentProfit = (revenue || 0) - (expenses || 0);
-        const goal = await prisma.financialGoal.upsert({
-            where: { id: `goal-${clinicId}-${month}-${year}-PROFIT` },
-            update: { target: targetProfit, achieved: currentProfit },
-            create: {
-                id: `goal-${clinicId}-${month}-${year}-PROFIT`,
-                month,
-                year,
-                target: targetProfit,
-                achieved: currentProfit,
-                type: 'PROFIT',
-                clinicId
-            }
-        });
-        const summary = await prisma.transaction.aggregate({
-            _sum: { amount: true },
-            where: { clinicId, type: 'INCOME' }
-        });
-        const totalTransactions = await prisma.transaction.count({
-            where: { clinicId, type: 'INCOME' }
-        });
-        const ticketMedio = totalTransactions > 0 ? (summary._sum.amount || 0) / totalTransactions : 0;
-        const estimatedRevenueNeeded = targetProfit / 0.3;
-        const proceduresNeeded = ticketMedio > 0 ? Math.ceil(estimatedRevenueNeeded / ticketMedio) : 0;
+        const total = transactions.reduce((acc, t) => acc + t.amount, 0);
+        const count = transactions.length;
+        const averageTicket = count > 0 ? total / count : 0;
         return {
-            goal,
-            projections: {
-                estimatedRevenueNeeded,
-                proceduresNeeded,
-                ticketMedio,
-                message: `Para lucrar R$ ${targetProfit.toLocaleString('pt-BR')}, você precisa de aproximadamente ${proceduresNeeded} procedimentos.`
-            }
+            summary: {
+                total,
+                count,
+                averageTicket
+            },
+            items: transactions.map(t => ({
+                id: t.id,
+                date: t.date,
+                description: t.description,
+                procedureName: t.procedureName,
+                doctorName: t.doctorName || t.doctor?.name || 'Clínica',
+                patientName: t.patient?.fullName || 'N/A',
+                patientId: t.patient?.id || null,
+                patientPhone: t.patient?.phone || null,
+                paymentMethod: t.paymentMethod || 'Não Informado',
+                amount: t.amount,
+                status: t.status
+            }))
         };
     }
 }

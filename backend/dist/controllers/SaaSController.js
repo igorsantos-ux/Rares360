@@ -1,4 +1,4 @@
-import { basePrisma } from '../lib/prisma.js';
+import prisma, { basePrisma } from '../lib/prisma.js';
 import { AuthService } from '../services/AuthService.js';
 import { BillingService } from '../services/BillingService.js';
 import { MailService } from '../services/MailService.js';
@@ -51,7 +51,7 @@ export class SaaSController {
     }
     static async createClinic(req, res) {
         try {
-            const { name, razaoSocial, cnpj, inscricaoEstadual, inscricaoMunicipal, cnae, regimeTributario, dataAbertura, cep, logradouro, numero, complemento, bairro, cidade, estado, telefone, whatsapp, email, site, codigoServico, aliquotaISS, certificadoDigitalUrl, banco, agencia, conta, tipoConta, chavePix, logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel, registroVigilancia, cnes, pricePerUser } = req.body;
+            const { name, razaoSocial, cnpj, inscricaoEstadual, inscricaoMunicipal, cnae, regimeTributario, dataAbertura, cep, logradouro, numero, complemento, bairro, cidade, estado, telefone, whatsapp, email, site, codigoServico, aliquotaISS, certificadoDigitalUrl, banco, agencia, conta, tipoConta, chavePix, logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel, registroVigilancia, cnes, pricePerUser, plan } = req.body;
             const parseDate = (val) => {
                 if (!val || typeof val !== 'string' || val.trim() === '')
                     return null;
@@ -101,6 +101,7 @@ export class SaaSController {
                     registroVigilancia,
                     cnes,
                     pricePerUser: parseFloatSafe(pricePerUser) || 50.0,
+                    plan: plan || 'Essencial',
                     implementationFee: parseFloatSafe(req.body.implementationFee) || 0,
                     monthlyFee: parseFloatSafe(req.body.monthlyFee) || 0,
                     proposalUrl: req.body.proposalUrl || null
@@ -148,7 +149,7 @@ export class SaaSController {
     static async updateClinic(req, res) {
         try {
             const { id } = req.params;
-            const { name, razaoSocial, cnpj, inscricaoEstadual, inscricaoMunicipal, cnae, regimeTributario, dataAbertura, cep, logradouro, numero, complemento, bairro, cidade, estado, telefone, whatsapp, email, site, codigoServico, aliquotaISS, certificadoDigitalUrl, banco, agencia, conta, tipoConta, chavePix, logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel, registroVigilancia, cnes, pricePerUser, isActive } = req.body;
+            const { name, razaoSocial, cnpj, inscricaoEstadual, inscricaoMunicipal, cnae, regimeTributario, dataAbertura, cep, logradouro, numero, complemento, bairro, cidade, estado, telefone, whatsapp, email, site, codigoServico, aliquotaISS, certificadoDigitalUrl, banco, agencia, conta, tipoConta, chavePix, logo, corMarca, responsavelAdmin, responsavelTecnico, crmResponsavel, registroVigilancia, cnes, pricePerUser, isActive, plan } = req.body;
             const parseDate = (val) => {
                 if (val === undefined)
                     return undefined;
@@ -203,6 +204,7 @@ export class SaaSController {
                     registroVigilancia,
                     cnes,
                     pricePerUser: parseFloatSafe(pricePerUser),
+                    plan,
                     implementationFee: parseFloatSafe(req.body.implementationFee),
                     monthlyFee: parseFloatSafe(req.body.monthlyFee),
                     proposalUrl: req.body.proposalUrl,
@@ -231,11 +233,13 @@ export class SaaSController {
                 basePrisma.document.deleteMany({ where: { clinicId: id } }),
                 basePrisma.clinicDocument.deleteMany({ where: { clinicId: id } }),
                 basePrisma.pricingSimulation.deleteMany({ where: { clinicId: id } }),
-                basePrisma.procedurePricing.deleteMany({ where: { clinicId: id } }),
                 basePrisma.procedureExecution.deleteMany({ where: { clinicId: id } }),
+                basePrisma.procedure.deleteMany({ where: { clinicId: id } }),
                 basePrisma.task.deleteMany({ where: { clinicId: id } }),
                 basePrisma.doctor.deleteMany({ where: { clinicId: id } }),
                 basePrisma.patient.deleteMany({ where: { clinicId: id } }),
+                basePrisma.importBatch.deleteMany({ where: { clinicId: id } }),
+                basePrisma.appointment.deleteMany({ where: { clinicId: id } }),
                 basePrisma.user.deleteMany({ where: { clinicId: id } }),
                 basePrisma.clinic.delete({ where: { id } })
             ]);
@@ -249,8 +253,20 @@ export class SaaSController {
     // Gestão de Usuários
     static async listUsers(req, res) {
         try {
+            // SEC-010: NUNCA retornar password hash ou dados sensíveis
             const users = await basePrisma.user.findMany({
-                include: { clinic: { select: { name: true } } }
+                select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                    role: true,
+                    isActive: true,
+                    clinicId: true,
+                    lastLoginAt: true,
+                    createdAt: true,
+                    mustChangePassword: true,
+                    clinic: { select: { name: true } }
+                }
             });
             res.json(users);
         }
@@ -266,9 +282,23 @@ export class SaaSController {
             if (existingUser) {
                 return res.status(400).json({ error: 'Email já cadastrado' });
             }
-            // Gerar senha temporária caso não seja fornecida
+            // SEC-021: Gerar senha temporária com crypto (criptograficamente seguro)
             if (!password) {
-                password = crypto.randomBytes(4).toString('hex'); // ex: 8f2g3h1j
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+';
+                const bytes = crypto.randomBytes(12);
+                password = Array.from(bytes).map(b => chars[b % chars.length]).join('');
+                // Garantir pelo menos 1 de cada tipo
+                const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                const lower = 'abcdefghijklmnopqrstuvwxyz';
+                const numbers = '0123456789';
+                const symbols = '!@#$%^&*()_+';
+                const rb = crypto.randomBytes(4);
+                password =
+                    upper[rb[0] % upper.length] +
+                        lower[rb[1] % lower.length] +
+                        numbers[rb[2] % numbers.length] +
+                        symbols[rb[3] % symbols.length] +
+                        password.substring(4);
             }
             const hashedPassword = await AuthService.hashPassword(password);
             const user = await basePrisma.user.create({
@@ -277,8 +307,11 @@ export class SaaSController {
                     email,
                     password: hashedPassword,
                     role,
-                    clinicId,
+                    clinicId: clinicId === '' ? null : clinicId,
                     mustChangePassword: true, // Sempre obrigatório mudar no primeiro acesso
+                    isFirstAccess: true,
+                    temporaryPasswordExpiresAt: new Date(Date.now() + 72 * 60 * 60 * 1000), // expira em 72h
+                    createdByAdminId: req.user?.id,
                     passwordUpdatedAt: new Date()
                 }
             });
@@ -296,13 +329,14 @@ export class SaaSController {
             catch (mailError) {
                 console.error('[SaaS] Alerta: Usuário criado, mas falha ao enviar e-mail:', mailError);
             }
+            // SEC-016: Não retornar senha na resposta da API, apenas via e-mail
             res.status(201).json({
                 id: user.id,
                 name: user.name,
                 email: user.email,
                 role: user.role,
                 clinicId: user.clinicId,
-                tempPassword: password // Retorna para o Admin também
+                message: 'Usuário criado. Senha temporária enviada por e-mail.'
             });
         }
         catch (error) {
@@ -369,6 +403,66 @@ export class SaaSController {
             res.status(500).json({
                 error: 'Erro interno ao excluir usuário. Verifique se existem registros vinculados ou tente novamente.'
             });
+        }
+    }
+    static async impersonateClinic(req, res) {
+        try {
+            const adminId = req.user.id;
+            let adminName = req.user.name;
+            // Fallback: Se o token for antigo e não transportar o 'name', buscamos no banco.
+            if (!adminName) {
+                const adminUser = await basePrisma.user.findUnique({ where: { id: adminId } });
+                adminName = adminUser?.name || 'Administrador Global';
+            }
+            const { clinicId } = req.params;
+            // Encontrar o usuário master da clínica (OWNER ou ADMIN) ou pegar o primeiro CLINIC_ADMIN
+            const targetUser = await basePrisma.user.findFirst({
+                where: {
+                    clinicId,
+                    role: { in: ['OWNER', 'ADMIN', 'CLINIC_ADMIN'] },
+                    isActive: true
+                },
+                orderBy: { createdAt: 'asc' }
+            });
+            if (!targetUser) {
+                return res.status(404).json({ error: 'Nenhum usuário administrador ativo encontrado nesta clínica para impersonar.' });
+            }
+            const targetClinic = await basePrisma.clinic.findUnique({ where: { id: clinicId } });
+            // SEC-013: Token com marcador de impersonação para auditoria
+            const token = AuthService.generateToken({
+                id: targetUser.id,
+                email: targetUser.email,
+                name: targetUser.name,
+                role: targetUser.role,
+                clinicId: targetUser.clinicId || undefined,
+                impersonatedBy: adminId,
+                isImpersonation: true,
+            });
+            // Registrar log de auditoria
+            await basePrisma.adminAuditLog.create({
+                data: {
+                    adminId,
+                    adminName,
+                    targetClinicId: clinicId,
+                    targetClinicName: targetClinic?.name || 'Clínica Desconhecida',
+                    action: 'CONTEXT_SWITCH'
+                }
+            });
+            res.json({
+                user: {
+                    id: targetUser.id,
+                    name: targetUser.name,
+                    email: targetUser.email,
+                    role: targetUser.role,
+                    hasSeenOnboarding: targetUser.hasSeenOnboarding,
+                    clinic: targetClinic
+                },
+                token
+            });
+        }
+        catch (error) {
+            console.error('Error impersonating clinic:', error);
+            res.status(500).json({ error: 'Erro ao tentar acessar a conta da clínica.' });
         }
     }
     static async getBillingSummary(req, res) {
@@ -611,4 +705,135 @@ export class SaaSController {
             res.status(500).json({ error: error.message });
         }
     }
+    // Acesso Administrativo (Admin Access)
+    static async adminClinicAccess(req, res) {
+        try {
+            const { clinicId } = req.body;
+            const user = req.user;
+            if (user.role !== 'ADMIN_GLOBAL') {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+            const clinic = await basePrisma.clinic.findUnique({
+                where: { id: clinicId }
+            });
+            if (!clinic) {
+                return res.status(404).json({ error: 'Clínica não encontrada' });
+            }
+            if (!clinic.isActive) {
+                return res.status(403).json({ error: 'Acesso negado: Clínica inativa ou suspensa' });
+            }
+            const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+            // Logs in AuditLog
+            await basePrisma.auditLog.create({
+                data: {
+                    action: 'ADMIN_CLINIC_ACCESS',
+                    entity: 'Clinic',
+                    entityId: clinicId,
+                    clinicId: clinicId,
+                    userId: user.id,
+                    ipAddress: ipAddress,
+                    newValues: {
+                        adminEmail: user.email,
+                        userAgent: req.headers['user-agent']
+                    }
+                }
+            });
+            // Gerar novo token com adminAccessContext
+            const adminAccessContext = {
+                clinicId: clinic.id,
+                clinicName: clinic.name,
+                accessStartedAt: new Date().toISOString(),
+                adminUserId: user.id,
+                adminName: user.name,
+                adminEmail: user.email
+            };
+            const token = AuthService.generateToken({
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                clinicId: user.clinicId,
+                mustChangePassword: user.mustChangePassword,
+                adminAccessContext
+            });
+            res.json({
+                token,
+                clinic: { id: clinic.id, name: clinic.name, plan: clinic.plan, status: clinic.isActive },
+                redirectTo: '/dashboard'
+            });
+        }
+        catch (error) {
+            console.error('[ADMIN_ACCESS_ERROR]', error);
+            res.status(500).json({ error: 'Erro ao iniciar acesso administrativo' });
+        }
+    }
+    static async adminClinicExit(req, res) {
+        try {
+            const user = req.user;
+            if (!user.adminAccessContext) {
+                return res.status(400).json({ error: 'Sessão administrativa não encontrada no token' });
+            }
+            const { clinicId, accessStartedAt } = user.adminAccessContext;
+            const sessionDurationMinutes = Math.round((new Date().getTime() - new Date(accessStartedAt).getTime()) / 60000);
+            // Registrar saída
+            await basePrisma.auditLog.create({
+                data: {
+                    action: 'ADMIN_CLINIC_EXIT',
+                    entity: 'Clinic',
+                    entityId: clinicId,
+                    clinicId: clinicId,
+                    userId: user.id,
+                    ipAddress: req.ip || req.connection?.remoteAddress || 'unknown',
+                    newValues: {
+                        sessionDurationMinutes
+                    }
+                }
+            });
+            // Reemitir token original do admin
+            const token = AuthService.generateToken({
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+                clinicId: user.clinicId,
+                mustChangePassword: user.mustChangePassword
+            });
+            res.json({ redirectTo: '/saas-dashboard', token });
+        }
+        catch (error) {
+            console.error('[ADMIN_EXIT_ERROR]', error);
+            res.status(500).json({ error: 'Erro ao encerrar acesso administrativo' });
+        }
+    }
+    static async getAuditLogs(req, res) {
+        try {
+            if (req.user?.role !== 'ADMIN_GLOBAL') {
+                return res.status(403).json({ error: 'Acesso negado' });
+            }
+            const logs = await prisma.auditLog.findMany({
+                orderBy: { timestamp: 'desc' },
+                take: 100, // limite de exibição
+            });
+            // Buscando nomes para enriquecer (visto que a relação não é estrita)
+            const clinicIds = [...new Set(logs.map(l => l.clinicId))];
+            const userIds = [...new Set(logs.map(l => l.userId).filter(Boolean))];
+            const [clinics, users] = await Promise.all([
+                prisma.clinic.findMany({ where: { id: { in: clinicIds } }, select: { id: true, name: true } }),
+                prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true, email: true, role: true } })
+            ]);
+            const clinicMap = new Map(clinics.map(c => [c.id, c.name]));
+            const userMap = new Map(users.map(u => [u.id, u]));
+            const enrichedLogs = logs.map(log => ({
+                ...log,
+                clinicName: clinicMap.get(log.clinicId) || 'Desconhecida',
+                user: log.userId ? userMap.get(log.userId) : null
+            }));
+            res.status(200).json(enrichedLogs);
+        }
+        catch (error) {
+            console.error('Error fetching audit logs:', error);
+            res.status(500).json({ error: 'Erro interno ao buscar logs de auditoria' });
+        }
+    }
 }
+export default new SaaSController();

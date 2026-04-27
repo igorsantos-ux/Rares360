@@ -1,6 +1,102 @@
 import prisma from '../lib/prisma.js';
 import * as xlsx from 'xlsx';
+import { TaskService } from '../services/TaskService.js';
+import { InventoryService } from '../services/CoreServices.js';
 export class ImportController {
+    static async bulkImportPatients(req, res) {
+        try {
+            const clinicId = req.user?.clinicId;
+            if (!clinicId) {
+                return res.status(401).json({ message: 'Clínica não identificada' });
+            }
+            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const data = xlsx.utils.sheet_to_json(worksheet);
+            if (data.length === 0) {
+                return res.status(400).json({ message: 'Planilha vazia' });
+            }
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'PACIENTES',
+                    fileName: req.file.originalname,
+                    recordCount: 0
+                }
+            });
+            let importCount = 0;
+            for (const row of data) {
+                const cleanRow = {};
+                for (const key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+                const name = cleanRow['NOME'] || cleanRow['NOME COMPLETO'] || cleanRow['PACIENTE'] || cleanRow['NOME DO PACIENTE'];
+                if (!name)
+                    continue;
+                const email = cleanRow['E-MAIL'] || cleanRow['EMAIL'] || cleanRow['EMAIL PRINCIPAL'];
+                const phone = String(cleanRow['CELULAR'] || cleanRow['TELEFONE'] || cleanRow['TELEFONE CELULAR'] || cleanRow['FONE'] || '');
+                const cpf = cleanRow['CPF'] || cleanRow['DOCUMENTO'];
+                const birthDateRaw = cleanRow['DATA DE NASCIMENTO'] || cleanRow['NASCIMENTO'] || cleanRow['DATA NASCIMENTO'];
+                let birthDate = null;
+                if (birthDateRaw) {
+                    if (typeof birthDateRaw === 'number') {
+                        birthDate = new Date(Math.round((birthDateRaw - 25569) * 86400 * 1000));
+                    }
+                    else {
+                        const parsed = new Date(birthDateRaw);
+                        if (!isNaN(parsed.getTime()))
+                            birthDate = parsed;
+                    }
+                }
+                // Busca manual para evitar erro de índice composto inexistente
+                const existingPatient = await prisma.patient.findFirst({
+                    where: {
+                        clinicId,
+                        OR: [
+                            cpf ? { cpf: String(cpf).replace(/\D/g, '') } : null,
+                            email ? { email: email } : null
+                        ].filter(Boolean)
+                    }
+                });
+                const patientData = {
+                    fullName: name,
+                    phone,
+                    birthDate,
+                    cpf: cpf ? String(cpf).replace(/\D/g, '') : undefined,
+                    rg: cleanRow['RG'] ? String(cleanRow['RG']) : undefined,
+                    profession: cleanRow['PROFISSÃO'] || cleanRow['PROFISSÃO '],
+                    healthInsurance: cleanRow['CONVÊNIO'] || cleanRow['PLANO DE SAÚDE'],
+                    leadSource: cleanRow['ORIGEM'] || cleanRow['INDICAÇÃO'],
+                    clinicId
+                };
+                if (existingPatient) {
+                    await prisma.patient.update({
+                        where: { id: existingPatient.id },
+                        data: patientData
+                    });
+                }
+                else {
+                    await prisma.patient.create({
+                        data: {
+                            ...patientData,
+                            email: email || null,
+                            importBatchId: batch.id
+                        }
+                    });
+                }
+                importCount++;
+            }
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: importCount }
+            });
+            return res.json({ message: `${importCount} pacientes processados com sucesso!`, count: importCount });
+        }
+        catch (error) {
+            console.error('Erro na importação de pacientes:', error);
+            return res.status(500).json({ message: 'Erro interno ao importar pacientes', error: error.message });
+        }
+    }
     static async importTransactions(req, res) {
         try {
             const clinicId = req.user?.clinicId;
@@ -16,6 +112,14 @@ export class ImportController {
             const worksheet = workbook.Sheets[sheetName];
             // Converter para JSON as colunas
             const data = xlsx.utils.sheet_to_json(worksheet);
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'FATURAMENTO',
+                    fileName: req.file.originalname,
+                    recordCount: 0
+                }
+            });
             const transactionsToCreate = data.map((row) => {
                 // Normalizar as chaves para evitar problemas com espaços extras (ex: " PREÇO DE VENDA")
                 const cleanRow = {};
@@ -84,7 +188,11 @@ export class ImportController {
             }
             // Criar em lote
             const result = await prisma.transaction.createMany({
-                data: validTransactions
+                data: validTransactions.map(t => ({ ...t, importBatchId: batch.id }))
+            });
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: result.count }
             });
             return res.json({
                 message: `${result.count} novas transações importadas com sucesso!`,
@@ -96,7 +204,7 @@ export class ImportController {
             return res.status(500).json({ message: 'Erro ao processar planilha', error: error.message });
         }
     }
-    static async bulkImportPatients(req, res) {
+    static async importFinancialData(req, res) {
         try {
             const clinicId = req.user?.clinicId;
             if (!clinicId) {
@@ -105,111 +213,717 @@ export class ImportController {
             if (!req.file) {
                 return res.status(400).json({ message: 'Nenhum arquivo enviado' });
             }
+            const { type } = req.body;
+            console.log('DEBUG: Iniciando importação financeira:', {
+                type,
+                fileName: req.file?.originalname,
+                fileSize: req.file?.size,
+                bodyKeys: Object.keys(req.body)
+            });
+            if (!type) {
+                return res.status(400).json({
+                    message: 'Tipo de importação não especificado no payload (req.body.type)',
+                    debug_body: req.body
+                });
+            }
+            // Helper de normalização agressiva de chaves (Upper + Sem Acentos)
+            const normalizeKey = (str) => {
+                return str.trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            };
             // Ler o buffer do arquivo Excel
             const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
-            const sheetName = workbook.SheetNames[0];
+            // Determinar qual aba usar baseado no tipo ou pegar a padrão
+            let sheetName = '';
+            if (type === 'billing') {
+                sheetName = workbook.SheetNames.find(n => normalizeKey(n).includes('FATURAMENTO DIARIO')) || workbook.SheetNames[0];
+            }
+            else if (type === 'pricing') {
+                // Tenta nomes comuns como PROCEDIMENTOS, PRECO, PLANILHA1
+                sheetName = workbook.SheetNames.find(n => {
+                    const norm = normalizeKey(n);
+                    return norm.includes('PROCEDIMENTO') || norm.includes('PRECO') || norm.includes('PLANILHA1') || norm.includes('PLANILHA 1');
+                }) || workbook.SheetNames[0];
+            }
+            else if (type === 'equipment') {
+                sheetName = workbook.SheetNames.find(n => normalizeKey(n).includes('TECNOLOGIA')) || workbook.SheetNames[0];
+            }
+            else {
+                sheetName = workbook.SheetNames[0];
+            }
             const worksheet = workbook.Sheets[sheetName];
-            // Converter para JSON as colunas
             const data = xlsx.utils.sheet_to_json(worksheet);
             if (data.length === 0) {
-                return res.status(400).json({ message: 'A planilha está vazia' });
+                return res.status(400).json({ message: 'A planilha ou aba selecionada está vazia' });
             }
-            let importedCount = 0;
-            let updatedCount = 0;
-            for (const row of data) {
-                // Normalizar as chaves para facilitar o match (Case Insensitive e Trim)
-                const cleanRow = {};
-                for (const key in row) {
-                    cleanRow[key.trim().toLowerCase()] = row[key];
+            const moduleMap = {
+                'billing': 'FATURAMENTO',
+                'pricing': 'PROCEDIMENTOS',
+                'equipment': 'ESTOQUE'
+            };
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: moduleMap[type] || 'FATURAMENTO',
+                    fileName: req.file.originalname,
+                    recordCount: 0
                 }
-                const fullName = cleanRow['paciente'] || cleanRow['nome'] || cleanRow['nome completo'];
-                if (!fullName)
-                    continue;
-                const cpf = cleanRow['cpf'] ? String(cleanRow['cpf']).replace(/\D/g, '') : null;
-                const rg = cleanRow['rg'] ? String(cleanRow['rg']) : null;
-                const email = cleanRow['e-mail'] || cleanRow['email'];
-                const phone = cleanRow['celular'] || cleanRow['telefone'] || cleanRow['whatsapp'];
-                const profession = cleanRow['profissão'] || cleanRow['profissao'] || cleanRow['cargo'];
-                const gender = cleanRow['sexo'] || cleanRow['gênero'] || cleanRow['genero'];
-                const maritalStatus = cleanRow['estado civil'];
-                // Mapeamento de LeadSource (Origem + Indicação)
-                const origin = cleanRow['origem'] || '';
-                const indication = cleanRow['indicação'] || cleanRow['indicacao'] || '';
-                const leadSource = [origin, indication].filter(Boolean).join(' / ');
-                // Endereço concatenado
-                const rua = cleanRow['endereço'] || cleanRow['endereco'] || '';
-                const numero = cleanRow['número'] || cleanRow['numero'] || '';
-                const bairro = cleanRow['bairro'] || '';
-                const cidade = cleanRow['cidade'] || '';
-                const estado = cleanRow['estado'] || '';
-                const cep = cleanRow['cep'] || '';
-                const addressParts = [rua, numero, bairro, cidade, estado, cep].filter(Boolean);
-                const address = addressParts.length > 0 ? addressParts.join(', ') : null;
-                // Nascimento
-                let birthDate = null;
-                const birthRaw = cleanRow['nascimento'] || cleanRow['data de nascimento'];
-                if (birthRaw) {
-                    if (typeof birthRaw === 'number') {
-                        birthDate = new Date(Math.round((birthRaw - 25569) * 86400 * 1000));
+            });
+            let resultCount = 0;
+            let updatedCount = 0;
+            if (type === 'billing') {
+                // Lógica de Faturamento Diário (Transactions)
+                const patientCache = new Map(); // Cache para evitar múltiplas consultas ao mesmo paciente
+                const validTransactions = [];
+                for (const row of data) {
+                    const cleanRow = {};
+                    for (const key in row) {
+                        const normalizedKey = normalizeKey(key);
+                        cleanRow[normalizedKey] = row[key];
                     }
-                    else {
-                        const parsedDate = new Date(birthRaw);
-                        if (!isNaN(parsedDate.getTime())) {
-                            birthDate = parsedDate;
+                    const parseCurrency = (val) => {
+                        if (typeof val === 'number')
+                            return val;
+                        if (!val || typeof val !== 'string')
+                            return 0;
+                        let clean = val.replace(/R\$\s?/, '').trim();
+                        if (clean.includes(',') && clean.includes('.'))
+                            clean = clean.replace(/\./g, '').replace(',', '.');
+                        else if (clean.includes(','))
+                            clean = clean.replace(',', '.');
+                        const parsed = parseFloat(clean);
+                        return isNaN(parsed) ? 0 : parsed;
+                    };
+                    const valorRaw = cleanRow['PRECO DE VENDA'] || cleanRow['PRECO- TABELA'] || cleanRow['PRECO'] || cleanRow['VALOR'] || cleanRow['VALOR TOTAL'] || cleanRow['VALOR BRUTO'] || 0;
+                    const valor = Math.abs(parseCurrency(valorRaw));
+                    if (valor <= 0)
+                        continue;
+                    const valorLiquidoRaw = cleanRow['VALOR LIQUIDO'] || cleanRow['LIQUIDO'] || cleanRow['VALOR RECEBIDO'] || valorRaw;
+                    const valorLiquido = Math.abs(parseCurrency(valorLiquidoRaw));
+                    const pacienteNome = (cleanRow['PACIENTE'] || cleanRow['NOME'] || cleanRow['CLIENTE'] || cleanRow['NOME DO PACIENTE'] || '').trim();
+                    if (!pacienteNome)
+                        continue;
+                    // 1. Vincular ou Criar Paciente antes da Transação
+                    let patientId = patientCache.get(pacienteNome.toLowerCase());
+                    if (!patientId) {
+                        let patient = await prisma.patient.findFirst({
+                            where: {
+                                clinicId,
+                                fullName: { equals: pacienteNome, mode: 'insensitive' }
+                            }
+                        });
+                        if (!patient) {
+                            console.log(`DEBUG: Criando paciente novo durante importação de faturamento: ${pacienteNome}`);
+                            patient = await prisma.patient.create({
+                                data: {
+                                    fullName: pacienteNome,
+                                    clinicId,
+                                }
+                            });
+                        }
+                        patientId = patient.id;
+                        patientCache.set(pacienteNome.toLowerCase(), patientId);
+                    }
+                    let date = new Date();
+                    const dataRaw = cleanRow['DATA DA VENDA'] || cleanRow['DATA'] || cleanRow['DATA PROCEDIMENTO'];
+                    if (dataRaw) {
+                        if (typeof dataRaw === 'number') {
+                            date = new Date(Math.round((dataRaw - 25569) * 86400 * 1000));
+                        }
+                        else {
+                            const parsed = new Date(dataRaw);
+                            if (!isNaN(parsed.getTime()))
+                                date = parsed;
+                        }
+                    }
+                    const procedimento = String(cleanRow['PROCEDIMENTO'] || cleanRow['SERVICO'] || cleanRow['DESCRICAO'] || 'Procedimento não informado').trim();
+                    const medico = String(cleanRow['MEDICO SOLICITANTE'] || cleanRow['MEDICO'] || cleanRow['DOUTOR'] || cleanRow['PROFISSIONAL'] || cleanRow['MEDICO EXECUTOR'] || '').trim();
+                    const executor = String(cleanRow['MEDICO EXECUTOR'] || '').trim();
+                    const descricao = `${procedimento} - ${pacienteNome}${medico ? ` (Solic: ${medico})` : ''}${executor ? ` (Exec: ${executor})` : ''}`;
+                    const quantityRaw = cleanRow['QUANTIDADE'] || 1;
+                    const quantity = typeof quantityRaw === 'number' ? quantityRaw : (parseFloat(String(quantityRaw).replace(',', '.')) || 1);
+                    const comissao = parseCurrency(cleanRow['COMISSAO'] || 0);
+                    const custoTotal = parseCurrency(cleanRow['CUSTO TOTAL'] || 0);
+                    validTransactions.push({
+                        description: descricao,
+                        amount: valor,
+                        netAmount: valorLiquido,
+                        type: 'INCOME',
+                        status: 'PAID',
+                        category: String(cleanRow['TIPO'] || 'Faturamento').trim(),
+                        paymentMethod: String(cleanRow['FORMA DE PAGAMENTO'] || cleanRow['PAGAMENTO'] || 'Outros').trim(),
+                        centerOfCost: 'Operacional',
+                        procedureName: procedimento,
+                        doctorName: medico || executor,
+                        patientId,
+                        quantity,
+                        cost: custoTotal,
+                        date: date,
+                        clinicId: clinicId,
+                        importBatchId: batch.id
+                    });
+                }
+                if (validTransactions.length > 0) {
+                    const result = await prisma.transaction.createMany({
+                        data: validTransactions
+                    });
+                    resultCount = result.count;
+                    // Atualizar o lote IMEDIATAMENTE
+                    await prisma.importBatch.update({
+                        where: { id: batch.id },
+                        data: { recordCount: resultCount }
+                    });
+                    // GATILHO CRM (Reaproveitando os pacientes já carregados)
+                    for (const t of validTransactions) {
+                        try {
+                            await TaskService.triggerFollowUp(clinicId, {
+                                patientId: t.patientId,
+                                procedureName: t.procedureName,
+                                transactionDate: t.date
+                            });
+                        }
+                        catch (crmError) {
+                            console.error(`ERROR: CRM trigger failed:`, crmError);
                         }
                     }
                 }
-                const patientData = {
-                    fullName,
-                    rg,
-                    cpf,
-                    birthDate,
-                    gender,
-                    maritalStatus,
-                    profession,
-                    phone: phone ? String(phone) : null,
-                    email: email ? String(email) : null,
-                    address,
-                    leadSource,
-                    clinicId
-                };
-                // Lógica de Upsert baseada no CPF (se existir)
-                if (cpf) {
-                    const existingPatient = await prisma.patient.findFirst({
-                        where: { cpf, clinicId }
+            }
+            else if (type === 'pricing') {
+                // Lógica de Procedimentos Simplificada (TIPO, PROCEDIMENTO, DURAÇÃO, PRODUTO, TAREFA)
+                for (const row of data) {
+                    const cleanRow = {};
+                    for (const key in row) {
+                        cleanRow[key.trim().toUpperCase()] = row[key];
+                    }
+                    const name = cleanRow['PROCEDIMENTO'] || cleanRow['NOME'];
+                    if (!name)
+                        continue;
+                    const parseNumber = (val) => {
+                        if (typeof val === 'number')
+                            return val;
+                        if (!val || typeof val !== 'string')
+                            return 0;
+                        let clean = val.replace(/R\$\s?/, '').replace('%', '').trim();
+                        if (clean.includes(',') && clean.includes('.'))
+                            clean = clean.replace(/\./g, '').replace(',', '.');
+                        else if (clean.includes(','))
+                            clean = clean.replace(',', '.');
+                        const parsed = parseFloat(clean);
+                        return isNaN(parsed) ? 0 : parsed;
+                    };
+                    const category = cleanRow['TIPO'] || cleanRow['CATEGORIA'] || cleanRow['GRUPO'] || 'Geral';
+                    const durationRaw = cleanRow['DURACAO'] || cleanRow['DURACAO'] || cleanRow['TEMPO'] || 30;
+                    const duration = Number(durationRaw);
+                    const productName = String(cleanRow['PRODUTO'] || '');
+                    const taskCount = Number(cleanRow['TAREFA'] || 0);
+                    const procedureData = {
+                        name,
+                        category,
+                        durationMinutes: isNaN(duration) ? 30 : duration,
+                        productName,
+                        taskCount: isNaN(taskCount) ? 0 : taskCount,
+                        followUpDays: isNaN(taskCount) ? null : taskCount, // O usuário confirmou que TAREFA = Dias de Retorno
+                        clinicId
+                    };
+                    const existing = await prisma.procedure.findFirst({
+                        where: { name, clinicId }
                     });
-                    if (existingPatient) {
-                        await prisma.patient.update({
-                            where: { id: existingPatient.id },
-                            data: patientData
+                    if (existing) {
+                        await prisma.procedure.update({
+                            where: { id: existing.id },
+                            data: procedureData
                         });
                         updatedCount++;
                     }
                     else {
-                        await prisma.patient.create({
-                            data: patientData
+                        await prisma.procedure.create({
+                            data: { ...procedureData, importBatchId: batch.id }
                         });
-                        importedCount++;
+                        resultCount++;
                     }
                 }
-                else {
-                    // Se não tem CPF, cria sempre
-                    await prisma.patient.create({
-                        data: patientData
+            }
+            else if (type === 'equipment') {
+                // Lógica de Tecnologias (Equipment)
+                for (const row of data) {
+                    const cleanRow = {};
+                    for (const key in row) {
+                        cleanRow[key.trim().toUpperCase()] = row[key];
+                    }
+                    const name = cleanRow['TECNOLOGIA'] || cleanRow['NOME'] || cleanRow['EQUIPAMENTO'];
+                    if (!name)
+                        continue;
+                    const status = cleanRow['STATUS'] || 'ATIVO';
+                    const existing = await prisma.equipment.findFirst({
+                        where: { name, clinicId }
                     });
-                    importedCount++;
+                    if (!existing) {
+                        await prisma.equipment.create({
+                            data: { name, status, clinicId, importBatchId: batch.id }
+                        });
+                        resultCount++;
+                    }
+                    else {
+                        updatedCount++;
+                    }
                 }
             }
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: resultCount }
+            });
             return res.json({
                 message: 'Processamento concluído',
-                imported: importedCount,
-                updated: updatedCount,
-                total: data.length
+                total: data.length,
+                imported: resultCount,
+                updated: updatedCount
             });
         }
         catch (error) {
-            console.error('Erro na importação de pacientes:', error);
-            return res.status(500).json({ message: 'Erro ao processar planilha de pacientes', error: error.message });
+            console.error('❌ ERRO CRÍTICO NA IMPORTAÇÃO:', error);
+            // Retorna o erro detalhado para o frontend capturar
+            return res.status(500).json({
+                message: error.message || 'Erro interno no processamento da planilha',
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+                details: error.toString()
+            });
+        }
+    }
+    static async diagnoseDB(req, res) {
+        try {
+            const dbUrl = process.env.DATABASE_URL || '';
+            // Máscara para o hostname
+            const hostname = dbUrl.split('@')[1]?.split(':')[0] || 'Hostname não encontrado';
+            return res.json({
+                status: 'online',
+                db_hostname: hostname,
+                message: 'Verifique se este hostname coincide com o do seu Supabase atual.'
+            });
+        }
+        catch (error) {
+            return res.status(500).json({ error: error.message });
+        }
+    }
+    static async listImportBatches(req, res) {
+        try {
+            const clinicId = req.user?.clinicId;
+            if (!clinicId)
+                return res.status(401).json({ message: 'Clínica não identificada' });
+            const batches = await prisma.importBatch.findMany({
+                where: { clinicId },
+                orderBy: { createdAt: 'desc' }
+            });
+            return res.json(batches);
+        }
+        catch (error) {
+            console.error('Erro ao listar lotes:', error);
+            return res.status(500).json({ message: 'Erro ao listar histórico de importações' });
+        }
+    }
+    static async deleteImportBatch(req, res) {
+        try {
+            const clinicId = req.user?.clinicId;
+            const { batchId } = req.params;
+            if (!clinicId)
+                return res.status(401).json({ message: 'Clínica não identificada' });
+            const batch = await prisma.importBatch.findUnique({
+                where: { id: batchId, clinicId }
+            });
+            if (!batch)
+                return res.status(404).json({ message: 'Lote não encontrado' });
+            // Rollback: Deletar todos os registros vinculados a este lote
+            // O onDelete: Cascade lidará com agendamentos/evoluções dos pacientes automaticamente no banco se configurado,
+            // ou podemos fazer manual se necessário. No schema configuramos Cascade para relations se possível.
+            await prisma.$transaction([
+                prisma.patient.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.transaction.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.procedure.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.equipment.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.inventoryItem.deleteMany({ where: { importBatchId: batchId, clinicId } }),
+                prisma.importBatch.delete({ where: { id: batchId } })
+            ]);
+            return res.json({ message: 'Rollback concluído com sucesso!' });
+        }
+        catch (error) {
+            console.error('Erro no rollback:', error);
+            return res.status(500).json({ message: 'Erro ao processar rollback da importação' });
+        }
+    }
+    static async importPayables(req, res) {
+        console.log('📥 Iniciando importPayables...');
+        try {
+            const clinicId = req.user?.clinicId;
+            console.log('🏥 ClinicId:', clinicId);
+            if (!clinicId)
+                return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!req.file) {
+                console.log('❌ Nenhum arquivo no request.file');
+                return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+            }
+            console.log('📂 Arquivo recebido:', req.file.originalname, 'Size:', req.file.size);
+            const workbook = xlsx.read(req.file.buffer, { type: 'buffer', cellDates: true });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const data = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+            console.log('📊 Linhas extraídas:', data.length);
+            if (data.length === 0)
+                return res.status(400).json({ message: 'Planilha vazia' });
+            // 1. Criar Lote de Importação
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'CONTAS_A_PAGAR',
+                    fileName: req.file.originalname,
+                    recordCount: 0
+                }
+            });
+            // 2. Buscar Dados da Clínica para Validação de Segurança
+            const clinic = await prisma.clinic.findUnique({ where: { id: clinicId } });
+            const clinicCNPJ = clinic?.cnpj?.replace(/\D/g, '');
+            let successCount = 0;
+            const errorLogs = [];
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const cleanRow = {};
+                // Limpeza agressiva de chaves (Trim + Upper)
+                for (const key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+                try {
+                    // Validação de Segurança (CNPJ / Empresa)
+                    const rowCNPJ = String(cleanRow['CNPJ'] || '').replace(/\D/g, '');
+                    const rowEmpresa = String(cleanRow['EMPRESA'] || '').trim().toUpperCase();
+                    const clinicName = clinic?.name.trim().toUpperCase();
+                    // Se houver CNPJ na planilha e ele não bater com o da clínica, bloqueia (ponto 3.1)
+                    if (rowCNPJ && clinicCNPJ && rowCNPJ !== clinicCNPJ) {
+                        throw new Error(`Segurança: O CNPJ da linha (${rowCNPJ}) não coincide com o CNPJ da clínica (${clinicCNPJ}).`);
+                    }
+                    // Mapeamento de Status
+                    let status = 'PENDENTE';
+                    const statusRaw = String(cleanRow['STATUS'] || '').toUpperCase().trim();
+                    if (statusRaw === 'EFETUADO' || statusRaw === 'PAGO')
+                        status = 'PAGO';
+                    else if (statusRaw === 'A LANÇAR')
+                        status = 'PENDENTE';
+                    // Parse de Datas
+                    const dueDateRaw = cleanRow['VENCIMENTO'];
+                    const paymentDateRaw = cleanRow['DATA DO PAGAMENTO'];
+                    const parseDate = (val) => {
+                        if (!val)
+                            return null;
+                        const d = new Date(val);
+                        return isNaN(d.getTime()) ? null : d;
+                    };
+                    const dueDate = parseDate(dueDateRaw);
+                    if (!dueDate)
+                        throw new Error('Data de Vencimento inválida ou ausente.');
+                    const paymentDate = parseDate(paymentDateRaw);
+                    // Parse de Valor
+                    const parseCurrency = (val) => {
+                        if (typeof val === 'number')
+                            return val;
+                        if (!val || typeof val !== 'string')
+                            return 0;
+                        let clean = val.replace(/R\$\s?/, '').replace(/\./g, '').replace(',', '.').trim();
+                        const parsed = parseFloat(clean);
+                        return isNaN(parsed) ? 0 : parsed;
+                    };
+                    const amountRaw = cleanRow['VALOR (R$)'] || cleanRow['VALOR'] || 0;
+                    const amount = parseCurrency(amountRaw);
+                    if (amount <= 0)
+                        throw new Error('O valor da conta deve ser maior que zero.');
+                    // Criar Contas a Pagar
+                    const account = await prisma.accountPayable.create({
+                        data: {
+                            clinicId,
+                            importBatchId: batch.id,
+                            description: String(cleanRow['DESCRIÇÃO'] || cleanRow['DESCRICAO'] || 'Importação Contas a Pagar').trim(),
+                            totalAmount: amount,
+                            status,
+                            dueDate,
+                            paymentDate,
+                            paymentMethod: String(cleanRow['TIPO DO PAGAMENTO'] || cleanRow['FORMA DE PAGAMENTO'] || 'Outros').trim(),
+                            expenseType: String(cleanRow['TIPO DE DESPESA'] || 'FIXA').trim().toUpperCase(),
+                            category: String(cleanRow['CLASSIFICAÇÃO'] || cleanRow['CLASSIFICACAO'] || 'Geral').trim(),
+                            payee: String(cleanRow['FAVORECIDO/BENEFICIÁRIO'] || cleanRow['FAVORECIDO'] || cleanRow['BENEFICIARIO'] || 'Não informado').trim(),
+                            notes: String(cleanRow['OBSERVAÇÃO NF - BOLETO'] || cleanRow['OBSERVACAO'] || '').trim(),
+                            costCenter: String(cleanRow['CLASSIFICAÇÃO'] || 'Operacional').trim(),
+                            costType: String(cleanRow['TIPO DE DESPESA'] || 'FIXA').trim().toUpperCase(),
+                        }
+                    });
+                    // CRIAR PARCELA ÚNICA (Importante para visualização no front v14.0)
+                    await prisma.accountPayableInstallment.create({
+                        data: {
+                            accountPayableId: account.id,
+                            installmentNumber: 1,
+                            amount: amount,
+                            dueDate,
+                            status,
+                            paidAt: status === 'PAGO' ? (paymentDate || dueDate) : null,
+                            paymentMethod: String(cleanRow['TIPO DO PAGAMENTO'] || cleanRow['FORMA DE PAGAMENTO'] || 'Outros').trim(),
+                        }
+                    });
+                    successCount++;
+                }
+                catch (err) {
+                    errorLogs.push({
+                        importBatchId: batch.id,
+                        rowNumber: i + 1,
+                        rowData: row,
+                        errorMessage: err.message || 'Erro desconhecido ao processar linha'
+                    });
+                }
+            }
+            // 3. Registrar Log de Erros (se houver)
+            if (errorLogs.length > 0) {
+                await prisma.importErrorLog.createMany({ data: errorLogs });
+            }
+            // 4. Atualizar Contagem de Sucesso no Lote
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: successCount }
+            });
+            return res.json({
+                message: 'Processamento concluído',
+                totalRows: data.length,
+                successCount,
+                errorCount: errorLogs.length,
+                batchId: batch.id
+            });
+        }
+        catch (error) {
+            console.error('Erro na importação de Contas a Pagar:', error);
+            return res.status(500).json({ message: 'Erro interno ao processar planilha', error: error.message });
+        }
+    }
+    static async importInventory(req, res) {
+        console.log('📦 Iniciando importInventory...');
+        try {
+            const clinicId = req.user?.clinicId;
+            if (!clinicId)
+                return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!req.file) {
+                return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+            }
+            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const data = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+            if (data.length === 0)
+                return res.status(400).json({ message: 'Planilha vazia' });
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'ESTOQUE',
+                    fileName: req.file.originalname,
+                    recordCount: 0
+                }
+            });
+            const parseCurrency = (val) => {
+                if (typeof val === 'number')
+                    return val;
+                if (!val || typeof val !== 'string')
+                    return 0;
+                let clean = val.replace(/R\$\s?/, '').replace(/\./g, '').replace(',', '.').trim();
+                const parsed = parseFloat(clean);
+                return isNaN(parsed) ? 0 : parsed;
+            };
+            const parseNumber = (val) => {
+                if (typeof val === 'number')
+                    return val;
+                if (!val || typeof val !== 'string')
+                    return 0;
+                let clean = val.replace(/\./g, '').replace(',', '.').trim();
+                const parsed = parseFloat(clean);
+                return isNaN(parsed) ? 0 : parsed;
+            };
+            let successCount = 0;
+            const errorLogs = [];
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const keys = Object.keys(row);
+                // Pular se a linha estiver vazia (todas as colunas vazias)
+                if (keys.every(k => !row[k] || String(row[k]).trim() === ""))
+                    continue;
+                if (i === 0) {
+                    console.log('📝 Exemplo da primeira linha (chaves originais):', keys);
+                }
+                const cleanRow = {};
+                for (const key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+                try {
+                    const name = cleanRow['NOME DO PRODUTO'] || cleanRow['NOME'] || cleanRow['PRODUTO'];
+                    if (!name) {
+                        if (i < 5)
+                            console.log(`⚠️ Linha ${i + 1}: Nome não encontrado. Colunas:`, Object.keys(cleanRow));
+                        throw new Error('Coluna "NOME DO PRODUTO" não identificada ou vazia.');
+                    }
+                    const code = String(cleanRow['CÓD'] || cleanRow['COD'] || '').trim();
+                    const statusRaw = String(cleanRow['STATUS'] || '').toUpperCase().trim();
+                    const isActive = statusRaw === 'INATIVO' ? false : true;
+                    const category = String(cleanRow['CATEGORIA'] || 'Geral').trim();
+                    const unit = String(cleanRow['UNIDADE'] || 'UN').trim();
+                    const manufacturer = String(cleanRow['FABRICANTE'] || '').trim();
+                    const unitCost = parseCurrency(cleanRow['VALOR UNITÁRIO'] || cleanRow['VALOR UNITARIO'] || cleanRow['PREÇO'] || cleanRow['CUSTO'] || 0);
+                    const currentStock = parseNumber(cleanRow['QTD ESTOQUE ATUAL'] || cleanRow['ESTOQUE ATUAL'] || cleanRow['QTD ATUAL'] || cleanRow['QTD'] || 0);
+                    const minQuantity = parseNumber(cleanRow['QTD MÍNIMA'] || cleanRow['QTD MINIMA'] || cleanRow['MÍNIMO'] || cleanRow['MINIMO'] || 0);
+                    await prisma.inventoryItem.create({
+                        data: {
+                            clinicId,
+                            importBatchId: batch.id,
+                            code,
+                            isActive,
+                            name,
+                            category,
+                            unit,
+                            manufacturer,
+                            unitCost,
+                            currentStock,
+                            minQuantity
+                        }
+                    });
+                    successCount++;
+                }
+                catch (err) {
+                    errorLogs.push({
+                        importBatchId: batch.id,
+                        rowNumber: i + 1,
+                        rowData: row,
+                        errorMessage: err.message || 'Erro desconhecido ao processar linha'
+                    });
+                }
+            }
+            if (errorLogs.length > 0) {
+                await prisma.importErrorLog.createMany({ data: errorLogs });
+            }
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: successCount }
+            });
+            return res.json({
+                message: 'Importação de estoque concluída',
+                totalRows: data.length,
+                successCount,
+                errorCount: errorLogs.length,
+                batchId: batch.id
+            });
+        }
+        catch (error) {
+            console.error('Erro na importação de estoque:', error);
+            return res.status(500).json({ message: 'Erro interno ao processar planilha', error: error.message });
+        }
+    }
+    static async importStockMovements(req, res) {
+        console.log('📦 Iniciando importStockMovements...');
+        try {
+            const clinicId = req.user?.clinicId;
+            if (!clinicId)
+                return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!req.file) {
+                return res.status(400).json({ message: 'Nenhum arquivo enviado' });
+            }
+            const workbook = xlsx.read(req.file.buffer, { type: 'buffer' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const data = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+            if (data.length === 0)
+                return res.status(400).json({ message: 'Planilha vazia' });
+            const batch = await prisma.importBatch.create({
+                data: {
+                    clinicId,
+                    module: 'MOVIMENTACAO',
+                    fileName: req.file.originalname,
+                    recordCount: 0
+                }
+            });
+            const parseNumber = (val) => {
+                if (typeof val === 'number')
+                    return val;
+                if (!val || typeof val !== 'string')
+                    return 0;
+                let clean = val.replace(/\./g, '').replace(',', '.').trim();
+                const parsed = parseFloat(clean);
+                return isNaN(parsed) ? 0 : parsed;
+            };
+            const parseExcelDate = (excelDate) => {
+                if (!excelDate)
+                    return new Date();
+                if (excelDate instanceof Date)
+                    return excelDate;
+                if (typeof excelDate === 'number') {
+                    return new Date(Math.round((excelDate - 25569) * 86400 * 1000));
+                }
+                const parsed = new Date(excelDate);
+                return isNaN(parsed.getTime()) ? new Date() : parsed;
+            };
+            let successCount = 0;
+            const errorLogs = [];
+            for (let i = 0; i < data.length; i++) {
+                const row = data[i];
+                const keys = Object.keys(row);
+                if (keys.every(k => !row[k] || String(row[k]).trim() === ""))
+                    continue;
+                const cleanRow = {};
+                for (const key in row) {
+                    cleanRow[key.trim().toUpperCase()] = row[key];
+                }
+                try {
+                    const code = String(cleanRow['CÓDIGO'] || cleanRow['CODIGO'] || cleanRow['CÓD'] || cleanRow['COD'] || '').trim();
+                    const name = String(cleanRow['NOME DO PRODUTO'] || cleanRow['PRODUTO'] || cleanRow['NOME'] || '').trim();
+                    const quantity = parseNumber(cleanRow['QTD COMPRADA'] || cleanRow['QUANTIDADE'] || cleanRow['QTD'] || 0);
+                    const date = parseExcelDate(cleanRow['DATA'] || cleanRow['DATA COMPRA']);
+                    if (quantity <= 0)
+                        throw new Error('Quantidade deve ser maior que zero.');
+                    const item = await prisma.inventoryItem.findFirst({
+                        where: {
+                            clinicId,
+                            OR: [
+                                code ? { code: { equals: code, mode: 'insensitive' } } : undefined,
+                                name ? { name: { equals: name, mode: 'insensitive' } } : undefined
+                            ].filter(Boolean)
+                        }
+                    });
+                    if (!item) {
+                        throw new Error(`Produto não encontrado no catálogo (${code || name})`);
+                    }
+                    await InventoryService.registerMovement({
+                        itemId: item.id,
+                        type: 'IN',
+                        quantity,
+                        reason: 'Importação em Massa',
+                        date,
+                        clinicId,
+                        importBatchId: batch.id
+                    });
+                    successCount++;
+                }
+                catch (err) {
+                    errorLogs.push({
+                        importBatchId: batch.id,
+                        rowNumber: i + 1,
+                        rowData: JSON.stringify(row),
+                        errorMessage: err.message || 'Erro desconhecido'
+                    });
+                }
+            }
+            if (errorLogs.length > 0) {
+                await prisma.importErrorLog.createMany({ data: errorLogs });
+            }
+            await prisma.importBatch.update({
+                where: { id: batch.id },
+                data: { recordCount: successCount }
+            });
+            return res.json({
+                message: 'Importação de movimentações concluída',
+                totalRows: data.length,
+                successCount,
+                errorCount: errorLogs.length,
+                batchId: batch.id
+            });
+        }
+        catch (error) {
+            console.error('Erro na importação de movimentações:', error);
+            return res.status(500).json({ message: 'Erro interno ao processar planilha', error: error.message });
         }
     }
 }

@@ -89,7 +89,7 @@ export class PricingController {
                 };
             }
 
-            const procedures = await prisma.procedurePricing.findMany({
+            const procedures = await prisma.procedure.findMany({
                 where,
                 include: { supplies: true },
                 orderBy: { name: 'asc' }
@@ -103,7 +103,7 @@ export class PricingController {
 
                 const netProfit = currentPrice - totalCost;
                 const currentMargin = currentPrice > 0 ? (netProfit / currentPrice) * 100 : 0;
-                
+
                 // Preço Sugerido = Custo / (1 - Margem Desejada%)
                 const suggestedPrice = targetMargin < 100 ? totalCost / (1 - (targetMargin / 100)) : totalCost;
 
@@ -136,11 +136,11 @@ export class PricingController {
                 // Limpeza reativa de supplies para atualização limpa
                 if (id) {
                     await tx.pricingSupply.deleteMany({
-                        where: { procedurePricingId: id }
+                        where: { procedureId: id }
                     });
                 }
 
-                const procedure = await tx.procedurePricing.upsert({
+                const procedure = await tx.procedure.upsert({
                     where: { id: id || 'new-procedure' }, // Fallback para evitar erro se id vier vazio
                     update: {
                         name,
@@ -165,7 +165,7 @@ export class PricingController {
                             name: s.name,
                             quantity: Number(s.quantity),
                             cost: Number(s.cost),
-                            procedurePricingId: procedure.id
+                            procedureId: procedure.id
                         }))
                     });
                 }
@@ -185,7 +185,7 @@ export class PricingController {
             const { id } = req.params;
             const clinicId = (req as any).user.clinicId;
 
-            await prisma.procedurePricing.delete({
+            await prisma.procedure.delete({
                 where: { id, clinicId }
             });
 
