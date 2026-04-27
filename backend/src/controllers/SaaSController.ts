@@ -859,6 +859,7 @@ export class SaaSController {
             }
 
             const { clinicId, accessStartedAt } = user.adminAccessContext;
+            console.log(`[DEBUG] Tentando encerrar sessão administrativa. Clinic: ${clinicId}, User: ${user.id}`);
             const sessionDurationMinutes = Math.round((new Date().getTime() - new Date(accessStartedAt).getTime()) / 60000);
 
             // Registrar saída via utilitário centralizado
