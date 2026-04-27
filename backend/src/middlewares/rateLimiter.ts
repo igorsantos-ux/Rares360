@@ -9,15 +9,15 @@ import { Request } from 'express';
 
 // Função para extrair IP real de forma compatível com as validações de IPv6 da lib
 const getClientIp = (req: Request): string => {
-  // Se estivermos atrás do Cloudflare, o realIp (extraído do header cf-connecting-ip) é o mais confiável
-  // Caso contrário, usamos o req.ip que já foi validado pelo 'trust proxy' do Express
-  return (req as any).realIp || req.ip || 'unknown';
+  // Prioriza o realIp (extraído do header cf-connecting-ip no Cloudflare)
+  // Se não houver, usa req.ip. A lib exige que usemos req.ip se não houver customização complexa.
+  return (req as any).realIp || req.ip || '127.0.0.1';
 }
 
-// Rate limit para login — mais restritivo
+// Rate limit para login — Aumentado temporariamente para permitir acesso após bloqueios
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 10,
+  max: 100, // Temporário: 100 tentativas
   keyGenerator: getClientIp,
   message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
   standardHeaders: true,
