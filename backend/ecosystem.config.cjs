@@ -6,8 +6,7 @@ module.exports = {
     apps: [
         {
             name: 'rares360-api',
-            script: 'npx',
-            args: 'tsx src/server.ts',
+            script: './dist/server.js',
             instances: 'max',        // Usar todos os CPUs disponíveis
             exec_mode: 'cluster',
             max_memory_restart: '512M',

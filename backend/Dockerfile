@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Instalar dependências (inclusive devDependencies para build)
 COPY package*.json ./
+COPY prisma ./prisma
 RUN npm ci
 
 # Copiar código-fonte e Prisma schema
