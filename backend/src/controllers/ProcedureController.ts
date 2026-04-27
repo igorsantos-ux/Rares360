@@ -4,8 +4,11 @@ import { ProcedureService } from '../services/ProcedureService.js';
 export class ProcedureController {
     static async list(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            const clinicId = (req as any).user?.clinicId || (req as any).clinicId;
+            if (!clinicId) return res.status(403).json({
+                error: 'CLINIC_CONTEXT_REQUIRED',
+                message: 'Contexto de clínica não identificado.'
+            });
 
             const { page, limit, category, search } = req.query;
             const result = await ProcedureService.list(clinicId, {
@@ -23,8 +26,11 @@ export class ProcedureController {
 
     static async create(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            const clinicId = (req as any).user?.clinicId || (req as any).clinicId;
+            if (!clinicId) return res.status(403).json({
+                error: 'CLINIC_CONTEXT_REQUIRED',
+                message: 'Contexto de clínica não identificado.'
+            });
 
             const item = await ProcedureService.create(clinicId, req.body);
             return res.status(201).json(item);
@@ -35,9 +41,12 @@ export class ProcedureController {
 
     static async update(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).user?.clinicId || (req as any).clinicId;
             const { id } = req.params;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!clinicId) return res.status(403).json({
+                error: 'CLINIC_CONTEXT_REQUIRED',
+                message: 'Contexto de clínica não identificado.'
+            });
 
             const item = await ProcedureService.update(id, clinicId, req.body);
             return res.json(item);
@@ -48,9 +57,12 @@ export class ProcedureController {
 
     static async delete(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).user?.clinicId || (req as any).clinicId;
             const { id } = req.params;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!clinicId) return res.status(403).json({
+                error: 'CLINIC_CONTEXT_REQUIRED',
+                message: 'Contexto de clínica não identificado.'
+            });
 
             await ProcedureService.delete(id, clinicId);
             return res.status(204).send();
@@ -61,9 +73,12 @@ export class ProcedureController {
 
     static async getById(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).user?.clinicId || (req as any).clinicId;
             const { id } = req.params;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!clinicId) return res.status(403).json({
+                error: 'CLINIC_CONTEXT_REQUIRED',
+                message: 'Contexto de clínica não identificado.'
+            });
 
             const item = await ProcedureService.getById(id, clinicId);
             if (!item) return res.status(404).json({ message: 'Procedimento não encontrado' });
@@ -76,8 +91,11 @@ export class ProcedureController {
 
     static async listPending(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            const clinicId = (req as any).user?.clinicId || (req as any).clinicId;
+            if (!clinicId) return res.status(403).json({
+                error: 'CLINIC_CONTEXT_REQUIRED',
+                message: 'Contexto de clínica não identificado.'
+            });
 
             const result = await ProcedureService.listPending(clinicId);
             return res.json(result);
@@ -88,9 +106,12 @@ export class ProcedureController {
 
     static async getByPatient(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).user?.clinicId || (req as any).clinicId;
             const { patientId } = req.params;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!clinicId) return res.status(403).json({
+                error: 'CLINIC_CONTEXT_REQUIRED',
+                message: 'Contexto de clínica não identificado.'
+            });
 
             const result = await ProcedureService.getByPatient(clinicId, patientId);
             return res.json(result);
@@ -101,9 +122,12 @@ export class ProcedureController {
 
     static async execute(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).user?.clinicId || (req as any).clinicId;
             const { id } = req.params;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!clinicId) return res.status(403).json({
+                error: 'CLINIC_CONTEXT_REQUIRED',
+                message: 'Contexto de clínica não identificado.'
+            });
 
             const result = await ProcedureService.execute(id, clinicId);
             return res.json(result);

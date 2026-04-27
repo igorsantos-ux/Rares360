@@ -31,16 +31,30 @@ api.interceptors.request.use((config) => {
     return config;
 });
 
+import { queryClient } from '../lib/queryClient';
+
 api.interceptors.response.use(
     (response) => response,
     (error) => {
+        const status = error.response?.status;
+
+        if (status === 401) {
+            console.warn('Sessão expirada. Redirecionando para login...');
+            // Limpa o cache do React Query para parar pollings
+            queryClient.clear();
+            // Remove tokens do storage
+            localStorage.removeItem('heath_finance_token');
+            localStorage.removeItem('heath_finance_clinic_id');
+            // Redireciona via window para garantir reset de estado
+            window.location.href = '/login';
+        }
+
         console.error('❌ API Error:', {
             url: error.config?.url,
-            baseURL: error.config?.baseURL,
-            status: error.response?.status,
-            message: error.message,
-            data: error.response?.data
+            status: status,
+            message: error.message
         });
+
         return Promise.reject(error);
     }
 );
