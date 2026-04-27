@@ -39,8 +39,10 @@ import { Toaster } from 'react-hot-toast';
 import { OnboardingTour } from './components/OnboardingTour';
 import AdminAccessBanner from './components/AdminAccessBanner';
 import { useAdminContext } from './hooks/useAdminContext';
+import { useInactivityLogout } from './hooks/useInactivityLogout';
 
 function App() {
+  useInactivityLogout();
   const location = useLocation();
   const { user, loading } = useAuth();
   const { isAdminAccess } = useAdminContext();

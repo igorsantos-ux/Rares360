@@ -267,4 +267,20 @@ export class AuthController {
             res.status(500).json({ error: 'Erro ao atualizar status de onboarding.' });
         }
     }
+
+    static async logout(req: any, res: Response) {
+        try {
+            // Se houver um redis configurado futuramente, aqui será inserido na blocklist.
+            // Atualmente retornamos success para permitir o frontend limpar os dados client-side
+
+            // Aqui poderíamos ter:
+            // const token = req.headers.authorization?.split(' ')[1];
+            // if (token) { await redisClient.set(`blacklist_${token}`, 'true', 'EX', 8 * 60 * 60); }
+
+            res.json({ success: true, message: 'Logout realizado com sucesso' });
+        } catch (error) {
+            console.error('[AUTH] Erro ao realizar logout:', error);
+            res.status(500).json({ error: 'Erro interno ao realizar logout.' });
+        }
+    }
 }

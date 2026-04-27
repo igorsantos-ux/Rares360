@@ -2,7 +2,7 @@ import { Response, NextFunction } from 'express';
 import { AuthService } from '../services/AuthService.js';
 import prisma from '../lib/prisma.js';
 
-export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
+export const authMiddleware = async (req: any, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
@@ -12,6 +12,12 @@ export const authMiddleware = (req: any, res: Response, next: NextFunction) => {
     const [, token] = authHeader.split(' ');
 
     try {
+        const redisClient = (await import('../lib/redis.js')).default;
+        const isBlacklisted = await redisClient.get(`blacklist_${token}`);
+        if (isBlacklisted) {
+            return res.status(401).json({ error: 'Sessão encerrada', message: 'Sessão encerrada' });
+        }
+
         const decoded = AuthService.verifyToken(token);
 
         if (!decoded) {

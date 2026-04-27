@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Mail,
@@ -17,6 +17,14 @@ const LoginPage = () => {
     const [error, setError] = useState('');
     const navigate = useNavigate();
     const { login } = useAuth();
+
+    useEffect(() => {
+        const reason = sessionStorage.getItem('logoutReason');
+        if (reason === 'inactivity') {
+            setError('Sessão encerrada por inatividade. Faça login novamente.');
+            sessionStorage.removeItem('logoutReason');
+        }
+    }, []);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

@@ -50,6 +50,7 @@ export const authApi = {
     me: () => api.get('auth/me'),
     completeOnboarding: () => api.patch('auth/onboarding'),
     updatePassword: (data: any, config?: any) => api.post('auth/update-password', data, config),
+    logout: () => api.post('auth/logout'),
 };
 
 export const saasApi = {
