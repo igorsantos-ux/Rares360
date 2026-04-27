@@ -443,7 +443,7 @@ const SaaSManagement = () => {
             const { token, clinic } = response.data;
 
             // Set the new contextual token
-            localStorage.setItem('token', token);
+            localStorage.setItem('heath_finance_token', token);
 
             toast.success(`Entrando em ${clinic.name}...`, { id: 'impersonate' });
             setTimeout(() => {
