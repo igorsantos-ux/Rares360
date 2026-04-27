@@ -157,26 +157,42 @@ export class ReportingController {
             if (diffDays <= 31) interval = 'day';
             else if (diffDays <= 90) interval = 'week';
 
+            // Buscar todos os dados no banco DE UMA VEZ
+            const allExpenses = await prisma.accountPayableInstallment.findMany({
+                where: {
+                    accountPayable: { clinicId },
+                    dueDate: { gte: start, lte: end }
+                },
+                select: { amount: true, dueDate: true }
+            });
+
+            const allIncomes = await prisma.transaction.findMany({
+                where: {
+                    clinicId,
+                    type: 'INCOME',
+                    date: { gte: start, lte: end }
+                },
+                select: { amount: true, date: true }
+            });
+
             if (interval === 'day') {
                 for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
                     const current = new Date(d);
                     const next = new Date(d);
                     next.setDate(next.getDate() + 1);
 
-                    const exp = await prisma.accountPayableInstallment.aggregate({
-                        where: { accountPayable: { clinicId }, dueDate: { gte: current, lt: next } },
-                        _sum: { amount: true }
-                    });
+                    const currentExp = allExpenses
+                        .filter(e => e.dueDate && e.dueDate >= current && e.dueDate < next)
+                        .reduce((sum, e) => sum + e.amount, 0);
 
-                    const inc = await prisma.transaction.aggregate({
-                        where: { clinicId, type: 'INCOME', date: { gte: current, lt: next } },
-                        _sum: { amount: true }
-                    });
+                    const currentInc = allIncomes
+                        .filter(i => i.date >= current && i.date < next)
+                        .reduce((sum, i) => sum + i.amount, 0);
 
                     chartData.push({
                         label: current.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
-                        receita: inc._sum.amount || 0,
-                        despesa: exp._sum.amount || 0
+                        receita: currentInc,
+                        despesa: currentExp
                     });
                 }
             } else if (interval === 'week') {
@@ -185,20 +201,18 @@ export class ReportingController {
                     const next = new Date(d);
                     next.setDate(next.getDate() + 7);
 
-                    const exp = await prisma.accountPayableInstallment.aggregate({
-                        where: { accountPayable: { clinicId }, dueDate: { gte: current, lt: next } },
-                        _sum: { amount: true }
-                    });
+                    const currentExp = allExpenses
+                        .filter(e => e.dueDate && e.dueDate >= current && e.dueDate < next)
+                        .reduce((sum, e) => sum + e.amount, 0);
 
-                    const inc = await prisma.transaction.aggregate({
-                        where: { clinicId, type: 'INCOME', date: { gte: current, lt: next } },
-                        _sum: { amount: true }
-                    });
+                    const currentInc = allIncomes
+                        .filter(i => i.date >= current && i.date < next)
+                        .reduce((sum, i) => sum + i.amount, 0);
 
                     chartData.push({
                         label: `W-${current.getDate()}/${current.getMonth() + 1}`,
-                        receita: inc._sum.amount || 0,
-                        despesa: exp._sum.amount || 0
+                        receita: currentInc,
+                        despesa: currentExp
                     });
                 }
             } else {
@@ -215,20 +229,18 @@ export class ReportingController {
                     const first = new Date(curYear, curMonth, 1);
                     const last = new Date(curYear, curMonth + 1, 0);
 
-                    const exp = await prisma.accountPayableInstallment.aggregate({
-                        where: { accountPayable: { clinicId }, dueDate: { gte: first, lte: last } },
-                        _sum: { amount: true }
-                    });
+                    const currentExp = allExpenses
+                        .filter(e => e.dueDate && e.dueDate >= first && e.dueDate <= last)
+                        .reduce((sum, e) => sum + e.amount, 0);
 
-                    const inc = await prisma.transaction.aggregate({
-                        where: { clinicId, type: 'INCOME', date: { gte: first, lte: last } },
-                        _sum: { amount: true }
-                    });
+                    const currentInc = allIncomes
+                        .filter(i => i.date >= first && i.date <= last)
+                        .reduce((sum, i) => sum + i.amount, 0);
 
                     chartData.push({
                         label: first.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', ''),
-                        receita: inc._sum.amount || 0,
-                        despesa: exp._sum.amount || 0
+                        receita: currentInc,
+                        despesa: currentExp
                     });
 
                     curMonth++;
