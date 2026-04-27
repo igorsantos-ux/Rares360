@@ -46,6 +46,9 @@ import { errorHandler } from './middlewares/errorHandler.js';
 
 const app = express();
 
+// ═══ SEC-011: Confiar no Proxy (Easypanel/Nginx) para IP Real ═══
+app.set('trust proxy', 1);
+
 // ═══ SEC-008: Security Headers (Helmet.js) ═══
 app.use(helmet({
     contentSecurityPolicy: {
