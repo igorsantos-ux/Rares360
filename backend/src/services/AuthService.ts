@@ -34,7 +34,7 @@ export class AuthService {
     }
 
     static generateToken(payload: JwtPayload): string {
-        const expiresIn = payload.role === 'ADMIN_GLOBAL' ? '15m' : '25m';
+        const expiresIn = '4h'; // Aumentado para 4 horas para estabilidade durante transição
 
         return jwt.sign(payload, JWT_SECRET!, {
             expiresIn,

@@ -6,6 +6,7 @@ export const authMiddleware = async (req: any, res: Response, next: NextFunction
     const authHeader = req.headers.authorization;
 
     if (!authHeader) {
+        console.error(`[AUTH_DEBUG] Header Authorization ausente para ${req.originalUrl}`);
         return res.status(401).json({ error: 'Token não fornecido', message: 'Token não fornecido' });
     }
 
@@ -17,6 +18,7 @@ export const authMiddleware = async (req: any, res: Response, next: NextFunction
         if (redisClient) {
             const isBlacklisted = await redisClient.get(`blacklist_${token}`);
             if (isBlacklisted) {
+                console.warn(`[AUTH_DEBUG] Token blacklisted para ${req.originalUrl}`);
                 return res.status(401).json({ error: 'Sessão encerrada', message: 'Sessão encerrada' });
             }
         }
@@ -24,7 +26,7 @@ export const authMiddleware = async (req: any, res: Response, next: NextFunction
         const decoded = AuthService.verifyToken(token);
 
         if (!decoded) {
-            // SEC-014: Nunca logar trechos do token
+            console.error(`[AUTH_DEBUG] Token inválido ou expirado para ${req.originalUrl}`);
             return res.status(401).json({ error: 'Token inválido ou expirado', message: 'Token inválido ou expirado' });
         }
 
