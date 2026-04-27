@@ -9,7 +9,8 @@ import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-router.use(authMiddleware, tenantMiddleware);
+// Middlewares aplicados no server.ts
+// router.use(authMiddleware, tenantMiddleware);
 
 router.get('/productivity', CoreController.getProductivity);
 router.get('/doctors', CoreController.listDoctors);

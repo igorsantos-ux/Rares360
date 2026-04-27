@@ -4,7 +4,8 @@ import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.
 
 const router = Router();
 
-router.use(authMiddleware, tenantMiddleware);
+// Middlewares aplicados no server.ts
+// router.use(authMiddleware, tenantMiddleware);
 
 router.get('/summary', GoalController.getSummary);
 router.get('/list/:monthYear', GoalController.getMonthlyList);

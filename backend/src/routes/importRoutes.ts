@@ -9,7 +9,8 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Rota de diagnóstico (pública temporariamente para debug)
 router.get('/diagnostics/db', ImportController.diagnoseDB);
 
-router.use(authMiddleware, tenantMiddleware);
+// Middlewares aplicados no server.ts
+// router.use(authMiddleware, tenantMiddleware);
 
 // Novas rotas de gestão de lotes
 router.get('/', ImportController.listImportBatches);

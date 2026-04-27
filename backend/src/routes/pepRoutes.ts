@@ -7,7 +7,8 @@ import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.
 
 const router = Router();
 
-router.use(authMiddleware, tenantMiddleware);
+// Middlewares aplicados no server.ts
+// router.use(authMiddleware, tenantMiddleware);
 
 // Evoluções Clínicas
 router.get('/evolutions', ClinicalEvolutionController.list);
