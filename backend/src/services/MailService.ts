@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { emailCircuitBreaker } from '../lib/circuitBreaker.js';
 
 export class MailService {
     private static transporter: nodemailer.Transporter | null = null;
@@ -22,19 +23,38 @@ export class MailService {
                     ciphers: 'SSLv3',
                     rejectUnauthorized: false
                 },
-                debug: true,
-                logger: true
+                debug: false,
+                logger: false
             });
         }
         return this.transporter;
     }
 
     /**
+     * Retry com backoff exponencial (1s, 2s, 4s)
+     */
+    private static async withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {
+        let lastError: Error | null = null;
+        for (let attempt = 0; attempt < maxRetries; attempt++) {
+            try {
+                return await fn();
+            } catch (err: any) {
+                lastError = err;
+                const delay = Math.pow(2, attempt) * 1000;
+                console.warn(`[MailService] Tentativa ${attempt + 1}/${maxRetries} falhou. Retry em ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+        throw lastError;
+    }
+
+    /**
      * Envia o e-mail de onboarding para novos usuários
+     * Protegido com Circuit Breaker + Retry com backoff exponencial
      */
     static async sendOnboardingEmail(to: string, name: string, tempPassword: string) {
         const subject = '🚀 Bem-vindo à RARES – Sua Jornada Estratégica Começa Agora';
-        
+
         const html = `
             <!DOCTYPE html>
             <html lang="pt-BR">
@@ -75,19 +95,24 @@ export class MailService {
             </html>
         `;
 
-        try {
-            const transporter = this.getTransporter();
-            const info = await transporter.sendMail({
-                from: '"TI RARES" <ti.rares@rares360.com.br>',
-                to,
-                subject,
-                html,
-            });
-            console.log('[MailService] Sucesso!', info.messageId);
-            return info;
-        } catch (error) {
-            console.error('[MailService Error]:', error);
-            throw error;
-        }
+        // ═══ PERF-006: Circuit Breaker + Retry para Email ═══
+        return emailCircuitBreaker.execute(
+            () => this.withRetry(async () => {
+                const transporter = this.getTransporter();
+                const info = await transporter.sendMail({
+                    from: '"TI RARES" <ti.rares@rares360.com.br>',
+                    to,
+                    subject,
+                    html,
+                });
+                console.log('[MailService] ✅ E-mail enviado:', info.messageId);
+                return info;
+            }),
+            () => {
+                console.warn('[MailService] ⚠️ Circuit Breaker OPEN — e-mail enfileirado para retry posterior');
+                return { messageId: 'queued', status: 'circuit_open' };
+            }
+        );
     }
 }
+

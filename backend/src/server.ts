@@ -5,7 +5,9 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import path from 'path';
+import http from 'http';
 
 import authRoutes from './routes/authRoutes.js';
 import saasRoutes from './routes/saasRoutes.js';
@@ -43,11 +45,20 @@ import { MigrationService } from './services/MigrationService.js';
 import { authMiddleware, tenantMiddleware } from './middlewares/authMiddleware.js';
 import { loginLimiter, apiLimiter, adminLimiter } from './middlewares/rateLimiter.js';
 import { errorHandler } from './middlewares/errorHandler.js';
+import { getRedisHealth } from './lib/redis.js';
+import { geminiCircuitBreaker, emailCircuitBreaker } from './lib/circuitBreaker.js';
+import { basePrisma } from './lib/prisma.js';
 
 const app = express();
 
 // ═══ SEC-011: Confiar no Proxy (Easypanel/Nginx) para IP Real ═══
 app.set('trust proxy', 1);
+
+// ═══ PERF-001: Compressão HTTP (gzip/brotli) ═══
+app.use(compression({
+    threshold: 1024,  // Comprimir apenas respostas > 1KB
+    level: 6,         // Nível de compressão balanceado (1-9)
+}));
 
 // ═══ SEC-008: Security Headers (Helmet.js) ═══
 app.use(helmet({
@@ -144,26 +155,123 @@ app.use('/api/treatment-plans', authMiddleware, tenantMiddleware, treatmentPlanR
 // ═══ LGPD: Rotas de privacidade e direitos dos titulares ═══
 app.use('/api/privacy', authMiddleware, privacyRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'Rares360 API is running' });
+// ═══ PERF-002: Health Check Detalhado ═══
+app.get('/api/health', async (req, res) => {
+    const startTime = process.uptime();
+    const memUsage = process.memoryUsage();
+
+    // Database health
+    let dbHealth = { status: 'down', latency_ms: -1 };
+    try {
+        const dbStart = Date.now();
+        await basePrisma.$queryRaw`SELECT 1`;
+        dbHealth = { status: 'up', latency_ms: Date.now() - dbStart };
+    } catch {
+        dbHealth = { status: 'down', latency_ms: -1 };
+    }
+
+    // Redis health
+    const redisHealth = await getRedisHealth();
+
+    // Circuit Breaker states
+    const geminiState = geminiCircuitBreaker.getState();
+    const emailState = emailCircuitBreaker.getState();
+
+    // Overall status
+    const isDbUp = dbHealth.status === 'up';
+    const overallStatus = isDbUp ? (redisHealth.status === 'up' ? 'healthy' : 'degraded') : 'unhealthy';
+
+    res.status(isDbUp ? 200 : 503).json({
+        status: overallStatus,
+        timestamp: new Date().toISOString(),
+        services: {
+            database: dbHealth,
+            redis: redisHealth,
+            gemini: { status: geminiState === 'OPEN' ? 'circuit_open' : 'up' },
+            email: { status: emailState === 'OPEN' ? 'circuit_open' : 'up' },
+        },
+        memory: {
+            used_mb: Math.round(memUsage.heapUsed / 1024 / 1024),
+            total_mb: Math.round(memUsage.heapTotal / 1024 / 1024),
+            rss_mb: Math.round(memUsage.rss / 1024 / 1024),
+        },
+        uptime_seconds: Math.round(startTime),
+    });
+});
+
+// ═══ PERF-003: Prometheus Metrics Endpoint ═══
+app.get('/api/metrics', (req, res) => {
+    const mem = process.memoryUsage();
+    const geminiStats = geminiCircuitBreaker.getStats();
+    const emailStats = emailCircuitBreaker.getStats();
+
+    const metrics = [
+        `# HELP process_heap_used_bytes Heap usado em bytes`,
+        `# TYPE process_heap_used_bytes gauge`,
+        `process_heap_used_bytes ${mem.heapUsed}`,
+        `# HELP process_rss_bytes RSS em bytes`,
+        `# TYPE process_rss_bytes gauge`,
+        `process_rss_bytes ${mem.rss}`,
+        `# HELP process_uptime_seconds Uptime do processo`,
+        `# TYPE process_uptime_seconds gauge`,
+        `process_uptime_seconds ${Math.round(process.uptime())}`,
+        `# HELP circuit_breaker_state Estado do circuit breaker (0=closed, 1=open, 2=half_open)`,
+        `# TYPE circuit_breaker_state gauge`,
+        `circuit_breaker_state{service="gemini"} ${geminiStats.state === 'CLOSED' ? 0 : geminiStats.state === 'OPEN' ? 1 : 2}`,
+        `circuit_breaker_state{service="email"} ${emailStats.state === 'CLOSED' ? 0 : emailStats.state === 'OPEN' ? 1 : 2}`,
+        `# HELP circuit_breaker_requests_total Total de requests`,
+        `# TYPE circuit_breaker_requests_total counter`,
+        `circuit_breaker_requests_total{service="gemini"} ${geminiStats.totalRequests}`,
+        `circuit_breaker_requests_total{service="email"} ${emailStats.totalRequests}`,
+        `# HELP circuit_breaker_failures_total Total de falhas`,
+        `# TYPE circuit_breaker_failures_total counter`,
+        `circuit_breaker_failures_total{service="gemini"} ${geminiStats.totalFailures}`,
+        `circuit_breaker_failures_total{service="email"} ${emailStats.totalFailures}`,
+    ].join('\n');
+
+    res.setHeader('Content-Type', 'text/plain; version=0.0.4');
+    res.send(metrics);
 });
 
 // ═══ SEC-009/SEC-022: Global Error Handler (DEVE ser o último middleware) ═══
 app.use(errorHandler);
 
-process.on('SIGTERM', () => {
-    console.log('SIGTERM recebido. Encerrando graciosamente...');
-    process.exit(0);
-});
+// ═══ PERF-004: Graceful Shutdown ═══
+const port = 3001;
+const server = http.createServer(app);
+
+function gracefulShutdown(signal: string) {
+    console.log(`\n[${signal}] Iniciando shutdown gracioso...`);
+    const shutdownTimeout = setTimeout(() => {
+        console.error('[Shutdown] Timeout de 30s atingido. Forçando encerramento.');
+        process.exit(1);
+    }, 30_000);
+
+    server.close(() => {
+        console.log('[Shutdown] Servidor HTTP fechado.');
+        basePrisma.$disconnect().then(() => {
+            console.log('[Shutdown] Conexão com banco encerrada.');
+            clearTimeout(shutdownTimeout);
+            process.exit(0);
+        }).catch(() => {
+            clearTimeout(shutdownTimeout);
+            process.exit(0);
+        });
+    });
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 process.on('uncaughtException', (err) => {
     console.error('Exceção não capturada:', err);
 });
 
-const port = 3001;
+process.on('unhandledRejection', (reason) => {
+    console.error('Promise não tratada:', reason);
+});
 
-app.listen(port, '0.0.0.0', () => {
+server.listen(port, '0.0.0.0', () => {
     console.log(`🚀 Server is officially listening on 0.0.0.0:${port}`);
     MigrationService.runSoftMigrations().then(() => {
         SeedService.autoSeedIfEmpty().catch(err => console.error('Erro no auto-seed background:', err));

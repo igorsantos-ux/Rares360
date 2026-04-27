@@ -83,7 +83,7 @@ export class DreController {
             const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash-latest' });
 
             const prompt = `
-Vocë é um CFO sênior de clínicas médicas de altíssimo nível no Brasil e atua analisando ferramentas financeiras.
+Você é um CFO sênior de clínicas médicas de altíssimo nível no Brasil e atua analisando ferramentas financeiras.
 Foi fornecido um pacote completo da DRE da clínica, e sua tarefa é gerar uma devolutiva impecável retornando os insights estritamente nesse formato JSON (Apenas JSON, sem formatação markdown no contorno).
             
 Parâmetros de Benchmark SAUDÁVEL:
@@ -99,7 +99,7 @@ Sua resposta DEVE ser esse objeto (SEM NENHUM TEXTO EXTRA ALÉM DAS CHAVES {}):
   "recomendacoes": [
     { "titulo": "Ação Direta", "acao": "Texto descritivo de como aplicar na prática", "impacto_estimado": "Cifra ou porcentagem prevista", "prioridade": "alta" }
   ],
-  "score_saude_financeira": 87, // Int de 0 a 100 baseado em performance real
+  "score_saude_financeira": 87,
   "comparacao_setor": "Texto de comparação qualitativa breve de 2 linhas."
 }
 
@@ -109,13 +109,26 @@ ${JSON.stringify(dreData)}
 ---
             `;
 
-            const result = await model.generateContent(prompt);
-            let insightJSON = result.response.text();
+            // ═══ PERF-005: Circuit Breaker para Gemini API ═══
+            const { geminiCircuitBreaker } = await import('../lib/circuitBreaker.js');
 
-            // Clean markdown
-            insightJSON = insightJSON.replace(/^```(json)?\n?/mi, '').replace(/\n?```$/mi, '').trim();
+            const parsed = await geminiCircuitBreaker.execute(
+                async () => {
+                    const result = await model.generateContent(prompt);
+                    let insightJSON = result.response.text();
+                    insightJSON = insightJSON.replace(/^```(json)?\n?/mi, '').replace(/\n?```$/mi, '').trim();
+                    return JSON.parse(insightJSON);
+                },
+                () => ({
+                    diagnostico_geral: '⚠️ Análise de IA temporariamente indisponível. Os dados financeiros estão sendo exibidos normalmente, mas os insights automatizados estão em manutenção. Tente novamente em alguns minutos.',
+                    pontos_fortes: [],
+                    pontos_criticos: ['Serviço de IA indisponível no momento'],
+                    recomendacoes: [],
+                    score_saude_financeira: 0,
+                    comparacao_setor: 'Indisponível — serviço em recuperação.'
+                })
+            );
 
-            const parsed = JSON.parse(insightJSON);
             res.json(parsed);
 
         } catch (error) {

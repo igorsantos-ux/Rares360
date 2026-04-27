@@ -448,6 +448,8 @@ model FinancialGoal {
   type     String
   clinicId String
   clinic   Clinic @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId, month, year])
 }
 
 model Document {
@@ -459,6 +461,8 @@ model Document {
   createdAt DateTime @default(now())
   clinicId  String
   clinic    Clinic   @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
 }
 
 model ClinicDocument {
@@ -526,6 +530,9 @@ model AccountPayableInstallment {
   paidAt            DateTime?
   paymentMethod     String?
   accountPayable    AccountPayable @relation(fields: [accountPayableId], references: [id], onDelete: Cascade)
+
+  @@index([accountPayableId, status])
+  @@index([dueDate])
 }
 
 model PricingSimulation {
@@ -592,6 +599,7 @@ model Procedure {
   clinic        Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   treatmentItems TreatmentItem[]
 
+  @@index([clinicId])
   @@index([importBatchId])
 }
 
