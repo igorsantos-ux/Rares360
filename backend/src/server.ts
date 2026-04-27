@@ -168,7 +168,7 @@ app.get('/', (req, res) => {
 });
 
 // ═══ Rotas públicas ═══
-app.use('/api/auth', loginLimiter, authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
 
 // ═══ SEC-007: Rate limiting na API geral ═══
