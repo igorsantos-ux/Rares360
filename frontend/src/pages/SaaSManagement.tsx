@@ -614,7 +614,7 @@ const SaaSManagement = () => {
                             <span className="px-2 py-0.5 bg-[#8A9A5B] text-white text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm">Admin Global</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <img src="/rares360-logo.png" alt="Rares360" className="h-10 w-auto object-contain" />
+                            <img src="/logo-alamino-dark.png" alt="Rares360" className="h-12 w-auto object-contain" />
                         </div>
                         <p className="text-slate-400 font-bold text-[10px] mt-2 tracking-widest uppercase">{user?.name}</p>
                     </div>
