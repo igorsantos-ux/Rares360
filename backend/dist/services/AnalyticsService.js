@@ -40,7 +40,7 @@ export class AnalyticsService {
                 id: c.id,
                 name: c.fullName,
                 birthDate: c.birthDate,
-                lastVisit,
+                lastVisit: c.lastVisit || c.transactions[0]?.date || null,
                 lastValue,
                 totalSpent,
                 count: c.transactions.length

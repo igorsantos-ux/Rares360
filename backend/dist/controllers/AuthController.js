@@ -229,4 +229,23 @@ export class AuthController {
             res.status(500).json({ error: 'Erro ao atualizar status de onboarding.' });
         }
     }
+    static async logout(req, res) {
+        try {
+            const authHeader = req.headers.authorization;
+            if (authHeader) {
+                const token = authHeader.split(' ')[1];
+                const redisClient = (await import('../lib/redis.js')).default;
+                if (redisClient && token) {
+                    // Bloqueia o token por 8 horas (tempo máximo de sessão)
+                    await redisClient.set(`blacklist_${token}`, 'true', 'EX', 28800);
+                }
+            }
+            res.json({ success: true, message: 'Logout realizado com sucesso' });
+        }
+        catch (error) {
+            console.error('[AUTH] Erro ao realizar logout:', error);
+            // Mesmo se o Redis falhar, retornamos sucesso porque o frontend vai limpar o local
+            res.json({ success: true, message: 'Logout realizado com sucesso (local-only)' });
+        }
+    }
 }

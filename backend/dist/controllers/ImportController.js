@@ -1,5 +1,5 @@
 import prisma from '../lib/prisma.js';
-import * as xlsx from 'xlsx';
+import * as xlsx from '@e965/xlsx';
 import { TaskService } from '../services/TaskService.js';
 import { InventoryService } from '../services/CoreServices.js';
 export class ImportController {

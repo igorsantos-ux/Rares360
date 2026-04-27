@@ -21,7 +21,7 @@ export const jsonLoggerMiddleware = (req: Request, res: Response, next: NextFunc
             status: res.statusCode,
             durationMs: duration,
             userAgent: req.get('User-Agent') || 'unknown',
-            clientIp: req.ip || req.socket.remoteAddress || 'unknown',
+            clientIp: (req as any).realIp || req.headers['cf-connecting-ip'] || req.ip || req.socket.remoteAddress || 'unknown',
             message: `HTTP ${req.method} ${req.originalUrl} - ${res.statusCode} (${duration}ms)`
         };
 

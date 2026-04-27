@@ -37,7 +37,7 @@ export class HistoryService {
             },
             include: {
                 doctor: true,
-                customer: true
+                patient: true
             },
             orderBy: {
                 date: 'desc'

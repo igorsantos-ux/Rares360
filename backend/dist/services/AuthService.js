@@ -17,8 +17,9 @@ export class AuthService {
         return bcrypt.compare(password, hash);
     }
     static generateToken(payload) {
+        const expiresIn = payload.role === 'ADMIN_GLOBAL' ? '15m' : '25m';
         return jwt.sign(payload, JWT_SECRET, {
-            expiresIn: '7d',
+            expiresIn,
             algorithm: 'HS256',
             issuer: 'rares360',
             audience: 'rares360-api',

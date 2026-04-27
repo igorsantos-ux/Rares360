@@ -17,7 +17,7 @@ export const jsonLoggerMiddleware = (req, res, next) => {
             status: res.statusCode,
             durationMs: duration,
             userAgent: req.get('User-Agent') || 'unknown',
-            clientIp: req.ip || req.socket.remoteAddress || 'unknown',
+            clientIp: req.realIp || req.headers['cf-connecting-ip'] || req.ip || req.socket.remoteAddress || 'unknown',
             message: `HTTP ${req.method} ${req.originalUrl} - ${res.statusCode} (${duration}ms)`
         };
         if (res.statusCode >= 500) {

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import prisma, { basePrisma } from '../lib/prisma.js';
 import { AuthService } from '../services/AuthService.js';
 import { BillingService } from '../services/BillingService.js';
+import { createAuditLog } from '../lib/auditLogger.js';
 import { MailService } from '../services/MailService.js';
 import multer from 'multer';
 import path from 'path';
@@ -804,21 +805,16 @@ export class SaaSController {
                 return res.status(403).json({ error: 'Acesso negado: Clínica inativa ou suspensa' });
             }
 
-            const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
-
-            // Logs in AuditLog
-            await basePrisma.auditLog.create({
-                data: {
-                    action: 'ADMIN_CLINIC_ACCESS' as any,
-                    entity: 'Clinic',
-                    entityId: clinicId,
-                    clinicId: clinicId,
-                    userId: user.id,
-                    ipAddress: ipAddress,
-                    newValues: {
-                        adminEmail: user.email,
-                        userAgent: req.headers['user-agent']
-                    }
+            // Logs in AuditLog via utilitário centralizado
+            await createAuditLog({
+                action: 'ADMIN_CLINIC_ACCESS' as any,
+                entity: 'Clinic',
+                entityId: clinicId,
+                clinicId: clinicId,
+                userId: user.id,
+                req: req,
+                newValues: {
+                    adminEmail: user.email,
                 }
             });
 
@@ -865,18 +861,16 @@ export class SaaSController {
             const { clinicId, accessStartedAt } = user.adminAccessContext;
             const sessionDurationMinutes = Math.round((new Date().getTime() - new Date(accessStartedAt).getTime()) / 60000);
 
-            // Registrar saída
-            await basePrisma.auditLog.create({
-                data: {
-                    action: 'ADMIN_CLINIC_EXIT' as any,
-                    entity: 'Clinic',
-                    entityId: clinicId,
-                    clinicId: clinicId,
-                    userId: user.id,
-                    ipAddress: req.ip || req.connection?.remoteAddress || 'unknown',
-                    newValues: {
-                        sessionDurationMinutes
-                    }
+            // Registrar saída via utilitário centralizado
+            await createAuditLog({
+                action: 'ADMIN_CLINIC_EXIT' as any,
+                entity: 'Clinic',
+                entityId: clinicId,
+                clinicId: clinicId,
+                userId: user.id,
+                req: req,
+                newValues: {
+                    sessionDurationMinutes
                 }
             });
 

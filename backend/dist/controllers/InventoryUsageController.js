@@ -43,7 +43,7 @@ export class InventoryUsageController {
                 await tx.inventoryItem.update({
                     where: { id: inventoryItemId },
                     data: {
-                        quantity: { decrement: parseFloat(quantity) }
+                        currentStock: { decrement: parseFloat(quantity) }
                     }
                 });
                 // 3. Registrar Movimento de Saída (Auditoria)

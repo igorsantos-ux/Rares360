@@ -1,4 +1,4 @@
-import * as xlsx from 'xlsx';
+import * as xlsx from '@e965/xlsx';
 const filePath = 'c:/Users/Igor/OneDrive/Desktop/PROJETOS/Antigravity/Rares360/Modelo Planilha/FATURAMENTO TOTAL INC BEUATY .xlsx';
 try {
     const wb = xlsx.readFile(filePath);

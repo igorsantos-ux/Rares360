@@ -70,7 +70,7 @@ export const tenantMiddleware = async (req: any, res: Response, next: NextFuncti
 
     const clinicId = req.clinicId;
     const userId = req.user?.id;
-    const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+    const ipAddress = (req as any).realIp || req.headers['cf-connecting-ip'] || req.ip || 'unknown';
 
     tenantContext.run({ clinicId, userId, ipAddress }, () => {
         next();

@@ -7,7 +7,7 @@ export class AuditController {
             const { entity, entityId, targetField } = req.body;
             const clinicId = (req as any).clinicId || (req as any).user?.clinicId;
             const userId = (req as any).userId || (req as any).user?.id || 'unknown';
-            const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+            const ipAddress = (req as any).realIp || req.headers['cf-connecting-ip'] || req.ip || 'unknown';
 
             if (!entity || !entityId) {
                 return res.status(400).json({ error: 'entity e entityId são obrigatórios' });

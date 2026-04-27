@@ -3,30 +3,44 @@
  * Proteção contra brute force, DDoS e abuso de API
  */
 import rateLimit from 'express-rate-limit';
-// Login: 50 tentativas por 15 min por IP (Aumentado para evitar bloqueio falso em produção)
+import RedisStore from 'rate-limit-redis';
+import { redis } from '../lib/redis.js';
+// Função para extrair IP real
+const getClientIp = (req) => {
+    return req.realIp ||
+        req.headers['cf-connecting-ip'] ||
+        req.ip ||
+        'unknown';
+};
+// Rate limit para login — mais restritivo
 export const loginLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 50,
-    message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+    windowMs: 15 * 60 * 1000, // 15 minutos
+    max: 10,
+    keyGenerator: getClientIp,
+    message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
     standardHeaders: true,
     legacyHeaders: false,
-    validate: { trustProxy: false, xForwardedForHeader: false },
+    store: redis ? new RedisStore({
+        sendCommand: (...args) => redis.call(...args),
+    }) : undefined,
 });
-// API geral: 100 req/min por IP
+// Rate limit para API geral
 export const apiLimiter = rateLimit({
-    windowMs: 60 * 1000,
+    windowMs: 60 * 1000, // 1 minuto
     max: 100,
-    message: { error: 'Limite de requisições atingido. Tente novamente em breve.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-    validate: { xForwardedForHeader: false },
+    keyGenerator: getClientIp,
+    message: { error: 'Limite de requisições excedido.' },
+    store: redis ? new RedisStore({
+        sendCommand: (...args) => redis.call(...args),
+    }) : undefined,
 });
-// Admin/SaaS: 30 req/min por IP
+// Rate limit para endpoints admin — mais restritivo
 export const adminLimiter = rateLimit({
     windowMs: 60 * 1000,
     max: 30,
-    message: { error: 'Limite de requisições administrativas atingido.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-    validate: { xForwardedForHeader: false },
+    keyGenerator: getClientIp,
+    message: { error: 'Limite de requisições admin excedido.' },
+    store: redis ? new RedisStore({
+        sendCommand: (...args) => redis.call(...args),
+    }) : undefined,
 });

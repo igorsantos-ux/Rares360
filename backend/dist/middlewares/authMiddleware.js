@@ -1,11 +1,18 @@
 import { AuthService } from '../services/AuthService.js';
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
         return res.status(401).json({ error: 'Token não fornecido', message: 'Token não fornecido' });
     }
     const [, token] = authHeader.split(' ');
     try {
+        const redisClient = (await import('../lib/redis.js')).default;
+        if (redisClient) {
+            const isBlacklisted = await redisClient.get(`blacklist_${token}`);
+            if (isBlacklisted) {
+                return res.status(401).json({ error: 'Sessão encerrada', message: 'Sessão encerrada' });
+            }
+        }
         const decoded = AuthService.verifyToken(token);
         if (!decoded) {
             // SEC-014: Nunca logar trechos do token
@@ -48,7 +55,7 @@ export const tenantMiddleware = async (req, res, next) => {
     }
     const clinicId = req.clinicId;
     const userId = req.user?.id;
-    const ipAddress = req.ip || req.connection?.remoteAddress || 'unknown';
+    const ipAddress = req.realIp || req.headers['cf-connecting-ip'] || req.ip || 'unknown';
     tenantContext.run({ clinicId, userId, ipAddress }, () => {
         next();
     });

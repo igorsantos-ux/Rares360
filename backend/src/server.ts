@@ -55,8 +55,27 @@ import { prometheusMiddleware, getPrometheusMetrics } from './middlewares/metric
 
 const app = express();
 
-// ═══ SEC-011: Confiar no Proxy (Easypanel/Nginx) para IP Real ═══
-app.set('trust proxy', 1);
+// ═══ SEC-011: Confiar no Proxy (Easypanel/Nginx/Cloudflare) para IP Real ═══
+app.set('trust proxy', true);
+
+// Middleware para extrair IP real do header CF-Connecting-IP
+app.use((req, res, next) => {
+  const cfIp = req.headers['cf-connecting-ip'];
+  if (cfIp) {
+    (req as any).realIp = Array.isArray(cfIp) ? cfIp[0] : cfIp;
+  } else {
+    (req as any).realIp = req.ip;
+  }
+  next();
+});
+
+declare global {
+  namespace Express {
+    interface Request {
+      realIp: string;
+    }
+  }
+}
 
 // ═══ PERF-001: Compressão HTTP (gzip/brotli) ═══
 app.use(compression({
@@ -64,49 +83,81 @@ app.use(compression({
     level: 6,         // Nível de compressão balanceado (1-9)
 }));
 
-// ═══ SEC-008: Security Headers (Helmet.js) ═══
+// ═══ SEC-008: Security Headers (Helmet.js ajustado para Cloudflare) ═══
 app.use(helmet({
-    contentSecurityPolicy: {
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'", "data:", "blob:", "https:"],
-            connectSrc: ["'self'"],
-            fontSrc: ["'self'", "https://fonts.gstatic.com"],
-            objectSrc: ["'none'"],
-            frameAncestors: ["'none'"],
-        },
-    },
-    hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-    crossOriginEmbedderPolicy: false, // Necessário para uploads de imagens
+  // Cloudflare já gerencia HSTS
+  hsts: false,
+  // Cloudflare já gerencia X-Frame-Options
+  frameguard: false,
+  // Cloudflare não cobre as políticas abaixo
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://challenges.cloudflare.com"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "https://api.rares360.com.br", "https://generativelanguage.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.cloudflare.com", "https://fonts.gstatic.com"],
+      frameSrc: ["https://challenges.cloudflare.com"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: [],
+    }
+  },
+  // xContentTypeOptions já é ativado por padrão
+  // noSniff também não precisa ser explícito
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  permittedCrossDomainPolicies: false,
+  dnsPrefetchControl: { allow: false },
+  // hidePoweredBy já é ativado por padrão
+  crossOriginEmbedderPolicy: false,
 }));
 
-// ═══ SEC-003: CORS com allowlist (sem wildcard em produção) ═══
-const ALLOWED_ORIGINS = (process.env.CORS_ORIGINS || '')
-    .split(',')
-    .map(o => o.trim())
-    .filter(Boolean);
+// ═══ SEC-003: CORS com allowlist ═══
+const allowedOrigins = [
+  'https://rares360.com.br',
+  'https://www.rares360.com.br',
+  'https://api.rares360.com.br',
+  ...(process.env.NODE_ENV === 'development' ? [
+    'http://localhost:3000',
+    'http://localhost:5173',
+  ] : [])
+];
 
 app.use(cors({
-    origin: (origin, callback) => {
-        // Permitir requests sem origin (mobile apps, Postman, server-to-server)
-        if (!origin) return callback(null, true);
-        // Em dev (sem CORS_ORIGINS definido), permitir tudo
-        if (ALLOWED_ORIGINS.length === 0) return callback(null, true);
-        // Produção: checar allowlist
-        if (ALLOWED_ORIGINS.includes(origin)) {
-            return callback(null, true);
-        }
-        callback(new Error('Origem não permitida pelo CORS'));
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-clinic-id'],
-    credentials: true,
-    preflightContinue: false,
-    optionsSuccessStatus: 204
+  origin: (origin, callback) => {
+    if (!origin && process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    // Mobile apps e Postman locais também não mandam origin às vezes. Vamos aceitar se estiver na allowedOrigins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: Origem não permitida: ${origin}`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Request-ID',
+    'CF-Connecting-IP',
+    'x-clinic-id'
+  ],
+  exposedHeaders: ['X-Request-ID'],
+  maxAge: 86400
 }));
+
+app.use((req, res, next) => {
+  const isHttps = req.headers['cf-visitor']
+    ? JSON.parse(req.headers['cf-visitor'] as string).scheme === 'https'
+    : req.secure;
+  
+  if (process.env.NODE_ENV === 'production' && !isHttps) {
+    console.warn(`Requisição não-HTTPS detectada de ${(req as any).realIp}`);
+  }
+  next();
+});
 
 app.use(express.json({ limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));

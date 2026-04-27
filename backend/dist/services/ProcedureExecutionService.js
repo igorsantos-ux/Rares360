@@ -21,7 +21,7 @@ export class ProcedureExecutionService {
         });
         // 2. Baixa de estoque (Baseado nos insumos vinculados ao procedimento)
         if (execution.procedureId) {
-            const pricing = await prisma.procedurePricing.findUnique({
+            const pricing = await prisma.procedure.findUnique({
                 where: { id: execution.procedureId },
                 include: { supplies: true }
             });
@@ -37,8 +37,8 @@ export class ProcedureExecutionService {
                         try {
                             // Tenta registrar movimento. O InventoryService atual gerado por transação.
                             // Para manter a "Regra de Ouro" de permitir execução mesmo sem estoque:
-                            if (item.quantity < supply.quantity) {
-                                console.warn(`⚠️ ALERTA CRÍTICO: Estoque insuficiente para ${supply.name}. Saldo: ${item.quantity}, Necessário: ${supply.quantity}`);
+                            if (item.currentStock < supply.quantity) {
+                                console.warn(`⚠️ ALERTA CRÍTICO: Estoque insuficiente para ${supply.name}. Saldo: ${item.currentStock}, Necessário: ${supply.quantity}`);
                             }
                             await InventoryService.registerMovement({
                                 itemId: item.id,

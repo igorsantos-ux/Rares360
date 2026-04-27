@@ -6,6 +6,7 @@
  */
 import { Request, Response } from 'express';
 import prisma, { basePrisma } from '../lib/prisma.js';
+import { createAuditLog } from '../lib/auditLogger.js';
 
 export class PrivacyController {
 
@@ -113,16 +114,15 @@ export class PrivacyController {
             });
 
             // Registrar auditoria da anonimização
-            await basePrisma.auditLog.create({
-                data: {
-                    clinicId: user.clinicId || 'GLOBAL',
-                    userId: userId,
-                    action: 'DELETE',
-                    entity: 'User',
-                    entityId: userId,
-                    oldValues: { action: 'LGPD_ANONYMIZATION_REQUEST' },
-                    newValues: { anonymizedAt: new Date().toISOString() },
-                }
+            await createAuditLog({
+                clinicId: user.clinicId || 'GLOBAL',
+                userId: userId,
+                action: 'DELETE',
+                entity: 'User',
+                entityId: userId,
+                req: req,
+                oldValues: { action: 'LGPD_ANONYMIZATION_REQUEST' },
+                newValues: { anonymizedAt: new Date().toISOString() },
             });
 
             res.json({
@@ -152,16 +152,15 @@ export class PrivacyController {
             }
 
             // Registrar solicitação de correção no log de auditoria
-            await basePrisma.auditLog.create({
-                data: {
-                    clinicId: req.user.clinicId || 'GLOBAL',
-                    userId: userId,
-                    action: 'UPDATE',
-                    entity: 'DataCorrectionRequest',
-                    entityId: userId,
-                    oldValues: { field, currentValue, justification },
-                    newValues: { field, correctedValue, requestedAt: new Date().toISOString() },
-                }
+            await createAuditLog({
+                clinicId: req.user.clinicId || 'GLOBAL',
+                userId: userId,
+                action: 'UPDATE',
+                entity: 'DataCorrectionRequest',
+                entityId: userId,
+                req: req,
+                oldValues: { field, currentValue, justification },
+                newValues: { field, correctedValue, requestedAt: new Date().toISOString() },
             });
 
             res.json({
@@ -204,15 +203,14 @@ export class PrivacyController {
             }
 
             // Registrar auditoria do export
-            await basePrisma.auditLog.create({
-                data: {
-                    clinicId: user.clinicId || 'GLOBAL',
-                    userId: userId,
-                    action: 'EXPORT',
-                    entity: 'User',
-                    entityId: userId,
-                    newValues: { type: 'DATA_PORTABILITY', format: 'JSON', exportedAt: new Date().toISOString() },
-                }
+            await createAuditLog({
+                clinicId: user.clinicId || 'GLOBAL',
+                userId: userId,
+                action: 'EXPORT',
+                entity: 'User',
+                entityId: userId,
+                req: req,
+                newValues: { type: 'DATA_PORTABILITY', format: 'JSON', exportedAt: new Date().toISOString() },
             });
 
             const exportData = {
@@ -277,7 +275,7 @@ export class PrivacyController {
                     userId,
                     termsVersion,
                     consentType: consentType || 'DATA_PROCESSING',
-                    ipAddress: req.ip || req.connection?.remoteAddress || 'unknown',
+                    ipAddress: (req as any).realIp || req.headers['cf-connecting-ip'] || req.ip || 'unknown',
                     userAgent: req.headers['user-agent'] || 'unknown',
                 }
             });

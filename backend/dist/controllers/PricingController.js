@@ -76,7 +76,7 @@ export class PricingController {
                     ...(endDate ? { lte: new Date(endDate) } : {})
                 };
             }
-            const procedures = await prisma.procedurePricing.findMany({
+            const procedures = await prisma.procedure.findMany({
                 where,
                 include: { supplies: true },
                 orderBy: { name: 'asc' }
@@ -116,10 +116,10 @@ export class PricingController {
                 // Limpeza reativa de supplies para atualização limpa
                 if (id) {
                     await tx.pricingSupply.deleteMany({
-                        where: { procedurePricingId: id }
+                        where: { procedureId: id }
                     });
                 }
-                const procedure = await tx.procedurePricing.upsert({
+                const procedure = await tx.procedure.upsert({
                     where: { id: id || 'new-procedure' }, // Fallback para evitar erro se id vier vazio
                     update: {
                         name,
@@ -143,7 +143,7 @@ export class PricingController {
                             name: s.name,
                             quantity: Number(s.quantity),
                             cost: Number(s.cost),
-                            procedurePricingId: procedure.id
+                            procedureId: procedure.id
                         }))
                     });
                 }
@@ -160,7 +160,7 @@ export class PricingController {
         try {
             const { id } = req.params;
             const clinicId = req.user.clinicId;
-            await prisma.procedurePricing.delete({
+            await prisma.procedure.delete({
                 where: { id, clinicId }
             });
             res.json({ message: 'Procedimento removido do diagnóstico.' });
