@@ -270,17 +270,22 @@ export class AuthController {
 
     static async logout(req: any, res: Response) {
         try {
-            // Se houver um redis configurado futuramente, aqui será inserido na blocklist.
-            // Atualmente retornamos success para permitir o frontend limpar os dados client-side
+            const authHeader = req.headers.authorization;
+            if (authHeader) {
+                const token = authHeader.split(' ')[1];
+                const redisClient = (await import('../lib/redis.js')).default;
 
-            // Aqui poderíamos ter:
-            // const token = req.headers.authorization?.split(' ')[1];
-            // if (token) { await redisClient.set(`blacklist_${token}`, 'true', 'EX', 8 * 60 * 60); }
+                if (redisClient && token) {
+                    // Bloqueia o token por 8 horas (tempo máximo de sessão)
+                    await redisClient.set(`blacklist_${token}`, 'true', 'EX', 28800);
+                }
+            }
 
             res.json({ success: true, message: 'Logout realizado com sucesso' });
         } catch (error) {
             console.error('[AUTH] Erro ao realizar logout:', error);
-            res.status(500).json({ error: 'Erro interno ao realizar logout.' });
+            // Mesmo se o Redis falhar, retornamos sucesso porque o frontend vai limpar o local
+            res.json({ success: true, message: 'Logout realizado com sucesso (local-only)' });
         }
     }
 }

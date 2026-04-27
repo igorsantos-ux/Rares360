@@ -13,9 +13,12 @@ export const authMiddleware = async (req: any, res: Response, next: NextFunction
 
     try {
         const redisClient = (await import('../lib/redis.js')).default;
-        const isBlacklisted = await redisClient.get(`blacklist_${token}`);
-        if (isBlacklisted) {
-            return res.status(401).json({ error: 'Sessão encerrada', message: 'Sessão encerrada' });
+
+        if (redisClient) {
+            const isBlacklisted = await redisClient.get(`blacklist_${token}`);
+            if (isBlacklisted) {
+                return res.status(401).json({ error: 'Sessão encerrada', message: 'Sessão encerrada' });
+            }
         }
 
         const decoded = AuthService.verifyToken(token);
