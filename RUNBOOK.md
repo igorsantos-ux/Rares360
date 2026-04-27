@@ -69,3 +69,21 @@ Logs são obrigatoriamente estruturados em Object JSON, facilitando ingestão em
 ## 🔒 5. Segurança da Borda
 
 - WAF: Deve-se rotear a zona de NS para o **Cloudflare** via proxy (Nuvem laranja ligada), ativando **Bot Fight Mode** e OWASP Ruleset mínimo. Rate-limiting complementa a App logic. O Nginx no `vHost` não responde a IP sujo escaneando fora do TLD aprovado.
+
+---
+
+## ⚡ 6. Redis (Performance & Session Security)
+
+O Redis é usado como camada de cache e para a Blacklist de tokens invalidados.
+
+### 6.1 Configuração
+- **Variável:** `REDIS_URL` (Ex: `redis://redis:6379`)
+- **Fallback:** Se o Redis estiver fora, o sistema entra em modo de resiliência. O cache é ignorado e a validação de blacklist de logout é desativada para manter a disponibilidade da plataforma.
+
+### 6.2 Monitoramento
+Para limpar o cache manualmente via CLI (dentro do container api):
+```bash
+redis-cli -u $REDIS_URL FLUSHALL
+```
+- **Blacklist de Tokens:** Tokens invalidados ficam no Redis por 8h (tempo máximo de sessão).
+- **Cache de Rotas:** Dashboard e DRE usam cache de 5-15 min. No Easypanel, monitore o consumo de memória do Redis; 64MB-128MB costumam ser suficientes para o Rares360.

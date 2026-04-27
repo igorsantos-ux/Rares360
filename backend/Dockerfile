@@ -19,8 +19,9 @@ RUN npm run build
 # Stage 2: Runtime (Production)
 FROM node:20.18-slim AS runner
 
-# Instalar OpenSSL para o Prisma no runtime
+# Instalar PM2 globalmente e OpenSSL para o Prisma no runtime
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN npm install -g pm2
 
 WORKDIR /app
 
@@ -49,4 +50,4 @@ USER nodeuser
 EXPOSE 3001
 
 # Comando default via PM2 ou tsx
-CMD ["npx", "pm2-runtime", "start", "ecosystem.config.cjs"]
+CMD ["pm2-runtime", "start", "ecosystem.config.cjs"]
