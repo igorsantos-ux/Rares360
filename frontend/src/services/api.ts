@@ -62,6 +62,7 @@ export const saasApi = {
     getClinicInvoices: (clinicId: string) => api.get(`saas/billing/${clinicId}/invoices`),
     impersonateClinic: (clinicId: string) => api.post(`saas/impersonate/${clinicId}`),
     adminClinicAccess: (clinicId: string) => api.post(`saas/admin/clinic-access`, { clinicId }),
+    adminClinicExit: () => api.post(`saas/admin/clinic-exit`),
     getAuditLogs: () => api.get('saas/audit-logs'),
     updateClinic: (id: string, data: any) => api.patch(`saas/clinics/${id}`, data),
     deleteClinic: (id: string) => api.delete(`saas/clinics/${id}`),

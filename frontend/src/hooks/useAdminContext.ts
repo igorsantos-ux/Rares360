@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { jwtDecode } from 'jwt-decode';
-import api from '../services/api';
+import { saasApi } from '../services/api';
 
 const TOKEN_KEY = 'heath_finance_token';
 
@@ -110,7 +110,7 @@ export function useAdminContext() {
 
     const exitAdminAccess = async () => {
         try {
-            const res = await api.post('/api/admin/clinic-exit');
+            const res = await saasApi.adminClinicExit();
             if (res.data.token) {
                 localStorage.setItem(TOKEN_KEY, res.data.token);
                 // Limpar estado imediatamente
