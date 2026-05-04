@@ -93,6 +93,16 @@ model Clinic {
   importBatches         ImportBatch[]
   treatmentPlans        TreatmentPlan[]
   accountReceivables    AccountReceivable[]
+
+  // ═══ Módulo de Faturamento V2 ═══
+  formasPagamento       FormaPagamento[]
+  categoriasProcedimento CategoriaProcedimento[]
+  orcamentos            Orcamento[]
+  contratos             Contrato[]
+  contasPaciente        ContaPaciente[]
+  termos                Termo[]
+  setores               Setor[]
+  fornecedores          Fornecedor[]
 }
 
 enum AuditAction {
@@ -295,6 +305,11 @@ model Patient {
   treatmentPlans            TreatmentPlan[]
   accountReceivables        AccountReceivable[]
 
+  // ═══ Módulo de Faturamento V2 ═══
+  orcamentos                Orcamento[]
+  contasPaciente            ContaPaciente[]
+  documentosPaciente        DocumentoPaciente[]
+
   @@index([clinicId, fullName])
   @@index([importBatchId])
 }
@@ -407,16 +422,56 @@ model InventoryItem {
   leadTime        Int              @default(7)   // Dias para fornecedor entregar
   desiredCoverage Int              @default(30)  // Dias de cobertura desejada
   safetyStock     Float            @default(0)   // Estoque de segurança
+  setorId         String?
+  quantidadeIdeal Float?
+  giroMensal      Float?
+  ultimoCustoData DateTime?
+  fornecedorPadraoId String?
   
   importBatchId   String?
   importBatch     ImportBatch?     @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
 
   clinic          Clinic           @relation(fields: [clinicId], references: [id])
+  setor           Setor?           @relation(fields: [setorId], references: [id])
+  fornecedorPadrao Fornecedor?     @relation(fields: [fornecedorPadraoId], references: [id])
   movements       StockMovement[]
   inventoryUsages InventoryUsage[]
+  procedimentoInsumos ProcedimentoInsumo[]
 
   @@index([clinicId, name])
   @@index([importBatchId])
+}
+
+model Fornecedor {
+  id              String          @id @default(uuid())
+  clinicId        String
+  nome            String
+  cnpj            String?
+  email           String?
+  telefone        String?
+  whatsapp        String?
+  ativo           Boolean         @default(true)
+  itensEstoque    InventoryItem[]
+  clinic          Clinic          @relation(fields: [clinicId], references: [id])
+  createdAt       DateTime        @default(now())
+
+  @@index([clinicId])
+}
+
+model Setor {
+  id          String   @id @default(cuid())
+  clinicId    String
+  nome        String   // Enfermagem | Escritório | Copa | Limpeza | Estética
+  slug        String   // enfermagem | escritorio | copa | limpeza | estetica
+  cor         String   // hex para badge visual
+  icone       String   // nome do ícone Lucide React
+  ordem       Int      @default(0)
+  ativo       Boolean  @default(true)
+  itensEstoque InventoryItem[]
+  clinic      Clinic   @relation(fields: [clinicId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@index([clinicId])
 }
 
 model StockMovement {
@@ -591,6 +646,9 @@ model Procedure {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   
+  // ═══ Faturamento V2: Categoria tipada ═══
+  categoriaId     String?
+
   importBatchId String?
   importBatch   ImportBatch?    @relation(fields: [importBatchId], references: [id], onDelete: SetNull)
 
@@ -598,6 +656,11 @@ model Procedure {
   appointments  Appointment[]
   clinic        Clinic          @relation(fields: [clinicId], references: [id], onDelete: Cascade)
   treatmentItems TreatmentItem[]
+  categoriaProc CategoriaProcedimento? @relation(fields: [categoriaId], references: [id])
+  procedimentoInsumos ProcedimentoInsumo[]
+  orcamentoItens      OrcamentoItem[]
+  contaPacienteItens  ContaPacienteItem[]
+  termos              Termo[]
 
   @@index([clinicId])
   @@index([importBatchId])
@@ -956,6 +1019,255 @@ model AccountReceivable {
 
   @@index([clinicId, treatmentPlanId])
   @@index([patientId])
+}
+// ═══════════════════════════════════════════════════════
+// MÓDULO DE FATURAMENTO V2 — Fluxo Comercial Integrado
+// Orçamento → Contrato → Conta → Execução → Baixa
+// ═══════════════════════════════════════════════════════
+
+model FormaPagamento {
+  id                  String    @id @default(cuid())
+  clinicId            String
+  nome                String
+  tipo                String    // DINHEIRO|PIX|CREDITO|DEBITO|BOLETO
+  taxaPercentual      Decimal   @default(0)
+  taxaFixa            Decimal   @default(0)
+  taxaAntecipacao     Decimal   @default(0)
+  prazoRecebimento    Int       @default(0)
+  permiteParcelamento Boolean   @default(false)
+  parcelasMaximas     Int       @default(1)
+  taxaPorParcela      Json?     // {"2":1.99,"3":2.49,...}
+  ativo               Boolean   @default(true)
+  ordem               Int       @default(0)
+  clinic              Clinic    @relation(fields: [clinicId], references: [id])
+  orcamentos          Orcamento[]
+  contasPaciente      ContaPaciente[]
+  createdAt           DateTime  @default(now())
+
+  @@index([clinicId])
+}
+
+model CategoriaProcedimento {
+  id            String      @id @default(cuid())
+  clinicId      String
+  nome          String
+  cor           String?
+  ativa         Boolean     @default(true)
+  procedimentos Procedure[]
+  clinic        Clinic      @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+}
+
+model ProcedimentoInsumo {
+  id               String        @id @default(cuid())
+  procedimentoId   String
+  itemEstoqueId    String
+  quantidadePadrao Decimal
+  obrigatorio      Boolean       @default(true)
+  procedimento     Procedure     @relation(fields: [procedimentoId], references: [id], onDelete: Cascade)
+  itemEstoque      InventoryItem @relation(fields: [itemEstoqueId], references: [id])
+
+  @@index([procedimentoId])
+}
+
+model Orcamento {
+  id               String         @id @default(cuid())
+  clinicId         String
+  numero           String         // ORC-2026-00001
+  pacienteId       String
+  formaPagamentoId String
+  parcelas         Int            @default(1)
+  valorBruto       Decimal
+  valorDesconto    Decimal        @default(0)
+  tipoDesconto     String         @default("VALOR") // VALOR|PERCENTUAL
+  valorLiquido     Decimal
+  taxasTotal       Decimal        @default(0)
+  valorFinal       Decimal
+  observacoes      String?
+  status           String         @default("RASCUNHO") // RASCUNHO|ENVIADO|APROVADO|REJEITADO|EXPIRADO|CONVERTIDO
+  validadeDias     Int            @default(15)
+  validoAte        DateTime
+  aprovadoEm       DateTime?
+  aprovadoPor      String?
+  contratoId       String?        @unique
+  contaPacienteId  String?        @unique
+  itens            OrcamentoItem[]
+  formaPagamento   FormaPagamento @relation(fields: [formaPagamentoId], references: [id])
+  paciente         Patient        @relation(fields: [pacienteId], references: [id])
+  clinic           Clinic         @relation(fields: [clinicId], references: [id])
+  contrato         Contrato?
+  contaPaciente    ContaPaciente?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([clinicId, status])
+  @@index([clinicId, pacienteId])
+}
+
+model OrcamentoItem {
+  id              String    @id @default(cuid())
+  orcamentoId     String
+  procedimentoId  String
+  quantidade      Int       @default(1)
+  valorUnitario   Decimal
+  desconto        Decimal   @default(0)
+  valorTotal      Decimal
+  orcamento       Orcamento @relation(fields: [orcamentoId], references: [id], onDelete: Cascade)
+  procedimento    Procedure @relation(fields: [procedimentoId], references: [id])
+
+  @@index([orcamentoId])
+}
+
+model Contrato {
+  id            String    @id @default(cuid())
+  clinicId      String
+  orcamentoId   String    @unique
+  numero        String    // CONTR-2026-00001
+  pdfUrl        String
+  pdfHash       String
+  conteudoHTML  String
+  geradoEm      DateTime  @default(now())
+  geradoPor     String
+  assinadoEm    DateTime?
+  assinaturaUrl String?
+  orcamento     Orcamento @relation(fields: [orcamentoId], references: [id])
+  clinic        Clinic    @relation(fields: [clinicId], references: [id])
+
+  @@index([clinicId])
+}
+
+model ContaPaciente {
+  id               String                  @id @default(cuid())
+  clinicId         String
+  pacienteId       String
+  orcamentoId      String?                 @unique
+  numero           String                  // CT-2026-00001
+  valorTotal       Decimal
+  valorPago        Decimal                 @default(0)
+  saldoDevedor     Decimal
+  formaPagamentoId String
+  parcelas         Int                     @default(1)
+  parcelasGeradas  Boolean                 @default(false)
+  status           String                  @default("ABERTA") // ABERTA|PAGA|CANCELADA
+  observacoes      String?
+  itens            ContaPacienteItem[]
+  parcelasFinanc   ParcelaContaPaciente[]
+  documentos       DocumentoPaciente[]
+  paciente         Patient                 @relation(fields: [pacienteId], references: [id])
+  formaPagamento   FormaPagamento          @relation(fields: [formaPagamentoId], references: [id])
+  orcamento        Orcamento?              @relation(fields: [orcamentoId], references: [id])
+  clinic           Clinic                  @relation(fields: [clinicId], references: [id])
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  @@index([clinicId, status])
+  @@index([clinicId, pacienteId])
+}
+
+model ContaPacienteItem {
+  id                  String                  @id @default(cuid())
+  contaId             String
+  procedimentoId      String
+  quantidade          Int
+  quantidadeExecutada Int                     @default(0)
+  valorUnitario       Decimal
+  valorTotal          Decimal
+  status              String                  @default("PENDENTE") // PENDENTE|EXECUTADO_PARCIAL|EXECUTADO
+  execucoes           ExecucaoProcedimentoV2[]
+  conta               ContaPaciente           @relation(fields: [contaId], references: [id], onDelete: Cascade)
+  procedimento        Procedure               @relation(fields: [procedimentoId], references: [id])
+
+  @@index([contaId])
+}
+
+model ParcelaContaPaciente {
+  id             String        @id @default(cuid())
+  contaId        String
+  numeroParcela  Int
+  valorParcela   Decimal
+  valorTaxa      Decimal       @default(0)
+  valorLiquido   Decimal
+  vencimento     DateTime
+  pago           Boolean       @default(false)
+  pagoEm         DateTime?
+  conta          ContaPaciente @relation(fields: [contaId], references: [id], onDelete: Cascade)
+
+  @@index([contaId])
+  @@index([vencimento])
+}
+
+// Renomeado para V2 para não conflitar com ProcedureExecution legado
+model ExecucaoProcedimentoV2 {
+  id              String                 @id @default(cuid())
+  contaItemId     String
+  pacienteId      String
+  procedimentoId  String
+  profissionalId  String
+  dataExecucao    DateTime
+  observacoes     String?
+  baixasEstoque   BaixaEstoqueExecucao[]
+  contaItem       ContaPacienteItem      @relation(fields: [contaItemId], references: [id])
+  registradoPor   String
+  createdAt       DateTime               @default(now())
+
+  @@index([contaItemId])
+  @@index([pacienteId])
+}
+
+model BaixaEstoqueExecucao {
+  id             String                 @id @default(cuid())
+  execucaoId     String
+  itemEstoqueId  String
+  quantidade     Decimal
+  custoUnitario  Decimal                @default(0)
+  custoTotal     Decimal                @default(0)
+  execucao       ExecucaoProcedimentoV2 @relation(fields: [execucaoId], references: [id], onDelete: Cascade)
+
+  @@index([execucaoId])
+  @@index([itemEstoqueId])
+}
+
+model Termo {
+  id               String     @id @default(cuid())
+  clinicId         String
+  procedimentoId   String?
+  tipo             String     // CONSENTIMENTO|CONTRATO_PADRAO|TERMO_PROCEDIMENTO|OUTRO
+  nome             String
+  descricao        String?
+  arquivoUrl       String
+  arquivoHash      String
+  arquivoTamanho   Int
+  arquivoMimeType  String
+  ativo            Boolean    @default(true)
+  versao           Int        @default(1)
+  procedimento     Procedure? @relation(fields: [procedimentoId], references: [id])
+  clinic           Clinic     @relation(fields: [clinicId], references: [id])
+  uploadPor        String
+  createdAt        DateTime   @default(now())
+
+  @@index([clinicId])
+  @@index([clinicId, tipo])
+}
+
+model DocumentoPaciente {
+  id              String         @id @default(cuid())
+  pacienteId      String
+  contaId         String?
+  termoId         String?
+  tipo            String         // TERMO_ASSINADO|CONTRATO_ASSINADO|RG|CPF|EXAME|OUTRO
+  nome            String
+  arquivoUrl      String
+  arquivoHash     String
+  arquivoTamanho  Int
+  assinadoEm      DateTime?
+  paciente        Patient        @relation(fields: [pacienteId], references: [id])
+  conta           ContaPaciente? @relation(fields: [contaId], references: [id])
+  uploadPor       String
+  uploadEm        DateTime       @default(now())
+
+  @@index([pacienteId])
+  @@index([contaId])
 }
 
 // ═══════════════════════════════════════════

@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import { ProcedureController } from '../controllers/ProcedureController.js';
-import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.js';
 
 const router = Router();
-
-// Middlewares já aplicados no server.ts
-// router.use(authMiddleware, tenantMiddleware);
 
 // Catálogo de Procedimentos (CRUD e Precificação)
 router.get('/', ProcedureController.list);
@@ -18,5 +14,20 @@ router.delete('/:id', ProcedureController.delete);
 router.get('/pending', ProcedureController.listPending);
 router.get('/patient/:patientId', ProcedureController.getByPatient);
 router.post('/:id/execute', ProcedureController.execute);
+
+// ═══ Categorias de Procedimento ═══
+router.get('/categorias', ProcedureController.listCategorias);
+router.post('/categorias', ProcedureController.createCategoria);
+router.put('/categorias/:id', ProcedureController.updateCategoria);
+router.delete('/categorias/:id', ProcedureController.deleteCategoria);
+
+// ═══ Insumos vinculados ═══
+router.get('/:procedureId/insumos', ProcedureController.listInsumos);
+router.post('/:procedureId/insumos', ProcedureController.addInsumo);
+router.put('/insumos/:insumoId', ProcedureController.updateInsumo);
+router.delete('/insumos/:insumoId', ProcedureController.removeInsumo);
+
+// ═══ Cálculo de margem ═══
+router.get('/:procedureId/margem', ProcedureController.calcularMargem);
 
 export default router;

@@ -19,7 +19,8 @@ import {
     Stethoscope,
     History,
     Shield,
-    Brain
+    Brain,
+    CreditCard
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -66,6 +67,9 @@ const Sidebar = () => {
         {
             label: "Financeiro", items: [
                 { icon: <BarChart3 size={20} />, label: "Faturamento", path: "/billing" },
+                { icon: <FileText size={20} />, label: "Orçamentos", path: "/orcamentos" },
+                { icon: <CreditCard size={20} />, label: "Formas de Pagamento", path: "/formas-pagamento" },
+                { icon: <ArrowUpCircle size={20} />, label: "Contas de Pacientes", path: "/contas-paciente" },
                 { icon: <ArrowUpCircle size={20} />, label: "Contas a Receber (Pendências)", path: "/pendenciais" },
                 { icon: <ArrowDownCircle size={20} />, label: "Contas a Pagar", path: "/payables" },
                 { icon: <TrendingUp size={20} />, label: "Fluxo de Caixa", path: "/cash-flow" },

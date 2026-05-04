@@ -1,354 +1,248 @@
+/**
+ * Inteligência de Compras Otimizada - Módulo Rares360
+ */
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { inventoryApi } from '../services/api';
+import { inteligenciaComprasApi, setoresApi } from '../services/api';
+import { toast, Toaster } from 'react-hot-toast';
 import {
-    Brain,
-    ShoppingCart,
-    AlertTriangle,
-    CheckCircle2,
-    Package,
-    Loader2,
-    TrendingDown,
-    DollarSign,
-    Clock,
-    Search,
-    Download,
-    Minus
+    Brain, Download, AlertTriangle, CheckCircle2,
+    Loader2, Search, FileText, ShoppingCart, Box,
+    HeartPulse, Sparkles, Coffee, SprayCan
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import ItemDetalhesDrawer from '../components/InteligenciaCompras/ItemDetalhesDrawer';
 
-const PurchaseIntelligence = () => {
+const ICONS_MAP: Record<string, any> = {
+    HeartPulse, Sparkles, FileText, Coffee, SprayCan, Brain
+};
+
+export default function PurchaseIntelligence() {
+    const [setorFilter, setSetorFilter] = useState<string | undefined>();
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterStatus, setFilterStatus] = useState<'ALL' | 'COMPRAR' | 'OK' | 'SEM_CONSUMO'>('ALL');
+    const [selectedItem, setSelectedItem] = useState<any>(null);
 
-    const { data, isLoading, error } = useQuery({
-        queryKey: ['pge'],
-        queryFn: () => inventoryApi.getPGE().then(res => res.data),
+    const { data: inteligenciaData, isLoading: loadingInteligencia } = useQuery({
+        queryKey: ['inteligencia-compras', setorFilter],
+        queryFn: () => inteligenciaComprasApi.getPrioridade({ setorId: setorFilter }).then(r => r.data),
     });
 
-    const items = data?.items || [];
-    const kpis = data?.kpis || { totalItems: 0, criticalItems: 0, noConsumptionItems: 0, estimatedCost: 0 };
-
-    const filteredItems = items.filter((item: any) => {
-        const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (item.category || '').toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesFilter = filterStatus === 'ALL' || item.status === filterStatus;
-        return matchesSearch && matchesFilter;
+    const { data: setores } = useQuery({
+        queryKey: ['setores'],
+        queryFn: () => setoresApi.list().then(r => r.data)
     });
 
-    const handleExportCSV = () => {
-        if (filteredItems.length === 0) return;
-        const headers = ['Produto', 'Código', 'Categoria', 'Estoque', 'Consumo Médio/dia', 'Dias Restantes', 'Previsão Fim', 'Status', 'Qtd Compra', 'Custo Estimado'];
-        const rows = filteredItems.map((item: any) => [
-            item.name,
-            item.code || '-',
-            item.category,
-            item.currentStock,
-            item.consumoMedio,
-            item.diasRestantes ?? '-',
-            item.dataRuptura ? new Date(item.dataRuptura).toLocaleDateString('pt-BR') : '-',
-            item.status,
-            item.qtdCompra,
-            (item.qtdCompra * item.unitCost).toFixed(2)
-        ]);
-        const csv = '\uFEFF' + [headers, ...rows].map(r => r.join(';')).join('\n');
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `pge_inteligencia_compras_${new Date().toISOString().slice(0, 10)}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
+    const handleExport = async (formato: 'PDF' | 'EXCEL') => {
+        const promise = inteligenciaComprasApi.exportar({ formato, setorIds: setorFilter ? [setorFilter] : [] });
+        toast.promise(promise, {
+            loading: `Gerando ${formato}...`,
+            success: (r) => r.data.message || 'Exportado com sucesso!',
+            error: 'Erro ao exportar'
+        });
     };
 
-    if (isLoading) {
+    if (loadingInteligencia) {
         return (
             <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
                 <Loader2 className="animate-spin text-[#8A9A5B]" size={40} />
-                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Calculando inteligência de estoque...</p>
+                <p className="text-slate-400 font-bold uppercase tracking-widest text-xs">Calculando prioridades...</p>
             </div>
         );
     }
 
-    if (error) {
-        return (
-            <div className="h-[60vh] flex flex-col items-center justify-center gap-4">
-                <AlertTriangle className="text-red-400" size={40} />
-                <p className="text-slate-500 font-bold text-sm">Erro ao carregar dados PGE.</p>
-            </div>
-        );
-    }
+    const { resumo, itens } = inteligenciaData || { resumo: {}, itens: [] };
+
+    const filteredItems = itens.filter((item: any) =>
+        !searchTerm || item.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
-        <div className="space-y-10 animate-in fade-in duration-700 pb-12">
+        <div className="space-y-8 animate-in fade-in duration-700 pb-24 p-8 max-w-[1600px] mx-auto relative">
+            <Toaster position="top-right" />
+
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div>
-                    <div className="flex items-center gap-3">
-                        <div className="p-3 bg-gradient-to-br from-[#8A9A5B] to-[#697D58] rounded-2xl text-white shadow-lg">
-                            <Brain size={28} />
-                        </div>
-                        <div>
-                            <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Inteligência de Compras</h2>
-                            <p className="text-slate-500 font-medium mt-1">PGE — Previsão de Giro de Estoque</p>
-                        </div>
+                <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 bg-gradient-to-br from-[#8A9A5B] to-[#697D58] rounded-2xl flex items-center justify-center shadow-lg shadow-[#8A9A5B]/20">
+                        <Brain className="text-white" size={28} />
+                    </div>
+                    <div>
+                        <h2 className="text-4xl font-black tracking-tight text-[#697D58]">Prioridade de Compra</h2>
+                        <p className="text-slate-500 font-medium mt-1">{resumo.totalItens || 0} itens precisam de reposição</p>
                     </div>
                 </div>
-                <button
-                    onClick={handleExportCSV}
-                    className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl font-bold text-sm text-slate-600 hover:bg-[#8A9A5B]/5 hover:border-[#8A9A5B]/30 hover:text-[#697D58] transition-all shadow-sm"
-                >
-                    <Download size={16} />
-                    Exportar CSV
-                </button>
+                <div className="flex items-center gap-3">
+                    <button onClick={() => handleExport('EXCEL')} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 transition-colors">
+                        <Download size={14} /> Excel
+                    </button>
+                    <button onClick={() => handleExport('PDF')} className="flex items-center gap-2 px-5 py-2.5 bg-white border border-slate-200 rounded-xl font-black text-[10px] uppercase tracking-widest text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors">
+                        <FileText size={14} /> PDF
+                    </button>
+                </div>
             </div>
 
-            {/* KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <KPI
-                    title="Itens Monitorados"
-                    value={kpis.totalItems}
-                    icon={<Package size={24} />}
-                    color="bg-slate-50"
-                    textColor="text-[#1A202C]"
-                />
-                <KPI
-                    title="Alerta de Compra"
-                    value={kpis.criticalItems}
-                    icon={<AlertTriangle size={24} />}
-                    color="bg-red-50"
-                    textColor="text-red-600"
-                    iconColor="text-red-500"
-                />
-                <KPI
-                    title="Sem Consumo (30d)"
-                    value={kpis.noConsumptionItems}
-                    icon={<Minus size={24} />}
-                    color="bg-amber-50"
-                    textColor="text-amber-700"
-                    iconColor="text-amber-500"
-                />
-                <KPI
-                    title="Custo Estimado"
-                    value={`R$ ${kpis.estimatedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
-                    icon={<DollarSign size={24} />}
-                    color="bg-emerald-50"
-                    textColor="text-emerald-700"
-                    iconColor="text-emerald-500"
-                />
+            {/* Cards de Resumo */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 p-6 rounded-[2rem] border border-emerald-200">
+                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">Investimento Total</p>
+                    <h4 className="text-3xl font-black text-emerald-800">
+                        R$ {(resumo.investimentoTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </h4>
+                    <p className="text-xs font-bold text-emerald-600/70 mt-1">para reposição completa</p>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-red-100 shadow-sm">
+                    <p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-2 flex items-center gap-1"><AlertTriangle size={12}/> Críticos</p>
+                    <h4 className="text-3xl font-black text-red-600">{resumo.distribuicaoCriticidade?.critico || 0}</h4>
+                    <p className="text-xs font-bold text-slate-400 mt-1">ruptura iminente</p>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-orange-100 shadow-sm">
+                    <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest mb-2 flex items-center gap-1"><AlertTriangle size={12}/> Urgentes</p>
+                    <h4 className="text-3xl font-black text-orange-500">{resumo.distribuicaoCriticidade?.urgente || 0}</h4>
+                    <p className="text-xs font-bold text-slate-400 mt-1">abaixo do mínimo</p>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Setores Afetados</p>
+                    <h4 className="text-3xl font-black text-slate-700">{resumo.porSetor?.length || 0}</h4>
+                    <p className="text-xs font-bold text-slate-400 mt-1">com pendências</p>
+                </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="relative flex-1 max-w-md">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            {/* Filtros */}
+            <div className="flex flex-col space-y-4">
+                <div className="relative max-w-md">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                     <input
-                        type="text"
-                        placeholder="Buscar produto, código ou categoria..."
-                        className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#8A9A5B]/20 transition-all font-medium text-sm"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        placeholder="Buscar produto..."
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-100 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#8A9A5B]/20 outline-none shadow-sm"
+                        value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                <div className="flex gap-2">
-                    {(['ALL', 'COMPRAR', 'OK', 'SEM_CONSUMO'] as const).map(status => (
-                        <button
-                            key={status}
-                            onClick={() => setFilterStatus(status)}
-                            className={`px-4 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${filterStatus === status
-                                    ? 'bg-[#8A9A5B] text-white shadow-sm'
-                                    : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'
-                                }`}
-                        >
-                            {status === 'ALL' ? 'Todos' : status === 'COMPRAR' ? '🔴 Comprar' : status === 'OK' ? '🟢 OK' : '⚪ Sem Consumo'}
-                        </button>
-                    ))}
+                
+                {/* Chips de Setor */}
+                <div className="flex flex-wrap gap-2">
+                    <button 
+                        onClick={() => setSetorFilter(undefined)}
+                        className={`px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all ${!setorFilter ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-500 border border-slate-200 hover:bg-slate-50'}`}
+                    >
+                        Todos ({resumo.totalItens || 0})
+                    </button>
+                    {setores?.map((s: any) => {
+                        const Icon = ICONS_MAP[s.icone] || Box;
+                        const count = resumo.porSetor?.find((ps: any) => ps.setorId === s.id)?.totalItens || 0;
+                        const isSelected = setorFilter === s.id;
+                        return (
+                            <button 
+                                key={s.id}
+                                onClick={() => setSetorFilter(s.id)}
+                                className={`px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-black uppercase tracking-widest transition-all border ${isSelected ? 'shadow-md' : 'hover:bg-slate-50'}`}
+                                style={{
+                                    backgroundColor: isSelected ? s.cor : '#ffffff',
+                                    color: isSelected ? '#ffffff' : s.cor,
+                                    borderColor: isSelected ? s.cor : '#e2e8f0'
+                                }}
+                            >
+                                <Icon size={14} /> {s.nome} ({count})
+                            </button>
+                        );
+                    })}
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50 border-b border-slate-100">
-                            <tr>
-                                <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Produto</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estoque</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Média/Dia</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest min-w-[180px]">Cobertura</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Prev. Fim</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Qtd Compra</th>
-                                <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ação</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                            {filteredItems.length === 0 ? (
-                                <tr>
-                                    <td colSpan={8} className="px-6 py-16 text-center">
-                                        <Package size={32} className="mx-auto text-slate-200 mb-3" />
-                                        <p className="text-sm font-bold text-slate-400">Nenhum produto encontrado.</p>
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredItems.map((item: any) => {
-                                    const isCritical = item.status === 'COMPRAR' && item.diasRestantes !== null && item.diasRestantes <= item.leadTime;
-                                    const coveragePercent = item.diasRestantes !== null
-                                        ? Math.min((item.diasRestantes / item.desiredCoverage) * 100, 100)
-                                        : 0;
-
-                                    return (
-                                        <motion.tr
-                                            key={item.id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            className={`hover:bg-slate-50/50 transition-colors ${isCritical ? 'bg-red-50/50' : ''}`}
-                                        >
-                                            {/* Produto */}
-                                            <td className="px-6 py-4">
-                                                <div className="flex flex-col">
-                                                    <span className="font-black text-slate-800 text-sm truncate max-w-[200px]">{item.name}</span>
-                                                    <span className="text-[10px] font-bold text-slate-400 mt-0.5">
-                                                        {item.code && `${item.code} • `}{item.category}
-                                                    </span>
-                                                </div>
-                                            </td>
-
-                                            {/* Estoque Atual */}
-                                            <td className="px-4 py-4 text-center">
-                                                <span className={`font-black text-base ${item.currentStock <= 0 ? 'text-red-500' : 'text-slate-800'}`}>
-                                                    {item.currentStock}
+            {/* Lista Densa */}
+            <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                <table className="w-full text-left">
+                    <thead>
+                        <tr className="bg-slate-50/50">
+                            <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Produto</th>
+                            <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Atual / Mínimo</th>
+                            <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status Giro</th>
+                            <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Sugerido</th>
+                            <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Investimento</th>
+                            <th className="px-4 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                        {filteredItems.map((item: any) => (
+                            <tr key={item.id} className="hover:bg-slate-50/50 transition-colors group">
+                                <td className="px-6 py-4">
+                                    <div className="flex items-center gap-3">
+                                        <span className={`w-2 h-2 rounded-full ${
+                                            item.classificacao === 'CRITICO' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]' :
+                                            item.classificacao === 'URGENTE' ? 'bg-orange-500' : 'bg-amber-400'
+                                        }`} />
+                                        <div>
+                                            <span className="font-black text-slate-800 text-sm">{item.nome}</span>
+                                            {item.setor && (
+                                                <span className="ml-2 px-1.5 py-0.5 text-[8px] font-black uppercase rounded bg-slate-100 text-slate-500">
+                                                    {item.setor.nome}
                                                 </span>
-                                                <p className="text-[9px] font-bold text-slate-400 mt-0.5">{item.unit}</p>
-                                            </td>
+                                            )}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td className="px-4 py-4 text-center">
+                                    <span className={`font-black text-base ${item.qtdAtual <= 0 ? 'text-red-500' : 'text-slate-800'}`}>
+                                        {item.qtdAtual}
+                                    </span>
+                                    <span className="text-xs font-bold text-slate-400 ml-1">/ {item.qtdMinima}</span>
+                                </td>
+                                <td className="px-4 py-4 text-center">
+                                    <p className={`text-xs font-black ${item.diasAteRuptura <= 3 ? 'text-red-500' : 'text-slate-600'}`}>
+                                        {item.diasAteRuptura <= 0 ? 'RUPTURA' : `${item.diasAteRuptura} dias`}
+                                    </p>
+                                    <p className="text-[9px] font-bold text-slate-400">giro {item.giroMensal}/mês</p>
+                                </td>
+                                <td className="px-4 py-4 text-center">
+                                    <span className="text-lg font-black text-[#8A9A5B]">{item.qtdSugerida}</span>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                    <p className="text-sm font-black text-slate-800">
+                                        R$ {item.investimentoEstimado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </p>
+                                    <p className="text-[9px] font-bold text-slate-400">R$ {item.ultimoCusto.toFixed(2)}/un</p>
+                                </td>
+                                <td className="px-4 py-4 text-right">
+                                    <button 
+                                        onClick={() => setSelectedItem(item)}
+                                        className="opacity-0 group-hover:opacity-100 px-3 py-1.5 bg-white border border-slate-200 text-slate-500 rounded-lg text-[10px] font-black uppercase hover:text-[#8A9A5B] transition-all"
+                                    >
+                                        Detalhes
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                {filteredItems.length === 0 && (
+                    <div className="py-20 flex flex-col items-center">
+                        <CheckCircle2 size={48} className="text-emerald-200 mb-4" />
+                        <h4 className="text-lg font-black text-slate-700">Tudo em dia!</h4>
+                        <p className="text-sm font-bold text-slate-400">Nenhum item abaixo do mínimo.</p>
+                    </div>
+                )}
+            </div>
 
-                                            {/* Média Diária */}
-                                            <td className="px-4 py-4 text-center">
-                                                {item.consumoMedio > 0 ? (
-                                                    <span className="text-sm font-bold text-slate-700">
-                                                        {item.consumoMedio} <span className="text-[9px] text-slate-400">un/dia</span>
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold text-slate-300 uppercase">—</span>
-                                                )}
-                                            </td>
-
-                                            {/* Cobertura (Barra de Progresso) */}
-                                            <td className="px-4 py-4">
-                                                {item.diasRestantes !== null ? (
-                                                    <div>
-                                                        <div className="flex justify-between items-center mb-1.5">
-                                                            <span className={`text-xs font-black ${item.diasRestantes <= item.leadTime ? 'text-red-500' :
-                                                                    item.diasRestantes <= item.desiredCoverage * 0.5 ? 'text-amber-500' :
-                                                                        'text-emerald-600'
-                                                                }`}>
-                                                                {item.diasRestantes} dias
-                                                            </span>
-                                                            <Clock size={12} className="text-slate-300" />
-                                                        </div>
-                                                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                                                            <div
-                                                                className={`h-full rounded-full transition-all duration-1000 ${coveragePercent <= 25 ? 'bg-red-400' :
-                                                                        coveragePercent <= 50 ? 'bg-amber-400' :
-                                                                            'bg-emerald-400'
-                                                                    }`}
-                                                                style={{ width: `${Math.max(coveragePercent, 3)}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold text-slate-300">—</span>
-                                                )}
-                                            </td>
-
-                                            {/* Previsão de Fim */}
-                                            <td className="px-4 py-4 text-center">
-                                                {item.dataRuptura ? (
-                                                    <span className={`text-xs font-black ${item.diasRestantes <= item.leadTime ? 'text-red-500' : 'text-slate-600'
-                                                        }`}>
-                                                        {new Date(item.dataRuptura).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold text-slate-300">—</span>
-                                                )}
-                                            </td>
-
-                                            {/* Status Badge */}
-                                            <td className="px-4 py-4 text-center">
-                                                {item.status === 'COMPRAR' ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-wider border border-red-100">
-                                                        <TrendingDown size={12} />
-                                                        Risco de Ruptura
-                                                    </span>
-                                                ) : item.status === 'OK' ? (
-                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-wider border border-emerald-100">
-                                                        <CheckCircle2 size={12} />
-                                                        Estoque OK
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 text-slate-400 text-[9px] font-black uppercase tracking-wider border border-slate-100">
-                                                        <Minus size={12} />
-                                                        Sem Consumo
-                                                    </span>
-                                                )}
-                                            </td>
-
-                                            {/* Qtd Recomendada */}
-                                            <td className="px-4 py-4 text-center">
-                                                {item.qtdCompra > 0 ? (
-                                                    <div>
-                                                        <span className="text-lg font-black text-red-600">{item.qtdCompra}</span>
-                                                        <p className="text-[9px] font-bold text-slate-400 mt-0.5">
-                                                            ≈ R$ {(item.qtdCompra * item.unitCost).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                                        </p>
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold text-slate-300">—</span>
-                                                )}
-                                            </td>
-
-                                            {/* Botão Ação */}
-                                            <td className="px-4 py-4 text-right">
-                                                {item.status === 'COMPRAR' ? (
-                                                    <button className="flex items-center gap-1.5 ml-auto px-4 py-2.5 bg-gradient-to-r from-[#8A9A5B] to-[#697D58] text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:shadow-lg hover:shadow-[#8A9A5B]/20 hover:scale-105 transition-all">
-                                                        <ShoppingCart size={14} />
-                                                        Gerar Pedido
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold text-slate-300">—</span>
-                                                )}
-                                            </td>
-                                        </motion.tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+            {/* Rodapé Fixo */}
+            {filteredItems.length > 0 && (
+                <div className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-3xl bg-slate-900 text-white rounded-3xl p-4 flex items-center justify-between shadow-2xl z-50">
+                    <div className="flex items-center gap-4 px-2">
+                        <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center">
+                            <ShoppingCart size={18} className="text-slate-300" />
+                        </div>
+                        <div>
+                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">{resumo.totalItens} itens selecionados</p>
+                            <p className="text-lg font-black">Investimento Total: R$ {(resumo.investimentoTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                        </div>
+                    </div>
+                    <button className="px-6 py-3 bg-[#8A9A5B] hover:bg-[#697D58] rounded-xl font-black text-[10px] uppercase tracking-widest transition-all">
+                        Gerar Pedido de Compra
+                    </button>
                 </div>
-            </div>
+            )}
 
-            {/* Footer Info */}
-            <div className="flex items-center gap-3 p-6 bg-slate-50/50 border border-slate-100 rounded-3xl">
-                <Brain size={18} className="text-[#8A9A5B]" />
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
-                    Análise baseada nas saídas dos últimos 30 dias. Lead Time e Cobertura Desejada são configuráveis por produto. O custo estimado utiliza o valor unitário cadastrado.
-                </p>
-            </div>
+            {/* Drawer de Detalhes */}
+            {selectedItem && (
+                <ItemDetalhesDrawer item={selectedItem} onClose={() => setSelectedItem(null)} />
+            )}
         </div>
     );
-};
-
-const KPI = ({ title, value, icon, color, textColor, iconColor = 'text-[#8A9A5B]' }: any) => (
-    <div className={`${color} p-7 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center gap-6 group hover:translate-y-[-4px] transition-all duration-300`}>
-        <div className={`w-14 h-14 bg-white/80 rounded-2xl flex items-center justify-center ${iconColor} group-hover:scale-110 transition-transform shadow-sm`}>
-            {icon}
-        </div>
-        <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
-            <h5 className={`text-2xl font-black ${textColor}`}>{value}</h5>
-        </div>
-    </div>
-);
-
-export default PurchaseIntelligence;
+}

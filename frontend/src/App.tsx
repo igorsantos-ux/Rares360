@@ -27,6 +27,9 @@ import MyClinic from './pages/MyClinic';
 import DoctorsPage from './pages/DoctorsPage';
 import ImportHistory from './pages/ImportHistory';
 import Procedures from './pages/Procedures';
+import FormasPagamento from './pages/Billing/FormasPagamento';
+import Orcamentos from './pages/Billing/Orcamentos';
+import ContasPaciente from './pages/Billing/ContasPaciente';
 import TeamPage from './pages/Management/Team';
 import PurchaseIntelligence from './pages/PurchaseIntelligence';
 
@@ -125,6 +128,9 @@ function App() {
                   <Route path="/my-clinic" element={<MyClinic />} />
                   <Route path="/medicos" element={<DoctorsPage />} />
                   <Route path="/imports" element={<ImportHistory />} />
+                  <Route path="/formas-pagamento" element={<FormasPagamento />} />
+                  <Route path="/orcamentos" element={<Orcamentos />} />
+                  <Route path="/contas-paciente" element={<ContasPaciente />} />
                 </Route>
 
                 {/* Redirects */}

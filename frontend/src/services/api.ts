@@ -295,4 +295,74 @@ export const inventoryApi = {
     getPGE: () => api.get('inventory/pge'),
 };
 
+// ═══ MÓDULO DE FATURAMENTO V2 ═══
+
+export const formaPagamentoApi = {
+    list: () => api.get('forma-pagamento'),
+    create: (data: any) => api.post('forma-pagamento', data),
+    update: (id: string, data: any) => api.put(`forma-pagamento/${id}`, data),
+    delete: (id: string) => api.delete(`forma-pagamento/${id}`),
+    calcular: (data: { formaId: string; valor: number; parcelas?: number }) =>
+        api.post('forma-pagamento/calcular', data),
+};
+
+export const categoriaProcedimentoApi = {
+    list: () => api.get('procedures/categorias'),
+    create: (data: any) => api.post('procedures/categorias', data),
+    update: (id: string, data: any) => api.put(`procedures/categorias/${id}`, data),
+    delete: (id: string) => api.delete(`procedures/categorias/${id}`),
+};
+
+export const procedimentoInsumosApi = {
+    list: (procedureId: string) => api.get(`procedures/${procedureId}/insumos`),
+    add: (procedureId: string, data: any) => api.post(`procedures/${procedureId}/insumos`, data),
+    update: (insumoId: string, data: any) => api.put(`procedures/insumos/${insumoId}`, data),
+    remove: (insumoId: string) => api.delete(`procedures/insumos/${insumoId}`),
+    margem: (procedureId: string) => api.get(`procedures/${procedureId}/margem`),
+};
+
+export const orcamentoApi = {
+    list: (params?: any) => api.get('orcamentos', { params }),
+    getById: (id: string) => api.get(`orcamentos/${id}`),
+    create: (data: any) => api.post('orcamentos', data),
+    update: (id: string, data: any) => api.put(`orcamentos/${id}`, data),
+    enviar: (id: string) => api.post(`orcamentos/${id}/enviar`),
+    aprovar: (id: string) => api.post(`orcamentos/${id}/aprovar`),
+    rejeitar: (id: string) => api.post(`orcamentos/${id}/rejeitar`),
+    kpis: () => api.get('orcamentos/kpis'),
+};
+
+export const contaPacienteApi = {
+    list: (params?: any) => api.get('contas-paciente', { params }),
+    getById: (id: string) => api.get(`contas-paciente/${id}`),
+    pagarParcela: (contaId: string, parcelaId: string) =>
+        api.post(`contas-paciente/${contaId}/parcelas/${parcelaId}/pagar`),
+    kpis: () => api.get('contas-paciente/kpis'),
+};
+
+export const execucaoApi = {
+    list: (params?: any) => api.get('execucao', { params }),
+    executar: (data: any) => api.post('execucao/executar', data),
+};
+
+export const termoApi = {
+    listTermos: () => api.get('termos'),
+    createTermo: (data: any) => api.post('termos', data),
+    listDocumentos: (pacienteId: string) => api.get(`termos/paciente/${pacienteId}`),
+    createDocumento: (pacienteId: string, data: any) => api.post(`termos/paciente/${pacienteId}`, data),
+};
+
+export const inteligenciaComprasApi = {
+    getPrioridade: (params?: any) => api.get('inteligencia-compras/prioridade', { params }),
+    exportar: (data: any) => api.post('inteligencia-compras/exportar', data),
+};
+
+export const setoresApi = {
+    list: () => api.get('setores'),
+    create: (data: any) => api.post('setores', data),
+    update: (id: string, data: any) => api.put(`setores/${id}`, data),
+    delete: (id: string) => api.delete(`setores/${id}`),
+};
+
 export default api;
+

@@ -39,6 +39,13 @@ import managementRoutes from './routes/managementRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
 import treatmentPlanRoutes from './routes/treatmentPlanRoutes.js';
 import privacyRoutes from './routes/privacyRoutes.js';
+import formaPagamentoRoutes from './routes/formaPagamentoRoutes.js';
+import orcamentoRoutes from './routes/orcamentoRoutes.js';
+import contaPacienteRoutes from './routes/contaPacienteRoutes.js';
+import execucaoRoutes from './routes/execucaoRoutes.js';
+import termoRoutes from './routes/termoRoutes.js';
+import inteligenciaComprasRoutes from './routes/inteligenciaComprasRoutes.js';
+import setorRoutes from './routes/setorRoutes.js';
 import { SeedService } from './services/SeedService.js';
 import { MigrationService } from './services/MigrationService.js';
 
@@ -207,6 +214,13 @@ app.use('/api/dfc', authMiddleware, tenantMiddleware, apiLimiter, dfcRoutes);
 app.use('/api/import', authMiddleware, tenantMiddleware, apiLimiter, importRoutes);
 app.use('/api/inventory', authMiddleware, tenantMiddleware, apiLimiter, inventoryRoutes);
 app.use('/api/treatment-plans', authMiddleware, tenantMiddleware, apiLimiter, treatmentPlanRoutes);
+app.use('/api/forma-pagamento', authMiddleware, tenantMiddleware, apiLimiter, formaPagamentoRoutes);
+app.use('/api/orcamentos', authMiddleware, tenantMiddleware, apiLimiter, orcamentoRoutes);
+app.use('/api/contas-paciente', authMiddleware, tenantMiddleware, apiLimiter, contaPacienteRoutes);
+app.use('/api/execucao', authMiddleware, tenantMiddleware, apiLimiter, execucaoRoutes);
+app.use('/api/termos', authMiddleware, tenantMiddleware, apiLimiter, termoRoutes);
+app.use('/api/inteligencia-compras', authMiddleware, tenantMiddleware, apiLimiter, inteligenciaComprasRoutes);
+app.use('/api/setores', authMiddleware, tenantMiddleware, apiLimiter, setorRoutes);
 
 // ═══ LGPD: Rotas de privacidade e direitos dos titulares ═══
 app.use('/api/privacy', authMiddleware, privacyRoutes);

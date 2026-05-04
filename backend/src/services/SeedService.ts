@@ -99,6 +99,21 @@ export class SeedService {
             }
         });
 
+        // 2.5 Criar Setores Padrão
+        const setoresPadrao = [
+            { nome: "Enfermagem", slug: "enfermagem", cor: "#185FA5", icone: "HeartPulse", ordem: 1 },
+            { nome: "Estética", slug: "estetica", cor: "#BA7517", icone: "Sparkles", ordem: 2 },
+            { nome: "Escritório", slug: "escritorio", cor: "#534AB7", icone: "FileText", ordem: 3 },
+            { nome: "Copa", slug: "copa", cor: "#854F0B", icone: "Coffee", ordem: 4 },
+            { nome: "Limpeza", slug: "limpeza", cor: "#3B6D11", icone: "SprayCan", ordem: 5 }
+        ];
+
+        for (const setor of setoresPadrao) {
+            await prisma.setor.create({
+                data: { ...setor, clinicId: clinic.id }
+            });
+        }
+
         // 3. Criar Roberta Alamino (Sem sobrescrever senha)
         const robertaEmail = 'roberta@alamino.com';
         const existingRoberta = await prisma.user.findUnique({ where: { email: robertaEmail } });
