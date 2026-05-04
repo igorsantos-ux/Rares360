@@ -79,13 +79,14 @@ export class GoalService {
             }
         });
 
-        const currentRevenue = transactions.reduce((acc, t) => acc + (t.netAmount || t.amount), 0);
+        const currentRevenue = transactions.reduce((acc, t) => acc + Number(t.netAmount || t.amount), 0);
         
         // 3. Progresso
-        const progress = primaryGoal.targetValue > 0 ? Math.min((currentRevenue / primaryGoal.targetValue) * 100, 100) : 0;
+        const targetValue = Number(primaryGoal.targetValue);
+        const progress = targetValue > 0 ? Math.min((currentRevenue / targetValue) * 100, 100) : 0;
 
         // 4. GAP
-        const gap = Math.max(primaryGoal.targetValue - currentRevenue, 0);
+        const gap = Math.max(targetValue - currentRevenue, 0);
 
         // 5. Ritmo Necessário
         const daysPassed = this.getBusinessDaysPassed(firstDay, now);
@@ -111,7 +112,7 @@ export class GoalService {
                 }
             });
 
-            const histRevenue = historicTransactions.reduce((acc, t) => acc + (t.netAmount || t.amount), 0);
+            const histRevenue = historicTransactions.reduce((acc, t) => acc + Number(t.netAmount || t.amount), 0);
             const histPatients = new Set(historicTransactions.map(t => t.patientId).filter(Boolean)).size;
             ticketPorPaciente = histPatients > 0 ? histRevenue / histPatients : 0;
         }
@@ -125,7 +126,7 @@ export class GoalService {
             id: primaryGoal.id,
             name: primaryGoal.name,
             monthYear,
-            targetValue: primaryGoal.targetValue,
+            targetValue: Number(primaryGoal.targetValue),
             workingDays: primaryGoal.workingDays,
             currentRevenue,
             currentRevenueFormatted: formatBRL(currentRevenue),
@@ -233,7 +234,7 @@ export class GoalService {
             _sum: { amount: true }
         });
 
-        const actualFaturamento = currentMonthFaturamento._sum.amount || 0;
+        const actualFaturamento = Number(currentMonthFaturamento._sum.amount || 0);
         
         const lastDayOfMonth = new Date(year, month, 0).getDate();
         let businessDaysRemaining = 0;
@@ -248,7 +249,7 @@ export class GoalService {
             const isComercial = goal.type === 'COMERCIAL';
             
             const current = (isCurrentMonth && isComercial) ? actualFaturamento : 0;
-            const target = goal.targetValue;
+            const target = Number(goal.targetValue);
             const progress = target > 0 ? (current / target) * 100 : 0;
 
             return {

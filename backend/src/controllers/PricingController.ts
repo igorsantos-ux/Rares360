@@ -98,9 +98,9 @@ export class PricingController {
 
             // Lógica de Diagnóstico Quantitativo (Markup Divisor)
             const diagnosis = procedures.map(proc => {
-                const totalCost = proc.totalCost;
-                const currentPrice = proc.currentPrice;
-                const targetMargin = proc.targetMargin;
+                const totalCost = Number(proc.totalCost);
+                const currentPrice = Number(proc.currentPrice);
+                const targetMargin = Number(proc.targetMargin);
 
                 const netProfit = currentPrice - totalCost;
                 const currentMargin = currentPrice > 0 ? (netProfit / currentPrice) * 100 : 0;

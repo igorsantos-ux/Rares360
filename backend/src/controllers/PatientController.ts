@@ -177,10 +177,11 @@ export class PatientController {
             // Rentabilidade para o Header (Paciente de Alta Rentabilidade)
             const totalSpent = patient.transactions
                 .filter(t => t.type === 'INCOME' && (t.status === 'PAID' || t.status === 'RECEBIDO' || t.status === 'PAGO'))
-                .reduce((acc, t) => acc + t.amount, 0);
+                .reduce((acc, t) => acc + Number(t.amount), 0);
 
             const totalInventoryCost = patient.inventoryUsages.reduce((acc, usage) => {
-                return acc + (usage.quantity * (usage.inventoryItem?.unitCost || 0));
+                const unitCost = usage.inventoryItem?.unitCost ? Number(usage.inventoryItem.unitCost) : 0;
+                return acc + (usage.quantity * unitCost);
             }, 0);
 
             const marginPercentage = totalSpent > 0 ? ((totalSpent - totalInventoryCost) / totalSpent) * 100 : 0;

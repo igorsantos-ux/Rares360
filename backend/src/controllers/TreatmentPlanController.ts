@@ -264,8 +264,8 @@ export class TreatmentPlanController {
             plan.items.forEach(item => {
                 doc.text(item.procedureName, 60, currentY);
                 doc.text('1', 300, currentY);
-                doc.text(item.unitValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 360, currentY);
-                doc.text(item.finalValue.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 480, currentY);
+                doc.text(Number(item.unitValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 360, currentY);
+                doc.text(Number(item.finalValue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), 480, currentY);
                 currentY += 20;
 
                 if (currentY > 700) { doc.addPage(); currentY = 50; }
@@ -276,7 +276,7 @@ export class TreatmentPlanController {
 
             // --- TOTAIS ---
             doc.font('Helvetica-Bold').fontSize(14);
-            doc.text(`VALOR TOTAL: ${plan.totalAmount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 350, currentY, { align: 'right' });
+            doc.text(`VALOR TOTAL: ${Number(plan.totalAmount).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`, 350, currentY, { align: 'right' });
             
             doc.moveDown(3);
 

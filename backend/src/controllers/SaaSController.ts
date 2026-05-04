@@ -544,9 +544,11 @@ export class SaaSController {
                 };
 
                 if (hasInvoices) {
-                    data.total = clinicInvoices.reduce((acc, inv) => acc + inv.totalAmount, 0);
+                    data.total = clinicInvoices.reduce((acc, inv) => acc + Number(inv.totalAmount), 0);
                 } else {
-                    data.total = c.monthlyFee > 0 ? c.monthlyFee : (c._count.users * c.pricePerUser);
+                    const monthlyFee = Number(c.monthlyFee);
+                    const pricePerUser = Number(c.pricePerUser);
+                    data.total = monthlyFee > 0 ? monthlyFee : (c._count.users * pricePerUser);
                 }
                 return data;
             });
@@ -577,9 +579,11 @@ export class SaaSController {
                 });
                 if (existing) continue;
 
-                const mensalidade = clinic.monthlyFee && clinic.monthlyFee > 0
-                    ? clinic.monthlyFee
-                    : (clinic._count.users * clinic.pricePerUser);
+                const monthlyFee = Number(clinic.monthlyFee || 0);
+                const pricePerUser = Number(clinic.pricePerUser || 0);
+                const mensalidade = monthlyFee > 0
+                    ? monthlyFee
+                    : (clinic._count.users * pricePerUser);
 
                 const dueDate = new Date();
                 dueDate.setDate(dueDate.getDate() + 5);
@@ -589,7 +593,7 @@ export class SaaSController {
                 let setupPortion = 0;
 
                 if (hasSetupPending && clinic.setupValue && clinic.setupInstallments) {
-                    setupPortion = clinic.setupValue / clinic.setupInstallments;
+                    setupPortion = Number(clinic.setupValue) / clinic.setupInstallments;
                 }
 
                 if (hasSetupPending && clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE') {
@@ -708,17 +712,17 @@ export class SaaSController {
                 cnpj: clinic.cnpj || '00.000.000/0000-00',
                 address: `${clinic.logradouro || ''}, ${clinic.numero || ''} ${clinic.complemento || ''} - ${clinic.bairro || ''}, ${clinic.cidade || ''}/${clinic.estado || ''}`.trim(),
                 userCount: clinic._count.users,
-                pricePerUser: clinic.pricePerUser,
-                monthlyFee: clinic.monthlyFee || 0,
-                setupValue: clinic.setupValue || 0,
+                pricePerUser: Number(clinic.pricePerUser),
+                monthlyFee: Number(clinic.monthlyFee || 0),
+                setupValue: Number(clinic.setupValue || 0),
                 setupInstallments: clinic.setupInstallments || 1,
                 setupRemaining: clinic.setupRemainingInstallments || 0,
                 contractStartDate: clinic.contractStartDate || clinic.createdAt,
                 contractDuration: clinic.contractDurationMonths || 12,
                 status: 'PENDENTE', // Valor padrão para fatura draft/on-the-fly
-                total: (clinic.monthlyFee || (clinic._count.users * clinic.pricePerUser)) +
+                total: (Number(clinic.monthlyFee) || (clinic._count.users * Number(clinic.pricePerUser))) +
                     (clinic.setupPaymentType === 'DILUIDO_NA_MENSALIDADE' && (clinic.setupRemainingInstallments || 0) > 0
-                        ? ((clinic.setupValue || 0) / (clinic.setupInstallments || 1)) : 0)
+                        ? (Number(clinic.setupValue || 0) / (clinic.setupInstallments || 1)) : 0)
             });
 
             res.setHeader('Content-Type', 'application/pdf');
@@ -743,8 +747,8 @@ export class SaaSController {
                 clinicName: clinic.name,
                 cnpj: clinic.cnpj || '',
                 userCount: clinic._count.users,
-                pricePerUser: clinic.pricePerUser,
-                total: clinic._count.users * clinic.pricePerUser
+                pricePerUser: Number(clinic.pricePerUser),
+                total: clinic._count.users * Number(clinic.pricePerUser)
             });
 
             res.setHeader('Content-Type', 'application/xml');

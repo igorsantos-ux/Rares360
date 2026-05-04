@@ -79,11 +79,11 @@ export class CashController {
 
             const income = transactions
                 .filter(t => t.type === 'INCOME')
-                .reduce((acc, t) => acc + t.amount, 0);
+                .reduce((acc, t) => acc + Number(t.amount), 0);
 
             const expense = transactions
                 .filter(t => t.type === 'EXPENSE')
-                .reduce((acc, t) => acc + t.amount, 0);
+                .reduce((acc, t) => acc + Number(t.amount), 0);
 
             // 3. Buscar saldo inicial (do dia anterior fechado)
             const yesterday = new Date(targetDate);
@@ -93,7 +93,7 @@ export class CashController {
                 where: { clinicId_date: { clinicId, date: yesterday } }
             });
 
-            const openingBalance = lastClosure ? lastClosure.closingBalance : 0;
+            const openingBalance = lastClosure ? Number(lastClosure.closingBalance) : 0;
             const closingBalance = openingBalance + income - expense;
 
             // 4. Criar ou atualizar fechamento

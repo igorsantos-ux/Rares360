@@ -20,8 +20,8 @@ export class HistoryService {
 
         const monthlyData = monthNames.map((name, index) => {
             const monthTransactions = transactions.filter(t => t.date.getMonth() === index);
-            const revenue = monthTransactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-            const expenses = monthTransactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0);
+            const revenue = monthTransactions.filter(t => t.type === 'INCOME').reduce((acc, t) => acc + Number(t.amount), 0);
+            const expenses = monthTransactions.filter(t => t.type === 'EXPENSE').reduce((acc, t) => acc + Number(t.amount), 0);
             return {
                 name,
                 revenue,
@@ -75,10 +75,11 @@ export class HistoryService {
 
         transactions.forEach(t => {
             const day = t.date.getDate();
-            if (day <= 7) weeklyData[0].revenue += t.amount;
-            else if (day <= 14) weeklyData[1].revenue += t.amount;
-            else if (day <= 21) weeklyData[2].revenue += t.amount;
-            else weeklyData[3].revenue += t.amount;
+            const amount = Number(t.amount);
+            if (day <= 7) weeklyData[0].revenue += amount;
+            else if (day <= 14) weeklyData[1].revenue += amount;
+            else if (day <= 21) weeklyData[2].revenue += amount;
+            else weeklyData[3].revenue += amount;
         });
 
         return weeklyData;

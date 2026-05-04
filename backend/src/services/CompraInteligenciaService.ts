@@ -42,13 +42,13 @@ export class CompraInteligenciaService {
         let investimentoTotal = 0;
 
         for (const item of itens) {
-            // Se o item está com estoque >= mínimo, não precisa comprar (na prioridade imediata)
-            if (item.currentStock >= item.minQuantity) continue;
+            const qtdMinima = Number(item.minQuantity);
+            const qtdAtual = Number(item.currentStock);
+            const giroMensal = Number(item.giroMensal || 0);
 
-            const qtdMinima = item.minQuantity;
-            const qtdAtual = item.currentStock;
-            const giroMensal = item.giroMensal || 0;
-            
+            // Se o item está com estoque >= mínimo, não precisa comprar (na prioridade imediata)
+            if (qtdAtual >= qtdMinima) continue;
+
             // 1. Cálculo de percentual abaixo do mínimo
             const percentualAbaixoMinimo = ((qtdMinima - qtdAtual) / qtdMinima) * 100;
 
@@ -84,11 +84,11 @@ export class CompraInteligenciaService {
             else { distribuicao.monitorar++; }
 
             // 6. Quantidade Sugerida
-            const qtdAlvo = item.quantidadeIdeal || (qtdMinima * 2);
+            const qtdAlvo = Number(item.quantidadeIdeal) || (qtdMinima * 2);
             let qtdSugerida = qtdAlvo - qtdAtual;
 
             if (giroMensal > 0) {
-                const estoqueDuranteReposicao = (giroMensal / 30) * item.leadTime;
+                const estoqueDuranteReposicao = (giroMensal / 30) * Number(item.leadTime || 0);
                 qtdSugerida += estoqueDuranteReposicao;
             }
             
@@ -96,7 +96,7 @@ export class CompraInteligenciaService {
             if (qtdSugerida <= 0) continue; // Pode acontecer se alvo < atual (raro devido ao filtro inicial)
 
             // 7. Investimento
-            const ultimoCusto = item.unitCost;
+            const ultimoCusto = Number(item.unitCost);
             const investimentoEstimado = qtdSugerida * ultimoCusto;
             investimentoTotal += investimentoEstimado;
 

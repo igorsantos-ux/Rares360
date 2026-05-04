@@ -10,8 +10,8 @@ export class AnalyticsService {
         const procedureStats = transactions.reduce((acc: any, t) => {
             const name = t.procedureName!;
             if (!acc[name]) acc[name] = { name, revenue: 0, cost: 0, count: 0 };
-            acc[name].revenue += t.amount;
-            acc[name].cost += t.cost;
+            acc[name].revenue += Number(t.amount);
+            acc[name].cost += Number(t.cost || 0);
             acc[name].count += 1;
             return acc;
         }, {});
@@ -38,7 +38,7 @@ export class AnalyticsService {
         });
 
         const patientInsights = patients.map(c => {
-            const totalSpent = c.transactions.reduce((acc, t) => acc + t.amount, 0);
+            const totalSpent = c.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
             const lastValue = c.transactions[0]?.amount || 0;
 
             return {
@@ -59,7 +59,7 @@ export class AnalyticsService {
         });
 
         const doctorStats = doctors.map(d => {
-            const total = d.transactions.reduce((acc, t) => acc + t.amount, 0);
+            const total = d.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
             return {
                 name: d.name,
                 avgTicket: d.transactions.length > 0 ? total / d.transactions.length : 0,

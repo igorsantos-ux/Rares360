@@ -35,6 +35,11 @@ export class PGEService {
         // 5. Processar cada item com o motor matemático
         const results = items.map(item => {
             const totalOutput = outputMap[item.id] || 0;
+            const currentStock = Number(item.currentStock);
+            const leadTime = Number(item.leadTime || 0);
+            const safetyStock = Number(item.safetyStock || 0);
+            const desiredCoverage = Number(item.desiredCoverage || 0);
+            const unitCost = Number(item.unitCost || 0);
 
             // Consumo médio diário
             const consumoMedio = totalOutput / 30;
@@ -48,11 +53,11 @@ export class PGEService {
                     category: item.category,
                     unit: item.unit,
                     supplier: item.supplier,
-                    currentStock: item.currentStock,
-                    unitCost: item.unitCost,
-                    leadTime: item.leadTime,
-                    desiredCoverage: item.desiredCoverage,
-                    safetyStock: item.safetyStock,
+                    currentStock,
+                    unitCost,
+                    leadTime,
+                    desiredCoverage,
+                    safetyStock,
                     consumoMedio: 0,
                     diasRestantes: null,
                     dataRuptura: null,
@@ -64,21 +69,21 @@ export class PGEService {
             }
 
             // Dias restantes e data de ruptura
-            const diasRestantes = item.currentStock / consumoMedio;
+            const diasRestantes = currentStock / consumoMedio;
             const dataRuptura = new Date(today);
             dataRuptura.setDate(dataRuptura.getDate() + Math.floor(diasRestantes));
 
             // Ponto de reposição
-            const pontoReposicao = (consumoMedio * item.leadTime) + item.safetyStock;
+            const pontoReposicao = (consumoMedio * leadTime) + safetyStock;
 
             // Decisão e quantidade de compra
             let status: 'COMPRAR' | 'OK' | 'SEM_CONSUMO' = 'OK';
             let qtdCompra = 0;
 
-            if (item.currentStock <= pontoReposicao) {
+            if (currentStock <= pontoReposicao) {
                 status = 'COMPRAR';
                 qtdCompra = Math.ceil(
-                    (consumoMedio * item.desiredCoverage + item.safetyStock) - item.currentStock
+                    (consumoMedio * desiredCoverage + safetyStock) - currentStock
                 );
                 if (qtdCompra < 0) qtdCompra = 0;
             }
@@ -90,11 +95,11 @@ export class PGEService {
                 category: item.category,
                 unit: item.unit,
                 supplier: item.supplier,
-                currentStock: item.currentStock,
-                unitCost: item.unitCost,
-                leadTime: item.leadTime,
-                desiredCoverage: item.desiredCoverage,
-                safetyStock: item.safetyStock,
+                currentStock,
+                unitCost,
+                leadTime,
+                desiredCoverage,
+                safetyStock,
                 consumoMedio: Math.round(consumoMedio * 100) / 100,
                 diasRestantes: Math.round(diasRestantes),
                 dataRuptura: dataRuptura.toISOString(),
@@ -119,7 +124,7 @@ export class PGEService {
         const noConsumptionItems = results.filter(r => r.status === 'SEM_CONSUMO').length;
         const estimatedCost = results
             .filter(r => r.status === 'COMPRAR')
-            .reduce((acc, r) => acc + (r.qtdCompra * r.unitCost), 0);
+            .reduce((acc, r) => acc + (r.qtdCompra * Number(r.unitCost)), 0);
 
         return {
             kpis: {

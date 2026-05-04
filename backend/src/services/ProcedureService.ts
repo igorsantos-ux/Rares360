@@ -59,11 +59,11 @@ export class ProcedureService {
         return {
             items: items.map(item => {
                 const finance = this.calculateFinance({
-                    fixedCost: item.fixedCost,
-                    variableCost: item.variableCost,
-                    taxes: item.taxes,
-                    commission: item.commission,
-                    basePrice: item.basePrice
+                    fixedCost: Number(item.fixedCost),
+                    variableCost: Number(item.variableCost),
+                    taxes: Number(item.taxes),
+                    commission: Number(item.commission),
+                    basePrice: Number(item.basePrice)
                 });
                 return { ...item, ...finance };
             }),
@@ -124,11 +124,11 @@ export class ProcedureService {
         if (!item) return null;
 
         const finance = this.calculateFinance({
-            fixedCost: item.fixedCost,
-            variableCost: item.variableCost,
-            taxes: item.taxes,
-            commission: item.commission,
-            basePrice: item.basePrice
+            fixedCost: Number(item.fixedCost),
+            variableCost: Number(item.variableCost),
+            taxes: Number(item.taxes),
+            commission: Number(item.commission),
+            basePrice: Number(item.basePrice)
         });
 
         return { ...item, ...finance };

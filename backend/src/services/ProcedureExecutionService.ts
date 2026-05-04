@@ -41,8 +41,9 @@ export class ProcedureExecutionService {
                         try {
                             // Tenta registrar movimento. O InventoryService atual gerado por transação.
                             // Para manter a "Regra de Ouro" de permitir execução mesmo sem estoque:
-                            if (item.currentStock < supply.quantity) {
-                                console.warn(`⚠️ ALERTA CRÍTICO: Estoque insuficiente para ${supply.name}. Saldo: ${item.currentStock}, Necessário: ${supply.quantity}`);
+                            const currentStock = Number(item.currentStock);
+                            if (currentStock < supply.quantity) {
+                                console.warn(`⚠️ ALERTA CRÍTICO: Estoque insuficiente para ${supply.name}. Saldo: ${currentStock}, Necessário: ${supply.quantity}`);
                             }
 
                             await InventoryService.registerMovement({

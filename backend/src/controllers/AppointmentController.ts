@@ -111,9 +111,9 @@ export class AppointmentController {
                     const pProposals = proposals.filter(p => p.patientId === app.patientId);
                     const pAppCount = appCounts.find(c => c.patientId === app.patientId)?._count.id || 0;
 
-                    const totalInvested = pTransactions.reduce((acc, t) => acc + t.amount, 0);
+                    const totalInvested = pTransactions.reduce((acc, t) => acc + Number(t.amount), 0);
                     const avgTicket = pTransactions.length > 0 ? totalInvested / pTransactions.length : 0;
-                    const provisionalRevenue = pProposals.reduce((acc, p) => acc + p.totalValue, 0);
+                    const provisionalRevenue = pProposals.reduce((acc, p) => acc + Number(p.totalValue), 0);
                     const lastVisit = app.patient.lastVisit;
 
                     return {

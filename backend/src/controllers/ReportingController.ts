@@ -183,11 +183,11 @@ export class ReportingController {
 
                     const currentExp = allExpenses
                         .filter(e => e.dueDate && e.dueDate >= current && e.dueDate < next)
-                        .reduce((sum, e) => sum + e.amount, 0);
+                        .reduce((sum, e) => sum + Number(e.amount), 0);
 
                     const currentInc = allIncomes
                         .filter(i => i.date >= current && i.date < next)
-                        .reduce((sum, i) => sum + i.amount, 0);
+                        .reduce((sum, i) => sum + Number(i.amount), 0);
 
                     chartData.push({
                         label: current.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
@@ -203,11 +203,11 @@ export class ReportingController {
 
                     const currentExp = allExpenses
                         .filter(e => e.dueDate && e.dueDate >= current && e.dueDate < next)
-                        .reduce((sum, e) => sum + e.amount, 0);
+                        .reduce((sum, e) => sum + Number(e.amount), 0);
 
                     const currentInc = allIncomes
                         .filter(i => i.date >= current && i.date < next)
-                        .reduce((sum, i) => sum + i.amount, 0);
+                        .reduce((sum, i) => sum + Number(i.amount), 0);
 
                     chartData.push({
                         label: `W-${current.getDate()}/${current.getMonth() + 1}`,
@@ -231,11 +231,11 @@ export class ReportingController {
 
                     const currentExp = allExpenses
                         .filter(e => e.dueDate && e.dueDate >= first && e.dueDate <= last)
-                        .reduce((sum, e) => sum + e.amount, 0);
+                        .reduce((sum, e) => sum + Number(e.amount), 0);
 
                     const currentInc = allIncomes
                         .filter(i => i.date >= first && i.date <= last)
-                        .reduce((sum, i) => sum + i.amount, 0);
+                        .reduce((sum, i) => sum + Number(i.amount), 0);
 
                     chartData.push({
                         label: first.toLocaleDateString('pt-BR', { month: 'short' }).toUpperCase().replace('.', ''),
@@ -253,11 +253,11 @@ export class ReportingController {
 
             return res.json({
                 cards: {
-                    faturamentoTotal: periodRevenue._sum.amount || 0,
-                    recebimentosLiquidos: periodPaidRevenue._sum.amount || 0,
-                    contasAPagar: unpaidInstallments._sum.amount || 0,
-                    contasAReceber: pendingRevenue._sum.amount || 0,
-                    despesasTotais: periodExpenses._sum.amount || 0,
+                    faturamentoTotal: Number(periodRevenue._sum.amount || 0),
+                    recebimentosLiquidos: Number(periodPaidRevenue._sum.amount || 0),
+                    contasAPagar: Number(unpaidInstallments._sum.amount || 0),
+                    contasAReceber: Number(pendingRevenue._sum.amount || 0),
+                    despesasTotais: Number(periodExpenses._sum.amount || 0),
                     margin: 0
                 },
                 chartData

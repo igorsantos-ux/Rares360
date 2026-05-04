@@ -9,8 +9,9 @@ export class MedicalService {
         });
 
         return doctors.map(doc => {
-            const grossRevenue = doc.transactions.reduce((acc, t) => acc + t.amount, 0);
-            const doctorPart = grossRevenue * doc.commission;
+            const commissionRate = Number(doc.commission);
+            const grossRevenue = doc.transactions.reduce((acc, t) => acc + Number(t.amount), 0);
+            const doctorPart = grossRevenue * commissionRate;
             const clinicPart = grossRevenue - doctorPart;
 
             return {
@@ -20,7 +21,7 @@ export class MedicalService {
                 grossRevenue,
                 doctorPart,
                 clinicPart,
-                commissionRate: doc.commission * 100
+                commissionRate: commissionRate * 100
             };
         });
     }
@@ -89,14 +90,17 @@ export class InventoryService {
             where: { clinicId }
         });
 
-        const totalInventoryValue = items.reduce((acc, item) => acc + (item.currentStock * item.unitCost), 0);
+        const totalInventoryValue = items.reduce((acc, item) => acc + (Number(item.currentStock) * Number(item.unitCost)), 0);
 
         // Lógica Curva ABC (Simplificada por Valor de Estoque)
-        const sortedItems = [...items].sort((a, b) => (b.currentStock * b.unitCost) - (a.currentStock * a.unitCost));
+        const sortedItems = [...items].sort((a, b) => (Number(b.currentStock) * Number(b.unitCost)) - (Number(a.currentStock) * Number(a.unitCost)));
 
         let cumulativeValue = 0;
         return sortedItems.map(item => {
-            const itemValue = item.currentStock * item.unitCost;
+            const currentStock = Number(item.currentStock);
+            const unitCost = Number(item.unitCost);
+            const minQuantity = Number(item.minQuantity);
+            const itemValue = currentStock * unitCost;
             cumulativeValue += itemValue;
             const totalValueSum = totalInventoryValue || 1;
             const percentage = (cumulativeValue / totalValueSum) * 100;
@@ -108,7 +112,7 @@ export class InventoryService {
             return {
                 ...item,
                 totalValue: itemValue,
-                status: item.currentStock <= item.minQuantity ? 'BELOW_MINIMUM' : 'OK',
+                status: currentStock <= minQuantity ? 'BELOW_MINIMUM' : 'OK',
                 categoryABC
             };
         });
@@ -126,7 +130,7 @@ export class InventoryService {
             return await prisma.inventoryItem.update({
                 where: { id: existingItem.id },
                 data: {
-                    currentStock: existingItem.currentStock + Number(data.currentStock || data.quantity || 0),
+                    currentStock: Number(existingItem.currentStock) + Number(data.currentStock || data.quantity || 0),
                     minQuantity: Number(data.minQuantity),
                     unitCost: Number(data.unitCost),
                     category: data.category,
@@ -180,17 +184,18 @@ export class InventoryService {
             if (!item) throw new Error("Item não encontrado");
 
             // 3. Validar saldo negativo para saídas
-            if (data.type === 'OUT' && item.currentStock < data.quantity) {
+            if (data.type === 'OUT' && Number(item.currentStock) < data.quantity) {
                 if (!data.importBatchId) { // No caso de importação, não bloqueamos para permitir ajustes retroativos? 
                     // Melhor bloquear por segurança em ambos
-                    throw new Error(`Saldo insuficiente para item ${item.name}. Estoque atual: ${item.currentStock}`);
+                    throw new Error(`Saldo insuficiente para item ${item.name}. Estoque atual: ${Number(item.currentStock)}`);
                 }
             }
 
             // 4. Calcular novo saldo
+            const currentStock = Number(item.currentStock);
             const newQuantity = data.type === 'IN'
-                ? item.currentStock + data.quantity
-                : item.currentStock - data.quantity;
+                ? currentStock + data.quantity
+                : currentStock - data.quantity;
 
             // 5. Atualizar item
             await tx.inventoryItem.update({

@@ -51,11 +51,11 @@ export class CashFlowService {
 
         const totalIncomes = normalizedReceivables
             .filter(r => r.status === 'PAID')
-            .reduce((acc, r) => acc + r.amount, 0);
+            .reduce((acc, r) => acc + Number(r.amount), 0);
 
         const totalExpenses = normalizedPayables
             .filter(p => p.status === 'PAGO')
-            .reduce((acc, p) => acc + p.amount, 0);
+            .reduce((acc, p) => acc + Number(p.amount), 0);
 
         return {
             summary: {
@@ -81,16 +81,16 @@ export class CashFlowService {
             where
         });
 
-        const revenue = transactions.filter(t => t.type === 'INCOME' && t.status === 'PAID').reduce((acc, t) => acc + t.amount, 0);
+        const revenue = transactions.filter(t => t.type === 'INCOME' && t.status === 'PAID').reduce((acc, t) => acc + Number(t.amount), 0);
 
         // Custos Variáveis (Ex: Procedimentos, Insumos)
-        const variableCosts = transactions.filter(t => t.type === 'EXPENSE' && t.category === 'Variável').reduce((acc, t) => acc + t.amount, 0);
+        const variableCosts = transactions.filter(t => t.type === 'EXPENSE' && t.category === 'Variável').reduce((acc, t) => acc + Number(t.amount), 0);
 
         // Margem de Contribuição
         const contributionMargin = revenue - variableCosts;
 
         // Despesas Fixas
-        const fixedExpenses = transactions.filter(t => t.type === 'EXPENSE' && t.category === 'Fixo').reduce((acc, t) => acc + t.amount, 0);
+        const fixedExpenses = transactions.filter(t => t.type === 'EXPENSE' && t.category === 'Fixo').reduce((acc, t) => acc + Number(t.amount), 0);
 
         // Resultado Final (EBITDA simplificado)
         const netResult = contributionMargin - fixedExpenses;
@@ -148,8 +148,8 @@ export class BillingService {
         });
 
         // --- CÁLCULOS DOS KPIs ---
-        const totalBilling = currentTransactions.reduce((acc, t) => acc + t.amount, 0);
-        const totalPreviousBilling = previousTransactions.reduce((acc, t) => acc + t.amount, 0);
+        const totalBilling = currentTransactions.reduce((acc, t) => acc + Number(t.amount), 0);
+        const totalPreviousBilling = previousTransactions.reduce((acc, t) => acc + Number(t.amount), 0);
 
         const countCurrent = currentTransactions.length;
         const averageTicket = countCurrent > 0 ? totalBilling / countCurrent : 0;
@@ -203,10 +203,10 @@ export class BillingService {
             }
 
             if (timelineMap[key]) {
-                timelineMap[key].total += t.amount;
+                timelineMap[key].total += Number(t.amount);
                 timelineMap[key].count += 1;
             } else {
-                timelineMap[key] = { total: t.amount, count: 1 };
+                timelineMap[key] = { total: Number(t.amount), count: 1 };
             }
         });
 
@@ -233,19 +233,19 @@ export class BillingService {
             // Procedimentos
             const proc = t.procedureName || 'Sem Procedimento';
             if (!procMap[proc]) procMap[proc] = { total: 0, count: 0 };
-            procMap[proc].total += t.amount;
+            procMap[proc].total += Number(t.amount);
             procMap[proc].count += 1;
 
             // Médicos
             const doc = (t as any).doctorName || t.doctor?.name || 'Clínica';
             if (!doctorMap[doc]) doctorMap[doc] = { total: 0, count: 0 };
-            doctorMap[doc].total += t.amount;
+            doctorMap[doc].total += Number(t.amount);
             doctorMap[doc].count += 1;
 
             // Categorias (usaremos como Vendedores/Sellers proxy pois a regra de Vendedor não está clara no BD)
             const cat = t.category || 'Outros';
             if (!categoryMap[cat]) categoryMap[cat] = { total: 0, count: 0 };
-            categoryMap[cat].total += t.amount;
+            categoryMap[cat].total += Number(t.amount);
             categoryMap[cat].count += 1;
 
             // Pacientes (VIPs)
@@ -260,7 +260,7 @@ export class BillingService {
                         count: 0
                     };
                 }
-                patientMap[pId].value += t.amount;
+                patientMap[pId].value += Number(t.amount);
                 patientMap[pId].count += 1;
             }
         });
@@ -314,7 +314,7 @@ export class BillingService {
             originMap[origin] = (originMap[origin] || 0) + 1;
 
             const pay = (t.paymentMethod || 'Não Informado').trim().toUpperCase();
-            paymentMap[pay] = (paymentMap[pay] || 0) + t.amount;
+            paymentMap[pay] = (paymentMap[pay] || 0) + Number(t.amount);
         });
 
         const buildDist = (map: Record<string, number>) =>
@@ -407,7 +407,7 @@ export class BillingService {
             take: 50
         });
 
-        const total = transactions.reduce((acc, t) => acc + t.amount, 0);
+        const total = transactions.reduce((acc, t) => acc + Number(t.amount), 0);
         const count = transactions.length;
         const averageTicket = count > 0 ? total / count : 0;
 
@@ -427,7 +427,7 @@ export class BillingService {
                 patientId: t.patient?.id || null,
                 patientPhone: (t.patient as any)?.phone || null,
                 paymentMethod: t.paymentMethod || 'Não Informado',
-                amount: t.amount,
+                amount: Number(t.amount),
                 status: t.status
             }))
         };

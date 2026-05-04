@@ -309,17 +309,18 @@ export class ProcedureController {
             if (!proc) return res.status(404).json({ error: 'Procedimento não encontrado' });
 
             const custoInsumos = proc.procedimentoInsumos.reduce((acc, ins) => {
-                return acc + (Number(ins.quantidadePadrao) * (ins.itemEstoque.unitCost || 0));
+                const unitCost = ins.itemEstoque.unitCost ? Number(ins.itemEstoque.unitCost) : 0;
+                return acc + (Number(ins.quantidadePadrao) * unitCost);
             }, 0);
 
-            const custoTotal = custoInsumos + proc.fixedCost + proc.variableCost;
-            const precoVenda = proc.basePrice || proc.currentPrice || 0;
+            const custoTotal = custoInsumos + Number(proc.fixedCost) + Number(proc.variableCost);
+            const precoVenda = Number(proc.basePrice || proc.currentPrice || 0);
             const margem = precoVenda > 0 ? ((precoVenda - custoTotal) / precoVenda) * 100 : 0;
 
             return res.json({
                 custoInsumos: Number(custoInsumos.toFixed(2)),
-                custoFixo: proc.fixedCost,
-                custoVariavel: proc.variableCost,
+                custoFixo: Number(proc.fixedCost),
+                custoVariavel: Number(proc.variableCost),
                 custoTotal: Number(custoTotal.toFixed(2)),
                 precoVenda,
                 margem: Number(margem.toFixed(1)),
