@@ -46,8 +46,11 @@ jobs:
       - name: Build Docker Image (Backend)
         run: docker build -t rares360-backend:test ./backend
 
+      - name: Debug Dockerfile Content
+        run: cat frontend/Dockerfile
+
       - name: Build Docker Image (Frontend)
-        run: docker build -t rares360-frontend:test ./frontend
+        run: docker build --no-cache -t rares360-frontend:test ./frontend
 
       - name: Run Trivy Vulnerability Scanner (Backend)
         uses: aquasecurity/trivy-action@master
