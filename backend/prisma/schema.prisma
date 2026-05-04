@@ -120,6 +120,7 @@ enum AuditAction {
   VIEW_SENSITIVE
   ADMIN_CLINIC_ACCESS
   ADMIN_CLINIC_EXIT
+  CONTEXT_SWITCH
 }
 
 model AuditLog {
@@ -132,6 +133,7 @@ model AuditLog {
   oldValues Json?
   newValues Json?
   ipAddress String?
+  userAgent String?
   timestamp DateTime    @default(now())
 
   // Note: Relação opcional com clinic e user para não forçar integridade referencial rígida no log, 
@@ -1404,47 +1406,4 @@ model RegraComissaoEquipe {
 
   @@index([clinicId])
 }
-// ═══ Modelos de Segurança, Auditoria e LGPD ═══
 
-model AuditLog {
-  id        String   @id @default(uuid())
-  clinicId  String
-  userId    String
-  action    String
-  entity    String
-  entityId  String?
-  oldValues Json?
-  newValues Json?
-  ipAddress String?
-  userAgent String?
-  timestamp DateTime @default(now())
-
-  @@index([clinicId, entity])
-  @@index([userId, timestamp])
-}
-
-model ConsentLog {
-  id           String   @id @default(uuid())
-  userId       String
-  consentType  String   // DATA_PROCESSING, MARKETING, etc
-  termsVersion String
-  ipAddress    String?
-  userAgent    String?
-  timestamp    DateTime @default(now())
-
-  @@index([userId])
-}
-
-model IncidentReport {
-  id                 String   @id @default(uuid())
-  reportedBy         String
-  title              String
-  description        String
-  severity           String
-  affectedDataTypes  Json?
-  affectedUsersCount Int      @default(0)
-  containmentActions String?
-  status             String   @default("OPEN")
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-}
