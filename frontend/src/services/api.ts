@@ -53,6 +53,12 @@ api.interceptors.response.use(
     async (error) => {
         const originalRequest = error.config;
         const status = error.response?.status;
+        const errorCode = error.response?.data?.error;
+
+        // Não retentar se for erro de contexto de clínica obrigatório (evita loops 401)
+        if (status === 400 && errorCode === 'CLINIC_CONTEXT_REQUIRED') {
+            return Promise.reject(error);
+        }
 
         if (status === 401 && !originalRequest._retry && originalRequest.url !== 'auth/login' && originalRequest.url !== 'auth/refresh') {
             if (isRefreshing) {
@@ -103,7 +109,8 @@ api.interceptors.response.use(
         console.error('❌ API Error:', {
             url: error.config?.url,
             status: status,
-            message: error.message
+            message: error.message,
+            code: errorCode
         });
 
         return Promise.reject(error);
@@ -226,7 +233,7 @@ export const pepApi = {
 
 export const reportingApi = {
     getDashboard: () => api.get('reporting/dashboard'),
-    getDashboardKPIs: () => api.get('reporting/dashboard-kpis'),
+    getDashboardKPIs: (params?: any) => api.get('reporting/dashboard-kpis', { params }),
     getCashFlow: (params?: { startDate?: string; endDate?: string }) => api.get('reporting/cash-flow', { params }),
     getDRE: (params?: { startDate?: string; endDate?: string }) => api.get('reporting/dre', { params }),
     getBillingAnalytics: (params?: { startDate?: string; endDate?: string; groupBy?: string }) => {
@@ -236,7 +243,7 @@ export const reportingApi = {
         if (params?.groupBy) query.append('groupBy', params.groupBy);
         return api.get(`reporting/billing-analytics?${query.toString()}`);
     },
-    getGoals: () => api.get('reporting/goals'),
+    getGoals: (params?: any) => api.get('reporting/goals', { params }),
     getDrillDown: (params: { type: string; value: string; startDate?: string; endDate?: string }) =>
         api.get('reporting/drill-down', { params }),
     postSmartGoal: (targetProfit: number) => api.post('reporting/smart-goal', { targetProfit }),
@@ -260,12 +267,17 @@ export const integrationApi = {
 };
 
 export const pricingApi = {
-    listSimulations: () => api.get('pricing'),
-    saveSimulation: (data: any) => api.post('pricing', data),
-    getDiagnosis: (params?: { startDate?: string, endDate?: string }) => api.get('pricing/diagnosis', { params }),
-    upsertProcedure: (data: any) => api.post('pricing/procedure', data),
-    deleteProcedure: (id: string) => api.delete(`pricing/procedure/${id}`),
-    simularIntegrado: (data: { procedimentoId: string, tempoMinutos: number, valorVenda?: number }) => api.post('pricing/simular-integrado', data),
+    getDiagnosis: (params?: any) => api.get('pricing', { params }),
+    getConfig: () => api.get('pricing/config'),
+    updateConfig: (data: any) => api.put('pricing/config', data),
+    updatePrice: (procedureId: string, salePrice: number) => api.patch(`pricing/${procedureId}/price`, { salePrice }),
+    importPrices: (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        return api.post('pricing/import', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        });
+    },
 };
 
 export const complianceApi = {

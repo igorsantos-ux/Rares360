@@ -23,7 +23,7 @@ const DREPage = () => {
         compareWith: 'MES_ANTERIOR'
     });
 
-    const { data: dre, isLoading, refetch } = useDreData(filter);
+    const { data: dre, isLoading } = useDreData(filter);
     const aiMutation = useDreAiInsights();
     const pdfMutation = useExportDrePdf();
 

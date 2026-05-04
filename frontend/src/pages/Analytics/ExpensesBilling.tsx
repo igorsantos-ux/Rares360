@@ -8,7 +8,6 @@ import {
     DollarSign,
     Percent,
     ArrowRight,
-    Filter,
     ArrowUpRight,
     ArrowDownRight
 } from 'lucide-react';

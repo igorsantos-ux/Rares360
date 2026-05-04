@@ -110,6 +110,10 @@ model Clinic {
   impostosEmissao       ImpostoEmissao[]
   regrasRepasse         RegraRepasseMedico[]
   regrasComissao        RegraComissaoEquipe[]
+
+  // ═══ Módulo de Precificação Dinâmica ═══
+  pricingConfig  PricingConfig?
+  procedurePrices ProcedurePrice[]
 }
 
 enum AuditAction {
@@ -121,6 +125,7 @@ enum AuditAction {
   ADMIN_CLINIC_ACCESS
   ADMIN_CLINIC_EXIT
   CONTEXT_SWITCH
+  PRICING_CONFIG_UPDATED
 }
 
 model AuditLog {
@@ -643,6 +648,9 @@ model Procedure {
   name            String
   category        String @default("Geral")
   durationMinutes Int    @default(0)
+  duration        Int    @default(0) // Usado pelo módulo de precificação
+  productCost     Decimal @default(0) @db.Decimal(12,2)
+  tipo            String? // PROCEDIMENTO|TECNOLOGIA|CONSULTA|SORO-IM|PRODUTO
 
   // Detalhes Financeiros
   fixedCost    Decimal @default(0) @db.Decimal(12,2)
@@ -684,6 +692,8 @@ model Procedure {
   // Regras de negócio
   regrasRepasse  RegraRepasseMedico[]
   regrasComissao RegraComissaoEquipe[]
+
+  prices ProcedurePrice[]
 
   @@index([clinicId])
   @@index([importBatchId])
@@ -1406,6 +1416,38 @@ model RegraComissaoEquipe {
   procedimento   Procedure?             @relation(fields: [procedimentoId], references: [id])
   categoria      CategoriaProcedimento? @relation(fields: [categoriaId], references: [id])
 
+  @@index([clinicId])
+}
+
+model PricingConfig {
+  id               String   @id @default(cuid())
+  clinicId         String   @unique
+  taxaSalaPerMin   Float    @default(4.45)   // R$/minuto de uso da sala
+  impostosRate     Float    @default(0.165)  // 16.5%
+  cartaoRate       Float    @default(0.05)   // 5.0%
+  comissaoRate     Float    @default(0.03)   // 3.0% (processamento/outros)
+  repasseRate      Float    @default(0.40)   // 40% repasse médico
+  margemAlvo       Float    @default(0.40)   // meta de margem clínica ideal
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  clinic           Clinic   @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+}
+
+model ProcedurePrice {
+  id          String    @id @default(cuid())
+  clinicId    String
+  procedureId String
+  salePrice   Float     @default(0)
+  isActive    Boolean   @default(true)
+  notes       String?
+  updatedAt   DateTime  @updatedAt
+  updatedBy   String?   // userId
+
+  clinic      Clinic    @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  procedure   Procedure @relation(fields: [procedureId], references: [id], onDelete: Cascade)
+
+  @@unique([clinicId, procedureId])
   @@index([clinicId])
 }
 

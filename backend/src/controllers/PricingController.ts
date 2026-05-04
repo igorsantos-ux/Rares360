@@ -1,232 +1,262 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import prisma from '../lib/prisma.js';
-import { PricingIntegrationService } from '../services/PricingIntegrationService.js';
+import { calcPricing } from '../utils/pricingCalculator.js';
+import { createAuditLog } from '../lib/auditLogger.js';
+import { z } from 'zod';
+import * as XLSX from '@e965/xlsx';
 
 export class PricingController {
-    static async create(req: Request, res: Response): Promise<void> {
-        try {
-            const { name, sellingPrice, totalCost, netProfit, profitMargin, cardFeePercentage, taxPercentage, fixedCost, commission, supplies } = req.body;
-            const clinicId = (req as any).user.clinicId;
+  /**
+   * Lista todos os procedimentos com margens calculadas em tempo real
+   */
+  async getDiagnosis(req: any, res: Response) {
+    try {
+      const { clinicId } = req.clinicContext;
+      const { tipo, status, search } = req.query;
 
-            if (!clinicId) {
-                res.status(403).json({ error: 'Acesso negado. Clínica não identificada.' });
-                return;
-            }
+      // Buscar config da clínica (com fallback para defaults via upsert)
+      const config = await prisma.pricingConfig.upsert({
+        where: { clinicId },
+        create: { clinicId },
+        update: {},
+      });
 
-            const simulation = await prisma.$transaction(async (tx) => {
-                const newSimulation = await tx.pricingSimulation.create({
-                    data: {
-                        name,
-                        sellingPrice: Number(sellingPrice),
-                        totalCost: Number(totalCost),
-                        netProfit: Number(netProfit),
-                        profitMargin: Number(profitMargin),
-                        cardFeePercentage: Number(cardFeePercentage),
-                        taxPercentage: Number(taxPercentage),
-                        fixedCost: Number(fixedCost),
-                        commission: Number(commission),
-                        clinicId
-                    }
-                });
+      // Buscar procedimentos da clínica
+      const procedures = await prisma.procedure.findMany({
+        where: {
+          clinicId,
+          ...(tipo && { tipo: tipo as string }),
+          ...(search && {
+            name: { contains: search as string, mode: 'insensitive' }
+          }),
+          // Removida a trava de isActive para permitir precificar tudo
+        },
+        include: {
+          prices: {
+            where: { clinicId },
+            take: 1,
+          },
+        },
+        orderBy: [{ tipo: 'asc' }, { name: 'asc' }],
+      });
 
-                if (supplies && supplies.length > 0) {
-                    await tx.pricingSupply.createMany({
-                        data: supplies.map((supply: any) => ({
-                            name: supply.name,
-                            quantity: Number(supply.quantity),
-                            cost: Number(supply.cost),
-                            pricingSimulationId: newSimulation.id
-                        }))
-                    });
-                }
+      let kpiCritica = 0, kpiOk = 0, kpiIdeal = 0, kpiSemPreco = 0;
 
-                return newSimulation;
-            });
+      const data = procedures.map((proc) => {
+        const salePrice = proc.prices[0]?.salePrice ?? 0;
+        
+        // Conversão de Decimal (Prisma) para number (Calculator)
+        const productCost = Number(proc.productCost || 0);
+        const duration = proc.duration || proc.durationMinutes || 0;
 
-            res.status(201).json({ message: 'Simulação de precificação salva com sucesso', simulation });
-        } catch (error) {
-            console.error('Erro ao salvar simulação de precificação:', error);
-            res.status(500).json({ error: 'Erro interno ao salvar simulação.' });
-        }
+        const result = calcPricing(
+          { productCost, duration, salePrice },
+          config as any
+        );
+
+        if (salePrice <= 0) kpiSemPreco++;
+        else if (result.status === 'CRITICA') kpiCritica++;
+        else if (result.status === 'OK') kpiOk++;
+        else if (result.status === 'IDEAL') kpiIdeal++;
+
+        return {
+          id: proc.id,
+          tipo: proc.tipo || proc.category,
+          nome: proc.name,
+          duracao: duration,
+          custoProduto: productCost,
+          salePrice,
+          pricing: result,
+        };
+      });
+
+      // Filtro por status após cálculo
+      const filtered = status
+        ? data.filter(d => d.pricing.status === status)
+        : data;
+
+      return res.json({
+        procedures: filtered,
+        config,
+        kpis: {
+          total: procedures.length,
+          critica: kpiCritica,
+          ok: kpiOk,
+          ideal: kpiIdeal,
+          semPreco: kpiSemPreco,
+        },
+      });
+    } catch (error: any) {
+      console.error('[PricingController.getDiagnosis] Erro:', error);
+      return res.status(500).json({ error: 'Erro ao buscar diagnóstico de precificação' });
     }
+  }
 
-    static async list(req: Request, res: Response): Promise<void> {
-        try {
-            const clinicId = (req as any).user.clinicId;
-
-            if (!clinicId) {
-                res.status(403).json({ error: 'Acesso negado. Clínica não identificada.' });
-                return;
-            }
-
-            const simulations = await prisma.pricingSimulation.findMany({
-                where: { clinicId },
-                include: { supplies: true },
-                orderBy: { updatedAt: 'desc' }
-            });
-
-            res.json(simulations);
-        } catch (error) {
-            console.error('Erro ao listar simulações de precificação:', error);
-            res.status(500).json({ error: 'Erro interno ao listar simulações.' });
-        }
+  /**
+   * Busca a configuração global da clínica
+   */
+  async getConfig(req: any, res: Response) {
+    try {
+      const { clinicId } = req.clinicContext;
+      const config = await prisma.pricingConfig.upsert({
+        where: { clinicId },
+        create: { clinicId },
+        update: {},
+      });
+      return res.json(config);
+    } catch (error) {
+      return res.status(500).json({ error: 'Erro ao buscar configuração' });
     }
+  }
 
-    static async diagnosis(req: Request, res: Response): Promise<void> {
-        try {
-            const clinicId = (req as any).user.clinicId;
-            const { startDate, endDate } = req.query;
+  /**
+   * Salva parâmetros globais da clínica
+   */
+  async updateConfig(req: any, res: Response) {
+    try {
+      const { clinicId } = req.clinicContext;
+      
+      const pricingConfigSchema = z.object({
+        taxaSalaPerMin: z.number().min(0).max(100),
+        impostosRate:   z.number().min(0).max(1),
+        cartaoRate:     z.number().min(0).max(0.2),
+        comissaoRate:   z.number().min(0).max(0.2),
+        repasseRate:    z.number().min(0).max(0.8),
+        margemAlvo:     z.number().min(0).max(0.9),
+      });
 
-            if (!clinicId) {
-                res.status(403).json({ error: 'Acesso negado. Clínica não identificada.' });
-                return;
-            }
+      const body = pricingConfigSchema.parse(req.body);
 
-            const where: any = { clinicId };
-            if (startDate || endDate) {
-                where.updatedAt = {
-                    ...(startDate ? { gte: new Date(startDate as string) } : {}),
-                    ...(endDate ? { lte: new Date(endDate as string) } : {})
-                };
-            }
+      const oldConfig = await prisma.pricingConfig.findUnique({ where: { clinicId } });
 
-            const procedures = await prisma.procedure.findMany({
-                where,
-                include: { supplies: true },
-                orderBy: { name: 'asc' }
-            });
+      const config = await prisma.pricingConfig.upsert({
+        where: { clinicId },
+        create: { clinicId, ...body },
+        update: body,
+      });
 
-            // Lógica de Diagnóstico Quantitativo (Markup Divisor)
-            const diagnosis = procedures.map(proc => {
-                const totalCost = Number(proc.totalCost);
-                const currentPrice = Number(proc.currentPrice);
-                const targetMargin = Number(proc.targetMargin);
+      // Auditoria
+      await createAuditLog({
+        action: 'PRICING_CONFIG_UPDATED' as any,
+        userId: req.user.id,
+        clinicId,
+        req,
+        entity: 'PricingConfig',
+        entityId: config.id,
+        oldValues: oldConfig || {},
+        newValues: body,
+      });
 
-                const netProfit = currentPrice - totalCost;
-                const currentMargin = currentPrice > 0 ? (netProfit / currentPrice) * 100 : 0;
-
-                // Preço Sugerido = Custo / (1 - Margem Desejada%)
-                const suggestedPrice = targetMargin < 100 ? totalCost / (1 - (targetMargin / 100)) : totalCost;
-
-                return {
-                    ...proc,
-                    netProfit,
-                    currentMargin,
-                    suggestedPrice
-                };
-            });
-
-            res.json(diagnosis);
-        } catch (error) {
-            console.error('Erro no diagnóstico de precificação:', error);
-            res.status(500).json({ error: 'Erro ao processar diagnóstico de margens.' });
-        }
+      return res.json(config);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: 'Dados inválidos', details: error.errors });
+      }
+      return res.status(500).json({ error: 'Erro ao salvar configuração' });
     }
+  }
 
-    static async upsertProcedure(req: Request, res: Response): Promise<void> {
-        try {
-            const { id, name, durationMinutes, totalCost, currentPrice, targetMargin, supplies } = req.body;
-            const clinicId = (req as any).user.clinicId;
+  /**
+   * Atualiza o preço de venda de um procedimento específico
+   */
+  async updatePrice(req: any, res: Response) {
+    try {
+      const { clinicId } = req.clinicContext;
+      const { procedureId } = req.params;
+      const { salePrice } = z.object({
+        salePrice: z.number().min(0)
+      }).parse(req.body);
 
-            if (!clinicId) {
-                res.status(403).json({ error: 'Acesso negado.' });
-                return;
-            }
+      const procedure = await prisma.procedure.findFirst({
+        where: { id: procedureId, clinicId },
+      });
+      
+      if (!procedure) return res.status(404).json({ error: 'Procedimento não encontrado' });
 
-            const result = await prisma.$transaction(async (tx) => {
-                // Limpeza reativa de supplies para atualização limpa
-                if (id) {
-                    await tx.pricingSupply.deleteMany({
-                        where: { procedureId: id }
-                    });
-                }
+      const price = await prisma.procedurePrice.upsert({
+        where: { clinicId_procedureId: { clinicId, procedureId } },
+        create: { clinicId, procedureId, salePrice, updatedBy: req.user.id },
+        update: { salePrice, updatedBy: req.user.id },
+      });
 
-                const procedure = await tx.procedure.upsert({
-                    where: { id: id || 'new-procedure' }, // Fallback para evitar erro se id vier vazio
-                    update: {
-                        name,
-                        durationMinutes: Number(durationMinutes),
-                        totalCost: Number(totalCost),
-                        currentPrice: Number(currentPrice),
-                        targetMargin: Number(targetMargin)
-                    },
-                    create: {
-                        name,
-                        durationMinutes: Number(durationMinutes),
-                        totalCost: Number(totalCost),
-                        currentPrice: Number(currentPrice),
-                        targetMargin: Number(targetMargin),
-                        clinicId
-                    }
-                });
+      const config = await prisma.pricingConfig.upsert({
+        where: { clinicId },
+        create: { clinicId },
+        update: {},
+      });
 
-                if (supplies && supplies.length > 0) {
-                    await tx.pricingSupply.createMany({
-                        data: supplies.map((s: any) => ({
-                            name: s.name,
-                            quantity: Number(s.quantity),
-                            cost: Number(s.cost),
-                            procedureId: procedure.id
-                        }))
-                    });
-                }
+      const result = calcPricing(
+        { 
+          productCost: Number(procedure.productCost || 0), 
+          duration: procedure.duration || procedure.durationMinutes || 0, 
+          salePrice 
+        },
+        config as any
+      );
 
-                return procedure;
-            });
-
-            res.json({ message: 'Procedimento salvo com sucesso', procedure: result });
-        } catch (error) {
-            console.error('Erro ao salvar procedimento:', error);
-            res.status(500).json({ error: 'Erro ao salvar procedimento e seus custos.' });
-        }
+      return res.json({ price, pricing: result });
+    } catch (error) {
+      return res.status(500).json({ error: 'Erro ao atualizar preço' });
     }
+  }
 
-    static async deleteProcedure(req: Request, res: Response): Promise<void> {
-        try {
-            const { id } = req.params;
-            const clinicId = (req as any).user.clinicId;
+  /**
+   * Importação em massa via planilha
+   */
+  async importPrices(req: any, res: Response) {
+    try {
+      const { clinicId } = req.clinicContext;
+      if (!req.file) return res.status(400).json({ error: 'Arquivo não enviado' });
 
-            await prisma.procedure.delete({
-                where: { id, clinicId }
-            });
+      const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(sheet);
 
-            res.json({ message: 'Procedimento removido do diagnóstico.' });
-        } catch (error) {
-            console.error('Erro ao deletar procedimento:', error);
-            res.status(500).json({ error: 'Erro ao remover procedimento.' });
+      const procedures = await prisma.procedure.findMany({
+        where: { clinicId },
+        select: { id: true, name: true },
+      });
+
+      const procMap = new Map(
+        procedures.map(p => [p.name.toLowerCase().trim(), p.id])
+      );
+
+      const results = { imported: 0, notFound: [] as string[], errors: [] as string[] };
+
+      // Executar em transaction para garantir integridade
+      await prisma.$transaction(async (tx) => {
+        for (const row of rows) {
+          const nome = String(row['PROCEDIMENTO'] || row['procedimento'] || row['Nome'] || '').trim();
+          const precoRaw = row['PRECO_VENDA'] || row['preco_venda'] || row['Preço'] || row['Valor'];
+          const preco = typeof precoRaw === 'number' ? precoRaw : parseFloat(String(precoRaw || 0).replace('R$', '').replace('.', '').replace(',', '.'));
+
+          if (!nome) continue;
+          
+          const procedureId = procMap.get(nome.toLowerCase());
+          
+          if (!procedureId) { 
+            results.notFound.push(nome); 
+            continue; 
+          }
+          
+          if (isNaN(preco) || preco < 0) { 
+            results.errors.push(nome); 
+            continue; 
+          }
+
+          await tx.procedurePrice.upsert({
+            where: { clinicId_procedureId: { clinicId, procedureId } },
+            create: { clinicId, procedureId, salePrice: preco, updatedBy: req.user.id },
+            update: { salePrice: preco, updatedBy: req.user.id },
+          });
+          results.imported++;
         }
+      });
+
+      return res.json(results);
+    } catch (error) {
+      console.error('[PricingController.importPrices] Erro:', error);
+      return res.status(500).json({ error: 'Erro ao importar preços' });
     }
-
-    // ==========================================
-    // INTEGRAÇÃO COM MOTOR DE REGRAS (Fase 2)
-    // ==========================================
-    static async simularIntegrado(req: Request, res: Response): Promise<void> {
-        try {
-            // O authMiddleware pode colocar clinicId em req.user.clinicId ou req.clinicId
-            const clinicId = (req as any).clinicId || (req as any).user?.clinicId;
-            const { procedimentoId, tempoMinutos, valorVenda } = req.body;
-
-            if (!clinicId) {
-                res.status(403).json({ error: 'Acesso negado. Clínica não identificada.' });
-                return;
-            }
-
-            if (!procedimentoId || !tempoMinutos) {
-                res.status(400).json({ error: 'Procedimento e tempo (minutos) são obrigatórios.' });
-                return;
-            }
-
-            const resultado = await PricingIntegrationService.calcular(
-                clinicId,
-                procedimentoId,
-                Number(tempoMinutos),
-                Number(valorVenda || 0)
-            );
-
-            res.json(resultado);
-        } catch (error: any) {
-            console.error('Erro na simulação integrada:', error);
-            res.status(400).json({ error: error.message || 'Erro ao calcular simulação integrada.' });
-        }
-    }
+  }
 }
