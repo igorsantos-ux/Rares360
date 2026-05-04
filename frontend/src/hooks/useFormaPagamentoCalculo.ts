@@ -23,7 +23,7 @@ interface CalculoResult {
 export function useFormaPagamentoCalculo() {
     const [resultado, setResultado] = useState<CalculoResult | null>(null);
     const [loading, setLoading] = useState(false);
-    const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+    const debounceTimer = useRef<number | null>(null);
 
     const calcular = useCallback((formaId: string, valor: number, parcelas: number = 1) => {
         if (!formaId || !valor || valor <= 0) {

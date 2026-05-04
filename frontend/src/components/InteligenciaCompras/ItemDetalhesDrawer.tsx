@@ -1,5 +1,4 @@
-import React from 'react';
-import { X, TrendingUp, Calendar, Box, Package, User, Phone, CheckCircle2, AlertTriangle, FileText } from 'lucide-react';
+import { X, TrendingUp, Box, Package, Phone } from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
