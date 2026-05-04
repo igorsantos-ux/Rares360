@@ -16,6 +16,7 @@ router.get('/', controller.getDiagnosis);
 router.get('/config', controller.getConfig);
 router.put('/config', controller.updateConfig);
 router.patch('/:procedureId/price', controller.updatePrice);
+router.post('/procedure', controller.upsertProcedure);
 router.post('/import', upload.single('file'), controller.importPrices);
 
 export default router;

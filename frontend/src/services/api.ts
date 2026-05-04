@@ -278,6 +278,7 @@ export const pricingApi = {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
     },
+    upsertProcedure: (data: any) => api.post('pricing/procedure', data),
 };
 
 export const complianceApi = {

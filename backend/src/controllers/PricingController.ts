@@ -258,5 +258,41 @@ export class PricingController {
       console.error('[PricingController.importPrices] Erro:', error);
       return res.status(500).json({ error: 'Erro ao importar preços' });
     }
+  // Método para compatibilidade com o editor legado de custos detalhados
+  async upsertProcedure(req: Request, res: Response) {
+    try {
+      const clinicId = req.headers['x-clinic-id'] as string;
+      const { id, name, productCost, durationMinutes, currentPrice } = req.body;
+
+      // Se tiver ID, atualiza o procedimento base
+      if (id) {
+        await prisma.procedure.update({
+          where: { id, clinicId },
+          data: {
+            name,
+            productCost: productCost || 0,
+            duration: durationMinutes || 0
+          }
+        });
+
+        // Atualiza ou cria o preço
+        await prisma.procedurePrice.upsert({
+          where: {
+            procedureId_clinicId: { procedureId: id, clinicId }
+          },
+          update: { salePrice: currentPrice || 0 },
+          create: {
+            procedureId: id,
+            clinicId,
+            salePrice: currentPrice || 0
+          }
+        });
+      }
+
+      return res.json({ success: true });
+    } catch (error) {
+      console.error('Error upserting procedure:', error);
+      return res.status(500).json({ error: 'Internal server error' });
+    }
   }
 }
