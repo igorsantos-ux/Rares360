@@ -3,29 +3,11 @@ import { getClinicId } from './context.js';
 
 // Lista de modelos que possuem explicitamente o campo clinicId
 const TENANT_MODELS = [
-  'User',
-  'Transaction',
-  'Doctor',
-  'Patient',
-  'Lead',
-  'InventoryItem',
-  'StockMovement',
-  'FinancialGoal',
-  'Document',
-  'ClinicDocument',
-  'AccountPayable',
-  'PricingSimulation',
-  'ProcedurePricing',
-  'DailyClosure',
-  'ProcedureExecution',
-  'Task',
-  'Appointment',
-  'Room',
-  'Equipment',
-  'ClinicalEvolution',
-  'Prescription',
-  'InventoryUsage',
-  'Proposal'
+  'User', 'Transaction', 'Doctor', 'Patient', 'Procedure',
+  'FormaPagamento', 'CategoriaProcedimento', 'Orcamento', 'OrcamentoItem',
+  'Contrato', 'ContaPaciente', 'ContaPacienteItem', 'ParcelaContaPaciente',
+  'Termo', 'Setor', 'Fornecedor', 'MonthlyGoal', 'ImpostoEmissao',
+  'RegraRepasseMedico', 'RegraComissaoEquipe', 'Room', 'Equipment'
 ];
 
 export const extendPrisma = (prisma: PrismaClient) => {

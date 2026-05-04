@@ -5,23 +5,10 @@ import { BillingService } from '../services/BillingService.js';
 import { createAuditLog } from '../lib/auditLogger.js';
 import { MailService } from '../services/MailService.js';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
+import { storageProvider } from '../lib/StorageService.js';
 import crypto from 'crypto';
 
-const storage = multer.diskStorage({
-    destination: (req: any, file: any, cb: any) => {
-        const dir = 'uploads/logos';
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        cb(null, dir);
-    },
-    filename: (req: any, file: any, cb: any) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'logo-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
+const storage = multer.memoryStorage();
 
 export const upload = multer({
     storage,
@@ -774,9 +761,14 @@ export class SaaSController {
                 return res.status(400).json({ error: 'Nenhum arquivo enviado' });
             }
 
-            const protocol = req.protocol;
-            const host = req.get('host');
-            const logoUrl = `${protocol}://${host}/uploads/logos/${file.filename}`;
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const fileName = `logos/${uniqueSuffix}-${file.originalname.replace(/\s+/g, '_')}`;
+
+            const logoUrl = await storageProvider.upload(
+                fileName,
+                file.buffer,
+                file.mimetype
+            );
 
             res.json({ url: logoUrl });
         } catch (error: any) {

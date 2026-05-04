@@ -2,6 +2,17 @@ console.log('🚀 Starting Backend Finance Server...');
 import dotenv from 'dotenv';
 dotenv.config();
 
+// ═══ Validação Crítica de Ambiente (Morte Súbita) ═══
+if (process.env.NODE_ENV === 'production') {
+  const requiredEnv = ['AWS_REGION', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'AWS_S3_BUCKET'];
+  const missing = requiredEnv.filter(env => !process.env[env]);
+  if (missing.length > 0) {
+    console.error(`\n❌ [CRITICAL ERROR] Variáveis de ambiente obrigatórias ausentes: ${missing.join(', ')}`);
+    console.error('O sistema de Storage S3 é obrigatório para persistência em cluster PM2.');
+    process.exit(1);
+  }
+}
+
 import { installSecureLogger } from './lib/secureLogger.js';
 installSecureLogger();
 
