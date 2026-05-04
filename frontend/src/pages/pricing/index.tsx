@@ -8,11 +8,11 @@ import {
   RefreshCw,
   Calculator
 } from 'lucide-react';
-import { usePricingList } from './hooks/usePricingList';
-import { PricingConfigPanel } from './components/PricingConfigPanel';
-import { PricingKPICards } from './components/PricingKPICards';
-import { PricingTable } from './components/PricingTable';
-import { PricingImportModal } from './components/PricingImportModal';
+import { usePricingList } from './Hooks/usePricingList';
+import { PricingConfigPanel } from './Components/PricingConfigPanel';
+import { PricingKPICards } from './Components/PricingKPICards';
+import { PricingTable } from './Components/PricingTable';
+import { PricingImportModal } from './Components/PricingImportModal';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import {

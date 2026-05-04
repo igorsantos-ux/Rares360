@@ -42,12 +42,12 @@ export class PricingController {
 
       let kpiCritica = 0, kpiOk = 0, kpiIdeal = 0, kpiSemPreco = 0;
 
-      const data = procedures.map((proc) => {
-        const salePrice = proc.prices[0]?.salePrice ?? 0;
+      const data = procedures.map((proc: any) => {
+        const salePrice = proc['prices']?.[0]?.salePrice ?? 0;
         
         // Conversão de Decimal (Prisma) para number (Calculator)
-        const productCost = Number(proc.productCost || 0);
-        const duration = proc.duration || proc.durationMinutes || 0;
+        const productCost = Number(proc['productCost'] || 0);
+        const duration = proc['duration'] || proc['durationMinutes'] || 0;
 
         const result = calcPricing(
           { productCost, duration, salePrice },
@@ -61,7 +61,7 @@ export class PricingController {
 
         return {
           id: proc.id,
-          tipo: proc.tipo || proc.category,
+          tipo: proc['tipo'] || proc.category,
           nome: proc.name,
           duracao: duration,
           custoProduto: productCost,
@@ -167,7 +167,7 @@ export class PricingController {
         salePrice: z.number().min(0)
       }).parse(req.body);
 
-      const procedure = await prisma.procedure.findFirst({
+      const procedure: any = await prisma.procedure.findFirst({
         where: { id: procedureId, clinicId },
       });
       
@@ -187,8 +187,8 @@ export class PricingController {
 
       const result = calcPricing(
         { 
-          productCost: Number(procedure.productCost || 0), 
-          duration: procedure.duration || procedure.durationMinutes || 0, 
+          productCost: Number(procedure['productCost'] || 0), 
+          duration: procedure['duration'] || procedure['durationMinutes'] || 0, 
           salePrice 
         },
         config as any

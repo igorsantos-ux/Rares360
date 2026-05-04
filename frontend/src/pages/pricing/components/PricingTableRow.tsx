@@ -1,8 +1,8 @@
 import { useState, useMemo, memo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { pricingApi } from '../../../services/api';
-import { calcPricing } from '../utils/pricingCalc';
-import type { PricingConfig } from '../utils/pricingCalc';
+import { calcPricing } from '../Utils/PricingCalc';
+import type { PricingConfig } from '../Utils/PricingCalc';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface Props {

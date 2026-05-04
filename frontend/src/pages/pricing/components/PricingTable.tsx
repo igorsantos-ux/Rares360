@@ -1,5 +1,5 @@
 import { PricingTableRow } from './PricingTableRow';
-import type { PricingConfig } from '../utils/pricingCalc';
+import type { PricingConfig } from '../Utils/PricingCalc';
 
 interface Props {
   procedures: any[];
