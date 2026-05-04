@@ -9,18 +9,19 @@ import { AiInsightsCard } from '../../components/dre/AiInsightsCard';
 import { DreTable } from '../../components/dre/DreTable';
 import { DrillDownDrawer } from '../../components/dre/DrillDownDrawer';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
-import DateFilter from '../../components/DateFilter';
+import { DateRangePicker } from '../../components/ui/DateRangePicker';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'react-hot-toast';
 
 const DREPage = () => {
+    const today = new Date();
     const [filter, setFilter] = useState<DreReportFilter>({
-        periodType: 'ESTE_MES',
+        periodType: 'CUSTOM',
+        startDate: format(startOfMonth(today), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(today), 'yyyy-MM-dd'),
         viewType: 'GERENCIAL',
         compareWith: 'MES_ANTERIOR'
     });
-
-    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
-    const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
 
     const { data: dre, isLoading, refetch } = useDreData(filter);
     const aiMutation = useDreAiInsights();
@@ -29,14 +30,13 @@ const DREPage = () => {
     const [aiInsightData, setAiInsightData] = useState<AiInsightsResponse | null>(null);
     const [selectedRow, setSelectedRow] = useState<DreRow | null>(null);
 
-    const handleApplyFilter = () => {
-        const finalFilter = { ...filter };
-        if (filter.periodType === 'CUSTOM') {
-            finalFilter.startDate = customStartDate;
-            finalFilter.endDate = customEndDate;
-        }
-        setFilter(finalFilter);
-        refetch();
+    const handleDateChange = (newRange: { startDate: string; endDate: string }) => {
+        setFilter(prev => ({
+            ...prev,
+            periodType: 'CUSTOM',
+            startDate: newRange.startDate,
+            endDate: newRange.endDate
+        }));
     };
 
     const handleGenerateInsights = () => {
@@ -111,17 +111,12 @@ const DREPage = () => {
                         <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     </div>
 
-                    <DateFilter
-                        selectedPeriod={filter.periodType}
-                        setSelectedPeriod={(v) => {
-                            if (v === 'Personalizado') setFilter({ ...filter, periodType: 'CUSTOM' })
-                            else setFilter({ ...filter, periodType: v as any })
+                    <DateRangePicker
+                        value={{ 
+                            startDate: filter.startDate || format(startOfMonth(new Date()), 'yyyy-MM-dd'), 
+                            endDate: filter.endDate || format(endOfMonth(new Date()), 'yyyy-MM-dd') 
                         }}
-                        customStartDate={customStartDate}
-                        setCustomStartDate={setCustomStartDate}
-                        customEndDate={customEndDate}
-                        setCustomEndDate={setCustomEndDate}
-                        onApply={handleApplyFilter}
+                        onChange={handleDateChange}
                     />
 
                     <button

@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { DeleteConfirmationModal } from '../../components/Financial/DeleteConfirmationModal';
-import DateFilter from '../../components/DateFilter';
+import { DateRangePicker } from '../../components/ui/DateRangePicker';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 import {
     PieChart,
     Pie,
@@ -296,20 +297,21 @@ const PendenciaisPage = () => {
 
     const [deleteModal, setDeleteModal] = useState<{ open: boolean; item: any | null }>({ open: false, item: null });
 
-    // Estados para Filtro de Data
-    const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
-    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
-    const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const today = new Date();
+    const [dateRange, setDateRange] = useState({
+        startDate: format(startOfMonth(today), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(today), 'yyyy-MM-dd')
+    });
 
     const { data: receivablesResponse, isLoading } = useQuery({
-        queryKey: ['receivables-list', currentPage, activeFilter, searchTerm, selectedPeriod, customStartDate, customEndDate],
+        queryKey: ['receivables-list', currentPage, activeFilter, searchTerm, dateRange.startDate, dateRange.endDate],
         queryFn: () => receivablesApi.getReceivables({
             page: currentPage,
             limit: itemsPerPage,
             filter: activeFilter !== 'all' ? activeFilter : undefined,
             search: searchTerm,
-            startDate: selectedPeriod === 'Personalizado' ? customStartDate : undefined,
-            endDate: selectedPeriod === 'Personalizado' ? customEndDate : undefined
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate
         }).then(res => res.data),
         staleTime: 60000,
     });
@@ -380,14 +382,9 @@ const PendenciaisPage = () => {
                     <p className="text-slate-500 font-medium mt-1">Acompanhamento de faturamento e pagamentos de clientes.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <DateFilter
-                        selectedPeriod={selectedPeriod}
-                        setSelectedPeriod={setSelectedPeriod}
-                        customStartDate={customStartDate}
-                        setCustomStartDate={setCustomStartDate}
-                        customEndDate={customEndDate}
-                        setCustomEndDate={setCustomEndDate}
-                        onApply={() => queryClient.invalidateQueries({ queryKey: ['receivables-list'] })}
+                    <DateRangePicker 
+                        value={dateRange}
+                        onChange={setDateRange}
                     />
                     <button
                         onClick={() => setIsSheetOpen(true)}

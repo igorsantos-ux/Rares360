@@ -12,24 +12,26 @@ import {
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { reportingApi, financialApi } from '../services/api';
-import DateFilter from '../components/DateFilter';
+import { DateRangePicker } from '../components/ui/DateRangePicker';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 const CashFlow = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [filter, setFilter] = useState<'ALL' | 'INCOME' | 'EXPENSE'>('ALL');
     const queryClient = useQueryClient();
 
-    // Estados para Filtro de Data
-    const [selectedPeriod, setSelectedPeriod] = useState('Este Mês');
-    const [customStartDate, setCustomStartDate] = useState(new Date().toISOString().split('T')[0]);
-    const [customEndDate, setCustomEndDate] = useState(new Date().toISOString().split('T')[0]);
+    const today = new Date();
+    const [dateRange, setDateRange] = useState({
+        startDate: format(startOfMonth(today), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(today), 'yyyy-MM-dd')
+    });
 
     // Consumo da nova API consolidada de Fluxo de Caixa
     const { data: cashFlowResponse, isLoading } = useQuery({
-        queryKey: ['cash-flow-data', selectedPeriod, customStartDate, customEndDate],
+        queryKey: ['cash-flow-data', dateRange.startDate, dateRange.endDate],
         queryFn: () => reportingApi.getCashFlow({
-            startDate: selectedPeriod === 'Personalizado' ? customStartDate : undefined,
-            endDate: selectedPeriod === 'Personalizado' ? customEndDate : undefined
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate
         }),
         staleTime: 60000 // Protocolo de Segurança: Evitar re-fetch excessivo
     });
@@ -141,14 +143,9 @@ const CashFlow = () => {
                             </button>
                         </div>
                     </div>
-                    <DateFilter 
-                        selectedPeriod={selectedPeriod}
-                        setSelectedPeriod={setSelectedPeriod}
-                        customStartDate={customStartDate}
-                        setCustomStartDate={setCustomStartDate}
-                        customEndDate={customEndDate}
-                        setCustomEndDate={setCustomEndDate}
-                        onApply={() => queryClient.invalidateQueries({ queryKey: ['cash-flow-data'] })}
+                    <DateRangePicker 
+                        value={dateRange}
+                        onChange={setDateRange}
                     />
                 </div>
 

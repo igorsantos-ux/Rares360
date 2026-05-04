@@ -13,20 +13,28 @@ import {
     Briefcase,
     Loader2
 } from 'lucide-react';
+import { DateRangePicker } from '../../components/ui/DateRangePicker';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 const IncomePage = () => {
     const [searchTerm, setSearchTerm] = useState('');
+    
+    const today = new Date();
+    const [dateRange, setDateRange] = useState({
+        startDate: format(startOfMonth(today), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(today), 'yyyy-MM-dd')
+    });
 
     const { data: summaryResponse, isLoading: isSummaryLoading } = useQuery({
-        queryKey: ['financial-summary'],
-        queryFn: () => financialApi.getSummary()
+        queryKey: ['financial-summary', dateRange.startDate, dateRange.endDate],
+        queryFn: () => financialApi.getSummary(dateRange)
     });
 
     const summary = summaryResponse?.data;
 
     const { data: transactionsResponse, isLoading: isTransactionsLoading } = useQuery({
-        queryKey: ['financial-transactions'],
-        queryFn: () => financialApi.getTransactions()
+        queryKey: ['financial-transactions', dateRange.startDate, dateRange.endDate],
+        queryFn: () => financialApi.getTransactions(dateRange)
     });
 
     const transactions = transactionsResponse?.data || [];
@@ -56,6 +64,10 @@ const IncomePage = () => {
                     <p className="text-slate-500 font-medium mt-1">Controle de entradas imediatas e fluxo de caixa.</p>
                 </div>
                 <div className="flex items-center gap-3">
+                    <DateRangePicker 
+                        value={dateRange}
+                        onChange={setDateRange}
+                    />
                     <button className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
                         <Plus size={20} />
                         Lançar Recebimento

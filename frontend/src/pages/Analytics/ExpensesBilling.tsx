@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { financialApi, reportingApi } from '../../services/api';
 import {
@@ -12,21 +13,28 @@ import {
     ArrowDownRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { DateRangePicker } from '../../components/ui/DateRangePicker';
+import { format, startOfMonth, endOfMonth } from 'date-fns';
 
 const ExpensesBilling = () => {
+    const today = new Date();
+    const [dateRange, setDateRange] = useState({
+        startDate: format(startOfMonth(today), 'yyyy-MM-dd'),
+        endDate: format(endOfMonth(today), 'yyyy-MM-dd')
+    });
 
     const { data: summary } = useQuery({
-        queryKey: ['dashboard-kpis'],
+        queryKey: ['dashboard-kpis', dateRange.startDate, dateRange.endDate],
         queryFn: async () => {
-            const response = await reportingApi.getDashboardKPIs();
+            const response = await reportingApi.getDashboardKPIs(dateRange);
             return response.data;
         }
     });
 
     const { data: evolution } = useQuery({
-        queryKey: ['financial-evolution'],
+        queryKey: ['financial-evolution', dateRange.startDate, dateRange.endDate],
         queryFn: async () => {
-            const response = await financialApi.getEvolution();
+            const response = await financialApi.getEvolution(dateRange);
             return response.data;
         }
     });
@@ -51,10 +59,10 @@ const ExpensesBilling = () => {
                     <p className="text-slate-500 font-medium mt-1">Análise comparativa de rentabilidade e custos.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    <button className="flex items-center gap-2 px-6 py-3 bg-[#8A9A5B] text-white rounded-2xl font-bold text-sm shadow-xl shadow-[#8A9A5B]/20 hover:scale-[1.02] active:scale-95 transition-all">
-                        <Filter size={20} />
-                        Filtrar Período
-                    </button>
+                    <DateRangePicker 
+                        value={dateRange}
+                        onChange={setDateRange}
+                    />
                 </div>
             </div>
 

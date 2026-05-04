@@ -9,10 +9,15 @@ import { AlertsPanel } from '../../components/dfc/AlertsPanel';
 import { ActivitiesBlock } from '../../components/dfc/ActivitiesBlock';
 import { ScenarioSimulator } from '../../components/dfc/ScenarioSimulator';
 import { DrillDownDfcDrawer } from '../../components/dfc/DrillDownDfcDrawer';
+import { DateRangePicker } from '../../components/ui/DateRangePicker';
+import { format, subDays } from 'date-fns';
 
 export default function DfcPage() {
+    const today = new Date();
     const [filters, setFilters] = useState<DfcFilters>({
-        period: 'LAST_90',
+        period: 'CUSTOM',
+        startDate: format(subDays(today, 90), 'yyyy-MM-dd'),
+        endDate: format(today, 'yyyy-MM-dd'),
         mode: 'BOTH',
         method: 'DIRECT'
     });
@@ -65,6 +70,12 @@ export default function DfcPage() {
                             Simular Cenário
                         </button>
 
+                        <div className="flex bg-slate-100 p-1 rounded-xl mr-3">
+                            <DateRangePicker 
+                                value={{ startDate: filters.startDate!, endDate: filters.endDate! }}
+                                onChange={(range) => setFilters({ ...filters, period: 'CUSTOM', ...range })}
+                            />
+                        </div>
                         <div className="flex bg-slate-100 p-1 rounded-xl">
                             {['REALIZED', 'PROJECTED', 'BOTH'].map(mode => (
                                 <button
