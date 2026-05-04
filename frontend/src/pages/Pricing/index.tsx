@@ -41,7 +41,8 @@ const PricingDiagnosis = () => {
     console.log('📊 Dados de Precificação:', { procedures: procedures.length, kpis, config: !!config });
   }, [procedures, kpis, config]);
 
-  if (isLoading && !data) {
+  // Guard de segurança: Só renderiza se tivermos os dados (evita crash do Select com value vazio)
+  if (isLoading || !data) {
     return (
       <div className="flex h-[80vh] items-center justify-center">
         <div className="flex flex-col items-center gap-4">
@@ -114,13 +115,13 @@ const PricingDiagnosis = () => {
             />
           </div>
 
-          <Select value={filters.tipo} onValueChange={v => setFilters(prev => ({ ...prev, tipo: v }))}>
+          <Select value={filters.tipo} onValueChange={v => setFilters(prev => ({ ...prev, tipo: v === 'all' ? '' : v }))}>
             <SelectTrigger className="w-[180px] rounded-xl bg-slate-50 border-none h-11">
               <Filter className="w-4 h-4 mr-2 text-slate-400" />
               <SelectValue placeholder="Todos os Tipos" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os Tipos</SelectItem>
+              <SelectItem value="all">Todos os Tipos</SelectItem>
               <SelectItem value="PROCEDIMENTO">Procedimento</SelectItem>
               <SelectItem value="TECNOLOGIA">Tecnologia</SelectItem>
               <SelectItem value="CONSULTA">Consulta</SelectItem>
@@ -129,13 +130,13 @@ const PricingDiagnosis = () => {
             </SelectContent>
           </Select>
 
-          <Select value={filters.status} onValueChange={v => setFilters(prev => ({ ...prev, status: v }))}>
+          <Select value={filters.status} onValueChange={v => setFilters(prev => ({ ...prev, status: v === 'all' ? '' : v }))}>
             <SelectTrigger className="w-[180px] rounded-xl bg-slate-50 border-none h-11">
               <TrendingUp className="w-4 h-4 mr-2 text-slate-400" />
               <SelectValue placeholder="Rentabilidade" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
+              <SelectItem value="all">Todas</SelectItem>
               <SelectItem value="IDEAL">Margem Ideal</SelectItem>
               <SelectItem value="OK">Margem OK</SelectItem>
               <SelectItem value="CRITICA">Margem Crítica</SelectItem>
