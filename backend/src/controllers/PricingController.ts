@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { calcPricing } from '../utils/pricingCalculator.js';
 import { createAuditLog } from '../lib/auditLogger.js';
@@ -15,7 +15,7 @@ export class PricingController {
       const { tipo, status, search } = req.query;
 
       // Buscar config da clínica (com fallback para defaults via upsert)
-      const config = await prisma.pricingConfig.upsert({
+      const config = await (prisma as any).pricingConfig.upsert({
         where: { clinicId },
         create: { clinicId },
         update: {},
@@ -38,7 +38,7 @@ export class PricingController {
           },
         },
         orderBy: [{ tipo: 'asc' }, { name: 'asc' }],
-      });
+      } as any);
 
       let kpiCritica = 0, kpiOk = 0, kpiIdeal = 0, kpiSemPreco = 0;
 
@@ -98,7 +98,7 @@ export class PricingController {
   async getConfig(req: any, res: Response) {
     try {
       const { clinicId } = req.clinicContext;
-      const config = await prisma.pricingConfig.upsert({
+      const config = await (prisma as any).pricingConfig.upsert({
         where: { clinicId },
         create: { clinicId },
         update: {},
@@ -127,9 +127,9 @@ export class PricingController {
 
       const body = pricingConfigSchema.parse(req.body);
 
-      const oldConfig = await prisma.pricingConfig.findUnique({ where: { clinicId } });
+      const oldConfig = await (prisma as any).pricingConfig.findUnique({ where: { clinicId } });
 
-      const config = await prisma.pricingConfig.upsert({
+      const config = await (prisma as any).pricingConfig.upsert({
         where: { clinicId },
         create: { clinicId, ...body },
         update: body,
@@ -173,13 +173,13 @@ export class PricingController {
       
       if (!procedure) return res.status(404).json({ error: 'Procedimento não encontrado' });
 
-      const price = await prisma.procedurePrice.upsert({
+      const price = await (prisma as any).procedurePrice.upsert({
         where: { clinicId_procedureId: { clinicId, procedureId } },
         create: { clinicId, procedureId, salePrice, updatedBy: req.user.id },
         update: { salePrice, updatedBy: req.user.id },
       });
 
-      const config = await prisma.pricingConfig.upsert({
+      const config = await (prisma as any).pricingConfig.upsert({
         where: { clinicId },
         create: { clinicId },
         update: {},
@@ -244,7 +244,7 @@ export class PricingController {
             continue; 
           }
 
-          await tx.procedurePrice.upsert({
+          await (tx as any).procedurePrice.upsert({
             where: { clinicId_procedureId: { clinicId, procedureId } },
             create: { clinicId, procedureId, salePrice: preco, updatedBy: req.user.id },
             update: { salePrice: preco, updatedBy: req.user.id },
@@ -258,6 +258,8 @@ export class PricingController {
       console.error('[PricingController.importPrices] Erro:', error);
       return res.status(500).json({ error: 'Erro ao importar preços' });
     }
+  }
+
   // Método para compatibilidade com o editor legado de custos detalhados
   async upsertProcedure(req: Request, res: Response) {
     try {
@@ -266,7 +268,7 @@ export class PricingController {
 
       // Se tiver ID, atualiza o procedimento base
       if (id) {
-        await prisma.procedure.update({
+        await (prisma as any).procedure.update({
           where: { id, clinicId },
           data: {
             name,
@@ -276,9 +278,9 @@ export class PricingController {
         });
 
         // Atualiza ou cria o preço
-        await prisma.procedurePrice.upsert({
+        await (prisma as any).procedurePrice.upsert({
           where: {
-            procedureId_clinicId: { procedureId: id, clinicId }
+            clinicId_procedureId: { procedureId: id, clinicId }
           },
           update: { salePrice: currentPrice || 0 },
           create: {

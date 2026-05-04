@@ -7,9 +7,9 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "../../../../components/ui/Dialog";
-import { Button } from "../../../../components/ui/Button";
-import { pricingApi } from '../../../../services/api';
+} from "../../../components/ui/Dialog";
+import { Button } from "../../../components/ui/Button";
+import { pricingApi } from '../../../services/api';
 import toast from 'react-hot-toast';
 import { useQueryClient } from '@tanstack/react-query';
 
