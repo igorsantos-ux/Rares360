@@ -202,7 +202,7 @@ export class FinancialService {
             }
         });
 
-        const target = goal?.target || 600000;
+        const target = Number(goal?.target || 600000);
         const diffTime = Math.abs(end.getTime() - start.getTime());
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 1;
         const dailyTarget = target / 30; // Baseado em média mensal de 30 dias

@@ -181,7 +181,7 @@ export class PatientController {
 
             const totalInventoryCost = patient.inventoryUsages.reduce((acc, usage) => {
                 const unitCost = usage.inventoryItem?.unitCost ? Number(usage.inventoryItem.unitCost) : 0;
-                return acc + (usage.quantity * unitCost);
+                return acc + (Number(usage.quantity) * unitCost);
             }, 0);
 
             const marginPercentage = totalSpent > 0 ? ((totalSpent - totalInventoryCost) / totalSpent) * 100 : 0;

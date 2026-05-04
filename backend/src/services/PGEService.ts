@@ -29,7 +29,7 @@ export class PGEService {
         // 4. Agrupar saídas por itemId
         const outputMap: Record<string, number> = {};
         for (const mov of movements) {
-            outputMap[mov.itemId] = (outputMap[mov.itemId] || 0) + mov.quantity;
+            outputMap[mov.itemId] = (outputMap[mov.itemId] || 0) + Number(mov.quantity);
         }
 
         // 5. Processar cada item com o motor matemático
