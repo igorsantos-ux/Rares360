@@ -46,11 +46,13 @@ jobs:
       - name: Build Docker Image (Backend)
         run: docker build -t rares360-backend:test ./backend
 
-      - name: Debug Dockerfile Content
-        run: cat frontend/Dockerfile
+      - name: Debug Git and Dockerfile
+        run: |
+          git log -1
+          cat frontend/Dockerfile
 
       - name: Build Docker Image (Frontend)
-        run: docker build --no-cache -t rares360-frontend:test ./frontend
+        run: docker build --no-cache -t rares360-frontend:${{ github.sha }} ./frontend
 
       - name: Run Trivy Vulnerability Scanner (Backend)
         uses: aquasecurity/trivy-action@master
@@ -65,7 +67,7 @@ jobs:
       - name: Run Trivy Vulnerability Scanner (Frontend)
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: 'rares360-frontend:test'
+          image-ref: 'rares360-frontend:${{ github.sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
