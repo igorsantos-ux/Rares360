@@ -2,8 +2,8 @@ import { useState, useMemo, memo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 // v1.1 - Casing fix
 import { pricingApi } from '../../../services/api';
-import { calcPricing } from '../Utils/pricingCalc';
-import type { PricingConfig } from '../Utils/pricingCalc';
+import { calcPricing } from '../utils/pricingCalc';
+import type { PricingConfig } from '../utils/pricingCalc';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface Props {
