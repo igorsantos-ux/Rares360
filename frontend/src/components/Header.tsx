@@ -10,11 +10,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './Sidebar';
+import { useAdminContext } from '../hooks/useAdminContext';
 
 const Header = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const { logout, user } = useAuth();
+    const { isAdminAccess, clinicName } = useAdminContext();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     const handleLogout = () => {
@@ -58,7 +60,11 @@ const Header = () => {
                     <div className="flex flex-col">
                         <h1 className="text-xl font-black text-[#697D58] tracking-tight">{currentTitle}</h1>
                         <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-0.5">
-                            {user?.clinic?.name ? `${user.clinic.name} • Healthcare Management` : 'Rares360 • Healthcare Management'}
+                            {isAdminAccess && clinicName
+                                ? `${clinicName} • Healthcare Management`
+                                : user?.clinic?.name 
+                                    ? `${user.clinic.name} • Healthcare Management` 
+                                    : 'Rares360 • Healthcare Management'}
                         </p>
                     </div>
                 </div>
