@@ -448,13 +448,18 @@ const SaaSManagement = () => {
             const response = await saasApi.adminClinicAccess(clinicId);
             const { token, clinic } = response.data;
 
-            // Set the new contextual token
+            // Set the new contextual token and clinicId
             localStorage.setItem('heath_finance_token', token);
+            if (clinic.id) {
+                localStorage.setItem('heath_finance_clinic_id', clinic.id);
+            }
 
             toast.success(`Entrando em ${clinic.name}...`, { id: 'impersonate' });
+            
+            // Força a atualização do contexto admin antes do redirect
             setTimeout(() => {
                 window.location.href = '/dashboard';
-            }, 1500);
+            }, 800);
 
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Erro ao tentar iniciar acesso administrativo.', { id: 'impersonate' });
