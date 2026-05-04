@@ -675,23 +675,40 @@ enum ClosureStatus {
 }
 
 model GlobalLead {
-  id         String           @id @default(uuid())
-  name       String
-  email      String
-  whatsapp   String
-  subject    String
-  message    String
-  diagnostic Json?
-  status     GlobalLeadStatus @default(NOVO)
-  score      Int              @default(0)
-  notes      String?
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
+  id              String           @id @default(uuid())
+  name            String
+  email           String
+  whatsapp        String
+  subject         String           @default("Demonstração")
+  message         String           @default("")
+  diagnostic      Json?
+
+  // ═══ Campos tipados do formulário de captação (v2) ═══
+  clinica         String?          // Nome da clínica
+  especialidade   String?          // Especialidade da clínica
+  volumeMensal    String?          // Volume aproximado de atendimentos/mês
+  desafio         String?          // Principal desafio
+  origem          String?          // Como nos conheceu
+  source          String           @default("website") // website | manual | api
+  ipOrigem        String?          // IP de origem para auditoria
+  consentimento   Boolean          @default(false)      // Aceite de contato
+
+  // ═══ Gestão do pipeline ═══
+  assignedTo      String?          // userId do admin responsável
+  contatadoEm     DateTime?        // Data do primeiro contato
+  fechadoEm       DateTime?        // Data do fechamento
+
+  status          GlobalLeadStatus @default(NOVO)
+  score           Int              @default(0)
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
 }
 
 enum GlobalLeadStatus {
   NOVO
   EM_CONTATO
+  DIAGNOSTICO
   DEMONSTRACAO
   FECHADO
   PERDIDO

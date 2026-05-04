@@ -32,6 +32,7 @@ import PurchaseIntelligence from './pages/PurchaseIntelligence';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
+import DemoPage from './pages/DemoPage';
 import ForceChangePassword from './pages/ForceChangePassword';
 import Automations from './pages/Automations';
 import { useAuth } from './contexts/AuthContext';
@@ -46,7 +47,7 @@ function App() {
   const location = useLocation();
   const { user, loading } = useAuth();
   const { isAdminAccess } = useAdminContext();
-  const isPublicPage = ['/', '/about', '/login', '/contact'].includes(location.pathname);
+  const isPublicPage = ['/', '/about', '/login', '/contact', '/demo'].includes(location.pathname);
   // Mostra Header se o usuário estiver logado, não for página pública e não for ADMIN_GLOBAL 
   // (A não ser que o ADMIN_GLOBAL esteja operando num acesso a clínica específico)
   const showHeader = !isPublicPage && !loading && user && (user.role !== 'ADMIN_GLOBAL' || isAdminAccess);
@@ -89,6 +90,7 @@ function App() {
                   user ? <Navigate to={user.role?.toUpperCase() === 'ADMIN_GLOBAL' ? "/saas-dashboard" : "/dashboard"} replace /> : <LoginPage />
                 } />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/demo" element={<DemoPage />} />
                 <Route path="/auth/force-change-password" element={<ForceChangePassword />} />
 
                 {/* SaaS Admin Routes */}

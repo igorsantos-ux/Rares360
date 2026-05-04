@@ -30,6 +30,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import AlertDialog from '../components/ui/AlertDialog';
+import LeadDrawer from '../components/LeadDrawer';
+import LeadMetrics from '../components/LeadMetrics';
+import NotificationBell from '../components/NotificationBell';
+import { Clock } from 'lucide-react';
 
 const InputField = ({ label, value, onChange, placeholder = '', type = 'text', required = false }: any) => (
     <div className="space-y-1.5">
@@ -143,9 +147,11 @@ const SaaSManagement = () => {
     const [selectedUser, setSelectedUser] = useState<any>(null);
     const [userManagementTab, setUserManagementTab] = useState<'perfil' | 'seguranca' | 'acesso'>('perfil');
 
-    // Lead Diagnostic Modal States
-    const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState(false);
+    // Lead Drawer States
+    const [isLeadDrawerOpen, setIsLeadDrawerOpen] = useState(false);
     const [selectedLead, setSelectedLead] = useState<any>(null);
+    // Legacy modal states kept for backwards compat
+    const [isDiagnosticModalOpen, setIsDiagnosticModalOpen] = useState(false);
 
     // Audit Logs State
     const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -708,6 +714,9 @@ const SaaSManagement = () => {
                         {activeTab === 'dashboard' ? 'Visão Geral da Plataforma' : activeTab === 'clinics' ? 'Gestão de Clínicas' : activeTab === 'users' ? 'Usuários Globais' : activeTab === 'billing' ? 'Faturamento SaaS' : activeTab === 'leads' ? 'Pipeline de Leads' : activeTab === 'audit' ? 'Logs de Auditoria' : 'Configurações'}
                     </h2>
 
+                    <div className="flex items-center gap-4">
+                        <NotificationBell leads={leads} onClickNotification={(lead) => { setActiveTab('leads'); setSelectedLead(lead); setIsLeadDrawerOpen(true); }} />
+                    </div>
                     <div className="flex items-center gap-4 hover:bg-white/60 p-2 pr-5 rounded-[2rem] transition-all cursor-pointer border border-transparent hover:border-[#8A9A5B]/20 shadow-sm" onClick={logout}>
                         <div className="w-10 h-10 rounded-full bg-white flex flex-col justify-center items-center text-[#DEB587] font-black shadow-sm border border-[#DEB587]/30">
                             {user?.name?.substring(0, 2).toUpperCase() || 'AD'}
@@ -875,11 +884,14 @@ const SaaSManagement = () => {
                             </div>
                         </div>
                     ) : activeTab === 'leads' && viewMode === 'kanban' ? (
-                        <div className="flex pb-4 gap-6 min-h-[600px] h-[calc(100vh-250px)] overflow-x-auto items-start w-full">
+                        <>
+                        <LeadMetrics leads={leads} />
+                        <div className="flex pb-4 gap-6 min-h-[600px] h-[calc(100vh-320px)] overflow-x-auto items-start w-full">
                             {[
                                 { id: 'NOVO', title: 'Novo', color: 'bg-blue-100 text-blue-700 border-blue-200' },
                                 { id: 'EM_CONTATO', title: 'Em Contato', color: 'bg-amber-100 text-amber-700 border-amber-200' },
-                                { id: 'DEMONSTRACAO', title: 'Diagnóstico Realizado', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+                                { id: 'DIAGNOSTICO', title: 'Diagnóstico', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+                                { id: 'DEMONSTRACAO', title: 'Demonstração', color: 'bg-purple-100 text-purple-700 border-purple-200' },
                                 { id: 'FECHADO', title: 'Fechado', color: 'bg-green-100 text-green-700 border-green-200' }
                             ].map(col => {
                                 const colLeads = leads
@@ -888,7 +900,8 @@ const SaaSManagement = () => {
                                         !searchTerm ||
                                         item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                                         item.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                        item.whatsapp?.includes(searchTerm)
+                                        item.whatsapp?.includes(searchTerm) ||
+                                        item.clinica?.toLowerCase().includes(searchTerm.toLowerCase())
                                     );
 
                                 return (
@@ -907,52 +920,51 @@ const SaaSManagement = () => {
                                             </div>
                                         </div>
                                         <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-hide pb-10">
-                                            {colLeads.map(lead => (
+                                            {colLeads.map(lead => {
+                                                const scoreColor = lead.score >= 70 ? 'bg-green-100 text-green-700 border-green-200' : lead.score >= 40 ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-red-100 text-red-700 border-red-200';
+                                                const origemIcon = lead.origem === 'Instagram' ? '📱' : lead.origem === 'Google' ? '🔍' : lead.origem === 'Indicação' ? '👥' : lead.origem === 'LinkedIn' ? '💼' : '💬';
+                                                const timeAgoStr = (() => { const diff = Date.now() - new Date(lead.createdAt).getTime(); const mins = Math.floor(diff/60000); if (mins < 60) return `há ${mins}m`; const hrs = Math.floor(mins/60); if (hrs < 24) return `há ${hrs}h`; return `há ${Math.floor(hrs/24)}d`; })();
+                                                return (
                                                 <div
                                                     key={lead.id}
                                                     draggable
                                                     onDragStart={(e) => handleDragStart(e, lead.id)}
                                                     className="bg-white p-5 rounded-2xl shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all border border-slate-100 cursor-grab active:cursor-grabbing group"
                                                     onClick={(e) => {
-                                                        // avoid opening drawer if clicked on specific buttons
                                                         if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('a')) return;
                                                         setSelectedLead(lead);
-                                                        setIsDiagnosticModalOpen(true);
+                                                        setIsLeadDrawerOpen(true);
                                                     }}
                                                 >
-                                                    <div className="flex justify-between items-start mb-3">
+                                                    <div className="flex justify-between items-start mb-2">
                                                         <div className="flex gap-3 items-center">
                                                             <div className="w-10 h-10 rounded-full bg-slate-100 border border-[#8A9A5B]/20 flex items-center justify-center text-[#697D58] font-black text-xs">
-                                                                {lead.name.substring(0, 2).toUpperCase()}
+                                                                {lead.name?.substring(0, 2).toUpperCase()}
                                                             </div>
                                                             <div>
-                                                                <h4 className="font-extrabold text-[#1A202C] leading-tight">{lead.name}</h4>
-                                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{lead.diagnostic?.clinicType || lead.subject || 'Lead Rares360'}</p>
+                                                                <h4 className="font-extrabold text-[#1A202C] leading-tight text-sm">{lead.name}</h4>
+                                                                <p className="text-[10px] text-slate-400 font-bold">{lead.clinica || lead.diagnostic?.clinicType || 'Lead Rares360'}</p>
                                                             </div>
                                                         </div>
+                                                        <span className="text-[9px] text-slate-400 font-bold flex items-center gap-0.5"><Clock size={9} />{timeAgoStr}</span>
                                                     </div>
 
-                                                    <div className="grid grid-cols-2 gap-y-3 gap-x-2 mt-4 mb-4 text-xs">
-                                                        <div className="space-y-0.5">
-                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Contato</span>
-                                                            <span className="font-bold text-slate-700 break-all">{lead.email}</span>
-                                                        </div>
-                                                        <div className="space-y-0.5">
-                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Interação</span>
-                                                            <span className="font-bold text-slate-700">{new Date(lead.createdAt).toLocaleDateString()}</span>
-                                                        </div>
-                                                        <div className="space-y-0.5 col-span-2">
-                                                            <span className="text-[9px] text-slate-400 font-black uppercase tracking-widest block">Score</span>
-                                                            <div className={`px-2 py-0.5 rounded-full inline-flex items-center gap-1 border ${lead.score >= 80 ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-slate-50 text-slate-500 border-slate-100'}`}>
-                                                                <Star size={10} className={lead.score >= 80 ? 'fill-orange-500' : ''} />
-                                                                <span className="text-[10px] font-black">{lead.score} / 100</span>
-                                                            </div>
-                                                        </div>
+                                                    {/* Score Badge */}
+                                                    <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-black ${scoreColor} mb-2`}>
+                                                        <Star size={10} /> {lead.score}/100
+                                                    </div>
+
+                                                    {/* Info Grid */}
+                                                    <div className="space-y-1.5 text-[10px] mb-3">
+                                                        {lead.especialidade && <div className="flex items-center gap-1.5 text-slate-500"><span className="font-black text-slate-400">Esp.</span> <span className="font-bold">{lead.especialidade}</span></div>}
+                                                        {lead.volumeMensal && <div className="flex items-center gap-1.5 text-slate-500"><span className="font-black text-slate-400">Vol.</span> <span className="font-bold">{lead.volumeMensal} atend/mês</span></div>}
+                                                        {lead.desafio && <div className="text-slate-400 font-medium truncate" title={lead.desafio}>💡 {lead.desafio}</div>}
+                                                        {lead.origem && <div className="text-slate-400 font-medium">{origemIcon} {lead.origem}</div>}
                                                     </div>
 
                                                     <div className="pt-3 border-t border-slate-100 flex justify-between items-center">
                                                         <a
-                                                            href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}?text=Olá ${lead.name}, tudo bem? Sou consultor da Rares360.`}
+                                                            href={`https://wa.me/${(lead.whatsapp || '').replace(/\D/g, '')}?text=Olá ${lead.name}, tudo bem? Sou consultor(a) da Rares360.`}
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             className="flex items-center gap-1.5 px-3 py-1.5 bg-[#25D366] text-white rounded-lg hover:scale-105 transition-all shadow-md shadow-[#25D366]/20 font-black text-[10px] uppercase tracking-widest"
@@ -961,7 +973,8 @@ const SaaSManagement = () => {
                                                         </a>
                                                     </div>
                                                 </div>
-                                            ))}
+                                                );
+                                            })}
                                             {colLeads.length === 0 && (
                                                 <div className="py-8 text-center text-slate-400 font-medium text-xs border-2 border-dashed border-slate-200 rounded-2xl">
                                                     Arraste leads para cá
@@ -972,6 +985,8 @@ const SaaSManagement = () => {
                                 );
                             })}
                         </div>
+                        <LeadDrawer lead={selectedLead} isOpen={isLeadDrawerOpen} onClose={() => { setIsLeadDrawerOpen(false); setSelectedLead(null); }} onUpdateStatus={(id, status) => { handleUpdateLeadStatus(id, status); setIsLeadDrawerOpen(false); }} onUpdateNotes={handleUpdateLeadNotes} />
+                        </>
                     ) : (
                         <div className="bg-white/70 border border-[#8A9A5B]/10 rounded-[2.5rem] overflow-hidden backdrop-blur-md shadow-xl">
                             {isLoading ? (

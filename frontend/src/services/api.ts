@@ -237,6 +237,7 @@ export const leadsApi = {
     getLeads: () => api.get('leads'),
     updateStatus: (id: string, status: string) => api.patch(`leads/${id}/status`, { status }),
     updateNotes: (id: string, notes: string) => api.patch(`leads/${id}/notes`, { notes }),
+    updateLead: (id: string, data: any) => api.patch(`leads/${id}`, data),
 };
 
 export const appointmentsApi = {
