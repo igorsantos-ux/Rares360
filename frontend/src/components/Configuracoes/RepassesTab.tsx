@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit3, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, X } from 'lucide-react';
 import { configuracoesApi } from '../../services/api';
 import { toast } from 'react-hot-toast';
 
@@ -82,7 +82,9 @@ export default function RepassesTab() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {regras.length === 0 ? (
+                        {loading ? (
+                            <tr><td colSpan={4} className="text-center py-8"><div className="w-6 h-6 border-2 border-[#8A9A5B] border-t-transparent rounded-full animate-spin mx-auto"></div></td></tr>
+                        ) : regras.length === 0 ? (
                             <tr><td colSpan={4} className="text-center text-slate-400 py-8 font-bold">Nenhuma regra cadastrada.</td></tr>
                         ) : regras.map(r => (
                             <tr key={r.id} className="hover:bg-white transition-colors group">

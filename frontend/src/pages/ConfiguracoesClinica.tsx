@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Settings, Percent, Stethoscope, Users, Building } from 'lucide-react';
 import { toast, Toaster } from 'react-hot-toast';
 import { configuracoesApi } from '../services/api';
 import RepassesTab from '../components/Configuracoes/RepassesTab';
 import ComissoesTab from '../components/Configuracoes/ComissoesTab';
-import Switch from '../components/ui/Switch';
+import { Switch } from '../components/ui/Switch';
 
 export default function ConfiguracoesClinica() {
     const [loading, setLoading] = useState(false);
