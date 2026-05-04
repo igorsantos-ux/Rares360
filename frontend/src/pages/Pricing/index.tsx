@@ -8,11 +8,11 @@ import {
   RefreshCw,
   Calculator
 } from 'lucide-react';
-import { usePricingList } from './Hooks/usePricingList';
-import { PricingConfigPanel } from './Components/ConfigPanel';
-import { PricingKPICards } from './Components/KPICards';
-import { PricingList } from './Components/PricingList';
-import { PricingImportModal } from './Components/ImportModal';
+import { usePricingList } from './hooks/usePricingList';
+import { PricingConfigPanel } from './components/ConfigPanel';
+import { PricingKPICards } from './components/KPICards';
+import { PricingList } from './components/PricingList';
+import { PricingImportModal } from './components/ImportModal';
 
 const PricingDiagnosis = () => {
   const [filters, setFilters] = useState({
