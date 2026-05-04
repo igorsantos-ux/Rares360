@@ -1,4 +1,5 @@
 import { PricingTableRow } from './PricingTableRow';
+// v1.1 - Casing fix
 import type { PricingConfig } from '../Utils/PricingCalc';
 
 interface Props {

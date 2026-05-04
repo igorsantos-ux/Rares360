@@ -1,5 +1,6 @@
 import { useState, useMemo, memo } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+// v1.1 - Casing fix
 import { pricingApi } from '../../../services/api';
 import { calcPricing } from '../Utils/PricingCalc';
 import type { PricingConfig } from '../Utils/PricingCalc';
