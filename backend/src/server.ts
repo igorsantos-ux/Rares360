@@ -2,6 +2,9 @@ console.log('🚀 Starting Backend Finance Server...');
 import dotenv from 'dotenv';
 dotenv.config();
 
+import { installSecureLogger } from './lib/secureLogger.js';
+installSecureLogger();
+
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';

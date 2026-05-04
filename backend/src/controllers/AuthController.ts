@@ -53,8 +53,6 @@ export class AuthController {
 
                 const token = AuthService.generateToken({
                     id: user.id,
-                    email: user.email,
-                    name: user.name,
                     role: user.role,
                     clinicId: user.clinicId || undefined,
                     mustChangePassword: true
@@ -78,12 +76,12 @@ export class AuthController {
 
             const token = AuthService.generateToken({
                 id: user.id,
-                email: user.email,
-                name: user.name,
                 role: user.role,
                 clinicId: user.clinicId || undefined,
                 mustChangePassword: false
             });
+
+            const refreshToken = AuthService.generateRefreshToken({ id: user.id });
 
             // Atualiza lastLoginAt
             await prisma.user.update({
@@ -100,10 +98,47 @@ export class AuthController {
                     hasSeenOnboarding: user.hasSeenOnboarding,
                     clinic: user.clinic
                 },
-                token
+                token,
+                refreshToken
             });
         } catch (error) {
             console.error('Login error:', error);
+            res.status(500).json({ error: 'Erro interno no servidor' });
+        }
+    }
+
+    static async refresh(req: Request, res: Response) {
+        try {
+            const { refreshToken } = req.body;
+            if (!refreshToken) {
+                return res.status(401).json({ error: 'Refresh token ausente' });
+            }
+
+            const decoded = AuthService.verifyToken(refreshToken, true);
+            if (!decoded) {
+                return res.status(401).json({ error: 'Refresh token inválido ou expirado' });
+            }
+
+            const user = await prisma.user.findUnique({
+                where: { id: decoded.id }
+            });
+
+            if (!user || !user.isActive) {
+                return res.status(401).json({ error: 'Usuário inválido ou inativo' });
+            }
+
+            const newToken = AuthService.generateToken({
+                id: user.id,
+                role: user.role,
+                clinicId: user.clinicId || undefined,
+                mustChangePassword: user.mustChangePassword
+            });
+
+            const newRefreshToken = AuthService.generateRefreshToken({ id: user.id });
+
+            res.json({ token: newToken, refreshToken: newRefreshToken });
+        } catch (error) {
+            console.error('Refresh token error:', error);
             res.status(500).json({ error: 'Erro interno no servidor' });
         }
     }
@@ -201,17 +236,18 @@ export class AuthController {
             // Gerar novo token com as flags de segurança atualizadas
             const newToken = AuthService.generateToken({
                 id: user.id,
-                email: user.email,
-                name: user.name,
                 role: user.role,
                 clinicId: user.clinicId || undefined,
                 mustChangePassword: false // Agora é falso
             });
 
+            const newRefreshToken = AuthService.generateRefreshToken({ id: user.id });
+
             res.json({
                 success: true,
                 message: 'Sua senha foi atualizada com sucesso!',
                 token: newToken,
+                refreshToken: newRefreshToken,
                 user: {
                     id: user.id,
                     name: user.name,

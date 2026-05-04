@@ -15,15 +15,20 @@ const getClientIp = (req: Request): string => {
   return ipKeyGenerator(realIp);
 }
 
-// Rate limit para login — mais restritivo
+// Rate limit para login — agressivo (força bruta)
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100, // Temporário: 100 tentativas para permitir login após bloqueios
-  keyGenerator: getClientIp,
+  max: 5, // 5 tentativas
+  keyGenerator: (req) => {
+    const ip = getClientIp(req);
+    const email = req.body?.email?.toLowerCase().trim();
+    return email ? `${ip}:${email}` : ip;
+  },
   skip: (req) => process.env.NODE_ENV === 'development',
   message: { error: 'Muitas tentativas. Tente novamente em 15 minutos.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false, default: true },
   store: redis ? new RedisStore({
     sendCommand: (...args: string[]) => redis.call(...args),
     prefix: 'rl:login:'
@@ -39,6 +44,7 @@ export const apiLimiter = rateLimit({
   message: { error: 'Limite de requisições excedido.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false, default: true },
   store: redis ? new RedisStore({
     sendCommand: (...args: string[]) => redis.call(...args),
     prefix: 'rl:api:'
@@ -54,6 +60,7 @@ export const adminLimiter = rateLimit({
   message: { error: 'Limite admin excedido.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false, default: true },
   store: redis ? new RedisStore({
     sendCommand: (...args: string[]) => redis.call(...args),
     prefix: 'rl:admin:'

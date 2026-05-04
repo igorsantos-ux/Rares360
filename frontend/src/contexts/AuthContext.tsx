@@ -20,7 +20,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    login: (token: string, user: User) => void;
+    login: (token: string, user: User, refreshToken?: string) => void;
     logout: () => void;
     completeOnboarding: () => void;
     loading: boolean;
@@ -34,6 +34,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const channel = new BroadcastChannel('rares360_auth');
+        channel.onmessage = (event) => {
+            if (event.data?.type === 'LOGOUT') {
+                logout(false);
+            }
+        };
+        return () => channel.close();
+    }, []);
+
+    useEffect(() => {
         const loadUser = async () => {
             if (token) {
                 try {
@@ -43,7 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     console.error('Failed to load user', error);
                     // Não desloga se for apenas um erro de 403 (troca de senha necessária)
                     if (error.response?.status !== 403) {
-                        logout();
+                        logout(false);
                     }
                 }
             }
@@ -53,8 +63,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, [token]);
 
 
-    const login = (newToken: string, newUser: User) => {
+    const login = (newToken: string, newUser: User, newRefreshToken?: string) => {
         localStorage.setItem('heath_finance_token', newToken);
+        if (newRefreshToken) {
+            localStorage.setItem('heath_finance_refresh_token', newRefreshToken);
+        }
         if (newUser.clinicId) {
             localStorage.setItem('heath_finance_clinic_id', newUser.clinicId);
         }
@@ -62,12 +75,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(newUser);
     };
 
-    const logout = () => {
+    const logout = (broadcast = true) => {
         localStorage.removeItem('heath_finance_token');
+        localStorage.removeItem('heath_finance_refresh_token');
         localStorage.removeItem('heath_finance_clinic_id');
         localStorage.removeItem('heath_finance_active_clinic_id');
         setToken(null);
         setUser(null);
+        if (broadcast) {
+            const channel = new BroadcastChannel('rares360_auth');
+            channel.postMessage({ type: 'LOGOUT' });
+            channel.close();
+        }
     };
 
     const completeOnboarding = () => {

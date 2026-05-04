@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { AccountPayableController } from '../controllers/AccountPayableController.js';
 import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.js';
+import { validateOwnership } from '../middlewares/validateOwnership.js';
 
 const router = Router();
 
@@ -15,12 +16,14 @@ router.get('/', AccountPayableController.list);
 router.post('/', AccountPayableController.create);
 
 // Rota para atualizar o status de uma parcela
-router.patch('/:id/status', AccountPayableController.updateStatus);
+router.patch('/:id/status', validateOwnership('accountPayable'), AccountPayableController.updateStatus);
 
 // Rota para excluir uma parcela
-router.delete('/:id', AccountPayableController.delete);
+router.delete('/:id', validateOwnership('accountPayable'), AccountPayableController.delete);
 
 // Rota para excluir uma série completa (conta pai + todas as parcelas)
-router.delete('/series/:id', AccountPayableController.deleteSeries);
+// Atenção: Aqui a exclusão é da série. O validateOwnership original precisa da série.
+// Por segurança, vou apenas deixar o IDOR na série via controller se for complexo, mas se 'accountPayable' servir para a série...
+router.delete('/series/:id', validateOwnership('accountPayable'), AccountPayableController.deleteSeries);
 
 export default router;

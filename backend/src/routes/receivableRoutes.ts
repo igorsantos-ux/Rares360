@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { ReceivableController } from '../controllers/ReceivableController.js';
 import { authMiddleware, tenantMiddleware } from '../middlewares/authMiddleware.js';
+import { validateOwnership } from '../middlewares/validateOwnership.js';
 
 const router = Router();
 
@@ -15,9 +16,9 @@ router.get('/', ReceivableController.list);
 router.post('/', ReceivableController.create);
 
 // Rota para atualizar o status (Baixa rápida)
-router.patch('/:id/status', ReceivableController.updateStatus);
+router.patch('/:id/status', validateOwnership('receivable'), ReceivableController.updateStatus);
 
 // Rota para excluir um recebimento
-router.delete('/:id', ReceivableController.delete);
+router.delete('/:id', validateOwnership('receivable'), ReceivableController.delete);
 
 export default router;

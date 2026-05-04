@@ -13,8 +13,6 @@ const BCRYPT_ROUNDS = Math.max(parseInt(process.env.BCRYPT_ROUNDS || '12', 10), 
 
 export interface JwtPayload {
     id: string;
-    email: string;
-    name?: string;
     role: string;
     clinicId?: string;
     mustChangePassword?: boolean;
@@ -34,7 +32,7 @@ export class AuthService {
     }
 
     static generateToken(payload: JwtPayload): string {
-        const expiresIn = '4h'; // Aumentado para 4 horas para estabilidade durante transição
+        const expiresIn = '25m'; // SEC-002: Token de curta duração
 
         return jwt.sign(payload, JWT_SECRET!, {
             expiresIn,
@@ -44,15 +42,26 @@ export class AuthService {
         });
     }
 
-    static verifyToken(token: string): JwtPayload | null {
+    static generateRefreshToken(payload: { id: string }): string {
+        const expiresIn = '8h'; // SEC-003: Refresh token
+
+        return jwt.sign(payload, JWT_SECRET!, {
+            expiresIn,
+            algorithm: 'HS256',
+            issuer: 'rares360',
+            audience: 'rares360-refresh',
+        });
+    }
+
+    static verifyToken(token: string, isRefresh = false): any | null {
         try {
             return jwt.verify(token, JWT_SECRET!, {
                 algorithms: ['HS256'],
                 issuer: 'rares360',
-                audience: 'rares360-api',
-            }) as JwtPayload;
+                audience: isRefresh ? 'rares360-refresh' : 'rares360-api',
+            });
         } catch (error: any) {
-            console.error('[AUTH] Falha na verificação do token:', error.message);
+            console.error(`[AUTH] Falha na verificação do ${isRefresh ? 'refresh ' : ''}token:`, error.message);
             return null;
         }
     }

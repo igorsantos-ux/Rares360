@@ -483,13 +483,13 @@ export class SaaSController {
             // SEC-013: Token com marcador de impersonação para auditoria
             const token = AuthService.generateToken({
                 id: targetUser.id,
-                email: targetUser.email,
-                name: targetUser.name,
                 role: targetUser.role,
                 clinicId: targetUser.clinicId || undefined,
                 impersonatedBy: adminId,
                 isImpersonation: true,
             });
+
+            const refreshToken = AuthService.generateRefreshToken({ id: targetUser.id });
 
             // Registrar log de auditoria
             await basePrisma.adminAuditLog.create({
@@ -511,7 +511,8 @@ export class SaaSController {
                     hasSeenOnboarding: targetUser.hasSeenOnboarding,
                     clinic: targetClinic
                 },
-                token
+                token,
+                refreshToken
             });
 
         } catch (error) {

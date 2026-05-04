@@ -12,6 +12,9 @@ router.patch('/onboarding', authMiddleware, AuthController.completeOnboarding);
 // Nova rota de segurança RARES
 router.post('/update-password', authMiddleware, AuthController.updatePassword);
 
+// Refresh Token
+router.post('/refresh', AuthController.refresh);
+
 // Encerramento de sessão
 router.post('/logout', authMiddleware, AuthController.logout);
 

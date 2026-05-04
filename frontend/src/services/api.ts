@@ -33,20 +33,71 @@ api.interceptors.request.use((config) => {
 
 import { queryClient } from '../lib/queryClient';
 
+// Variáveis de controle para o refresh token
+let isRefreshing = false;
+let failedQueue: any[] = [];
+
+const processQueue = (error: any, token: string | null = null) => {
+    failedQueue.forEach((prom) => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(token);
+        }
+    });
+    failedQueue = [];
+};
+
 api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
+        const originalRequest = error.config;
         const status = error.response?.status;
 
-        if (status === 401) {
-            console.warn('Sessão expirada. Redirecionando para login...');
-            // Limpa o cache do React Query para parar pollings
-            queryClient.clear();
-            // Remove tokens do storage
-            localStorage.removeItem('heath_finance_token');
-            localStorage.removeItem('heath_finance_clinic_id');
-            // Redireciona via window para garantir reset de estado
-            window.location.href = '/login';
+        if (status === 401 && !originalRequest._retry && originalRequest.url !== 'auth/login' && originalRequest.url !== 'auth/refresh') {
+            if (isRefreshing) {
+                return new Promise(function (resolve, reject) {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then((token) => {
+                        originalRequest.headers['Authorization'] = 'Bearer ' + token;
+                        return api(originalRequest);
+                    })
+                    .catch((err) => {
+                        return Promise.reject(err);
+                    });
+            }
+
+            originalRequest._retry = true;
+            isRefreshing = true;
+
+            const refreshToken = localStorage.getItem('heath_finance_refresh_token');
+
+            if (!refreshToken) {
+                isRefreshing = false;
+                handleSessionExpired();
+                return Promise.reject(error);
+            }
+
+            try {
+                const response = await axios.post(`${getBaseURL()}/auth/refresh`, { refreshToken });
+                const { token: newToken, refreshToken: newRefreshToken } = response.data;
+
+                localStorage.setItem('heath_finance_token', newToken);
+                localStorage.setItem('heath_finance_refresh_token', newRefreshToken);
+
+                api.defaults.headers.common['Authorization'] = 'Bearer ' + newToken;
+                originalRequest.headers['Authorization'] = 'Bearer ' + newToken;
+
+                processQueue(null, newToken);
+                return api(originalRequest);
+            } catch (err) {
+                processQueue(err, null);
+                handleSessionExpired();
+                return Promise.reject(err);
+            } finally {
+                isRefreshing = false;
+            }
         }
 
         console.error('❌ API Error:', {
@@ -58,6 +109,15 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+function handleSessionExpired() {
+    console.warn('Sessão expirada. Redirecionando para login...');
+    queryClient.clear();
+    localStorage.removeItem('heath_finance_token');
+    localStorage.removeItem('heath_finance_refresh_token');
+    localStorage.removeItem('heath_finance_clinic_id');
+    window.location.href = '/login';
+}
 
 export const authApi = {
     login: (data: any) => api.post('auth/login', data),

@@ -33,6 +33,7 @@ export const createAuditLog = async (data: {
                 entity: data.entity,
                 entityId: data.entityId,
                 ipAddress: ip,
+                userAgent: userAgent,
                 oldValues: data.oldValues ? data.oldValues : undefined,
                 newValues: enrichedNewValues,
                 timestamp: new Date(),
