@@ -16,7 +16,10 @@ ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 
 # Etapa 2: Servidor de Produção (Nginx Seguro)
-FROM nginx:stable-alpine
+FROM nginx:mainline-alpine3.20
+
+# Atualizar pacotes para garantir correções de segurança
+RUN apk upgrade --no-cache
 
 # Limpar default html
 RUN rm -rf /usr/share/nginx/html/*
