@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import prisma from '../lib/prisma.js';
+import { PricingIntegrationService } from '../services/PricingIntegrationService.js';
 
 export class PricingController {
     static async create(req: Request, res: Response): Promise<void> {
@@ -193,6 +194,39 @@ export class PricingController {
         } catch (error) {
             console.error('Erro ao deletar procedimento:', error);
             res.status(500).json({ error: 'Erro ao remover procedimento.' });
+        }
+    }
+
+    // ==========================================
+    // INTEGRAÇÃO COM MOTOR DE REGRAS (Fase 2)
+    // ==========================================
+    static async simularIntegrado(req: Request, res: Response): Promise<void> {
+        try {
+            // O authMiddleware pode colocar clinicId em req.user.clinicId ou req.clinicId
+            const clinicId = (req as any).clinicId || (req as any).user?.clinicId;
+            const { procedimentoId, tempoMinutos, valorVenda } = req.body;
+
+            if (!clinicId) {
+                res.status(403).json({ error: 'Acesso negado. Clínica não identificada.' });
+                return;
+            }
+
+            if (!procedimentoId || !tempoMinutos) {
+                res.status(400).json({ error: 'Procedimento e tempo (minutos) são obrigatórios.' });
+                return;
+            }
+
+            const resultado = await PricingIntegrationService.calcular(
+                clinicId,
+                procedimentoId,
+                Number(tempoMinutos),
+                Number(valorVenda || 0)
+            );
+
+            res.json(resultado);
+        } catch (error: any) {
+            console.error('Erro na simulação integrada:', error);
+            res.status(400).json({ error: error.message || 'Erro ao calcular simulação integrada.' });
         }
     }
 }

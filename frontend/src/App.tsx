@@ -32,6 +32,7 @@ import Orcamentos from './pages/Billing/Orcamentos';
 import ContasPaciente from './pages/Billing/ContasPaciente';
 import TeamPage from './pages/Management/Team';
 import PurchaseIntelligence from './pages/PurchaseIntelligence';
+import ConfiguracoesClinica from './pages/ConfiguracoesClinica';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -131,6 +132,7 @@ function App() {
                   <Route path="/formas-pagamento" element={<FormasPagamento />} />
                   <Route path="/orcamentos" element={<Orcamentos />} />
                   <Route path="/contas-paciente" element={<ContasPaciente />} />
+                  <Route path="/configuracoes" element={<ConfiguracoesClinica />} />
                 </Route>
 
                 {/* Redirects */}

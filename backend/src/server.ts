@@ -46,6 +46,7 @@ import execucaoRoutes from './routes/execucaoRoutes.js';
 import termoRoutes from './routes/termoRoutes.js';
 import inteligenciaComprasRoutes from './routes/inteligenciaComprasRoutes.js';
 import setorRoutes from './routes/setorRoutes.js';
+import configuracoesRoutes from './routes/configuracoesRoutes.js';
 import { SeedService } from './services/SeedService.js';
 import { MigrationService } from './services/MigrationService.js';
 
@@ -221,6 +222,7 @@ app.use('/api/execucao', authMiddleware, tenantMiddleware, apiLimiter, execucaoR
 app.use('/api/termos', authMiddleware, tenantMiddleware, apiLimiter, termoRoutes);
 app.use('/api/inteligencia-compras', authMiddleware, tenantMiddleware, apiLimiter, inteligenciaComprasRoutes);
 app.use('/api/setores', authMiddleware, tenantMiddleware, apiLimiter, setorRoutes);
+app.use('/api/configuracoes', authMiddleware, tenantMiddleware, apiLimiter, configuracoesRoutes);
 
 // ═══ LGPD: Rotas de privacidade e direitos dos titulares ═══
 app.use('/api/privacy', authMiddleware, privacyRoutes);

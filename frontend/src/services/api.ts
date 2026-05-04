@@ -200,11 +200,12 @@ export const integrationApi = {
 };
 
 export const pricingApi = {
-    createSimulation: (data: any) => api.post('pricing', data),
-    getSimulations: () => api.get('pricing'),
-    getDiagnosis: (params?: { startDate?: string; endDate?: string }) => api.get('pricing/diagnosis', { params }),
+    listSimulations: () => api.get('pricing'),
+    saveSimulation: (data: any) => api.post('pricing', data),
+    getDiagnosis: (params?: { startDate?: string, endDate?: string }) => api.get('pricing/diagnosis', { params }),
     upsertProcedure: (data: any) => api.post('pricing/procedure', data),
     deleteProcedure: (id: string) => api.delete(`pricing/procedure/${id}`),
+    simularIntegrado: (data: { procedimentoId: string, tempoMinutos: number, valorVenda?: number }) => api.post('pricing/simular-integrado', data),
 };
 
 export const complianceApi = {
@@ -362,6 +363,19 @@ export const setoresApi = {
     create: (data: any) => api.post('setores', data),
     update: (id: string, data: any) => api.put(`setores/${id}`, data),
     delete: (id: string) => api.delete(`setores/${id}`),
+};
+
+export const configuracoesApi = {
+    getGlobais: () => api.get('configuracoes/globais'),
+    updateGlobais: (data: any) => api.put('configuracoes/globais', data),
+    getImpostosEmissao: () => api.get('configuracoes/impostos-emissao'),
+    saveImpostosEmissao: (data: { impostos: any[] }) => api.post('configuracoes/impostos-emissao', data),
+    getRegrasRepasse: () => api.get('configuracoes/regras-repasse'),
+    createRegraRepasse: (data: any) => api.post('configuracoes/regras-repasse', data),
+    deleteRegraRepasse: (id: string) => api.delete(`configuracoes/regras-repasse/${id}`),
+    getRegrasComissao: () => api.get('configuracoes/regras-comissao'),
+    createRegraComissao: (data: any) => api.post('configuracoes/regras-comissao', data),
+    deleteRegraComissao: (id: string) => api.delete(`configuracoes/regras-comissao/${id}`),
 };
 
 export default api;
