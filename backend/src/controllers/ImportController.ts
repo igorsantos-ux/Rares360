@@ -7,9 +7,9 @@ import { InventoryService } from '../services/CoreServices.js';
 export class ImportController {
     static async bulkImportPatients(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).clinicId;
             if (!clinicId) {
-                return res.status(401).json({ message: 'Clínica não identificada' });
+                return res.status(401).json({ message: 'Clínica não identificada no contexto do sistema' });
             }
 
             const workbook = xlsx.read((req as any).file.buffer, { type: 'buffer' });
@@ -111,9 +111,9 @@ export class ImportController {
 
     static async importTransactions(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).clinicId;
             if (!clinicId) {
-                return res.status(401).json({ message: 'Clínica não identificada' });
+                return res.status(401).json({ message: 'Clínica não identificada no contexto do sistema' });
             }
 
             if (!(req as any).file) {
@@ -241,9 +241,9 @@ export class ImportController {
 
     static async importFinancialData(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).clinicId;
             if (!clinicId) {
-                return res.status(401).json({ message: 'Clínica não identificada' });
+                return res.status(401).json({ message: 'Clínica não identificada no contexto do sistema' });
             }
 
             if (!(req as any).file) {
@@ -561,8 +561,8 @@ export class ImportController {
 
     static async listImportBatches(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            const clinicId = (req as any).clinicId;
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada no contexto do sistema' });
 
             const batches = await prisma.importBatch.findMany({
                 where: { clinicId },
@@ -578,10 +578,10 @@ export class ImportController {
 
     static async deleteImportBatch(req: Request, res: Response) {
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).clinicId;
             const { batchId } = req.params;
 
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada no contexto do sistema' });
 
             const batch = await prisma.importBatch.findUnique({
                 where: { id: batchId, clinicId }
@@ -613,9 +613,9 @@ export class ImportController {
     static async importPayables(req: Request, res: Response) {
         console.log('📥 Iniciando importPayables...');
         try {
-            const clinicId = (req as any).user?.clinicId;
+            const clinicId = (req as any).clinicId;
             console.log('🏥 ClinicId:', clinicId);
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada no contexto do sistema' });
 
             if (!(req as any).file) {
                 console.log('❌ Nenhum arquivo no request.file');
@@ -775,8 +775,8 @@ export class ImportController {
     static async importInventory(req: Request, res: Response) {
         console.log('📦 Iniciando importInventory...');
         try {
-            const clinicId = (req as any).user?.clinicId;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            const clinicId = (req as any).clinicId;
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada no contexto do sistema' });
 
             if (!(req as any).file) {
                 return res.status(400).json({ message: 'Nenhum arquivo enviado' });
@@ -905,8 +905,8 @@ export class ImportController {
     static async importStockMovements(req: Request, res: Response) {
         console.log('📦 Iniciando importStockMovements...');
         try {
-            const clinicId = (req as any).user?.clinicId;
-            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada' });
+            const clinicId = (req as any).clinicId;
+            if (!clinicId) return res.status(401).json({ message: 'Clínica não identificada no contexto do sistema' });
 
             if (!(req as any).file) {
                 return res.status(400).json({ message: 'Nenhum arquivo enviado' });
