@@ -19,7 +19,7 @@ import Inventory from './pages/Inventory';
 import CashFlow from './pages/CashFlow';
 import Goals from './pages/Goals';
 import DocumentsPage from './pages/Documents';
-import Pricing from './pages/Pricing';
+import Pricing from './pages/pricing';
 import Contact from './pages/Contact';
 import CRMPage from './pages/CRM';
 import Agenda from './pages/Agenda';
