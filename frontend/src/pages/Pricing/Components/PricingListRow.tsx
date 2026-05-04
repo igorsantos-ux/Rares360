@@ -11,7 +11,7 @@ interface Props {
   config: PricingConfig;
 }
 
-export const PricingTableRow = memo(({ procedure, config }: Props) => {
+export const PricingListRow = memo(({ procedure, config }: Props) => {
   const queryClient = useQueryClient();
   const [localPrice, setLocalPrice] = useState(procedure.salePrice);
 

@@ -9,10 +9,10 @@ import {
   Calculator
 } from 'lucide-react';
 import { usePricingList } from './Hooks/usePricingList';
-import { PricingConfigPanel } from './Components/PricingConfigPanel';
-import { PricingKPICards } from './Components/PricingKPICards';
-import { PricingTable } from './Components/PricingTable';
-import { PricingImportModal } from './Components/PricingImportModal';
+import { PricingConfigPanel } from './Components/ConfigPanel';
+import { PricingKPICards } from './Components/KPICards';
+import { PricingTable } from './Components/PricingList';
+import { PricingImportModal } from './Components/ImportModal';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import {
@@ -124,7 +124,7 @@ const PricingDiagnosis = () => {
       </div>
 
       {/* Main Table */}
-      <PricingTable 
+      <PricingList 
         procedures={data?.procedures || []} 
         config={data?.config} 
         isLoading={isLoading} 

@@ -1,4 +1,4 @@
-import { PricingTableRow } from './PricingTableRow';
+import { PricingListRow } from './PricingListRow';
 // v1.1 - Casing fix
 import type { PricingConfig } from '../Utils/PricingCalc';
 
@@ -8,7 +8,7 @@ interface Props {
   isLoading: boolean;
 }
 
-export const PricingTable = ({ procedures, config, isLoading }: Props) => {
+export const PricingList = ({ procedures, config, isLoading }: Props) => {
   if (isLoading) {
     return (
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -45,7 +45,7 @@ export const PricingTable = ({ procedures, config, isLoading }: Props) => {
           </thead>
           <tbody>
             {procedures.map((proc) => (
-              <PricingTableRow 
+              <PricingListRow 
                 key={proc.id} 
                 procedure={proc} 
                 config={config} 
