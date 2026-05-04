@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   TrendingUp, 
   Search, 
@@ -36,6 +36,13 @@ const PricingDiagnosis = () => {
   const procedures = data?.procedures ?? [];
   const kpis = data?.kpis ?? { total: 0, critica: 0, ok: 0, ideal: 0, semPreco: 0 };
   const config = data?.config;
+
+  // Debug para console do navegador
+  useEffect(() => {
+    if (data) {
+      console.log('📊 Dados de Precificação Carregados:', data);
+    }
+  }, [data]);
 
   if (isLoading && !data) {
     return (
@@ -164,3 +171,4 @@ const PricingDiagnosis = () => {
 };
 
 export default PricingDiagnosis;
+
