@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings2, Info } from 'lucide-react';
-import { usePricingConfig } from '../hooks/usePricingConfig';
+import { usePricingConfig } from '../Hooks/usePricingConfig';
 
 export const PricingConfigPanel = () => {
   const { config, updateConfig, isUpdating } = usePricingConfig();

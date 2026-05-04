@@ -1,6 +1,6 @@
 import { PricingListRow } from './PricingListRow';
 // v1.1 - Casing fix
-import type { PricingConfig } from '../Utils/PricingCalc';
+import type { PricingConfig } from '../Utils/pricingCalc';
 
 interface Props {
   procedures: any[];
