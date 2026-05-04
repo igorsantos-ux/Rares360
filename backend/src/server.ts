@@ -80,6 +80,9 @@ const app = express();
 // ═══ SEC-011: Confiar no Proxy (Easypanel/Nginx/Cloudflare) para IP Real ═══
 app.set('trust proxy', true);
 
+// Desabilitar ETag globalmente para evitar respostas 304 sem corpo em rotas dinâmicas
+app.set('etag', false);
+
 // Middleware para extrair IP real do header CF-Connecting-IP
 app.use((req, res, next) => {
   const cfIp = req.headers['cf-connecting-ip'];

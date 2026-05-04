@@ -35,11 +35,21 @@ const round1 = (n: number) => Math.round(n * 10) / 10;
 
 export function calcPricing(
   input: ProcedureInput,
-  config: PricingConfig
+  config?: PricingConfig
 ): PricingResult {
+  const defaultConfig: PricingConfig = {
+    taxaSalaPerMin: 4.45,
+    impostosRate: 0.08,
+    cartaoRate: 0.03,
+    comissaoRate: 0.02,
+    repasseRate: 0.35,
+    margemAlvo: 0.30
+  };
+
+  const finalConfig = config || defaultConfig;
   const { productCost, duration, salePrice } = input;
   const { taxaSalaPerMin, impostosRate, cartaoRate,
-          comissaoRate, repasseRate, margemAlvo } = config;
+          comissaoRate, repasseRate, margemAlvo } = finalConfig;
 
   const custoSala = duration * (taxaSalaPerMin || 0);
   const taxasSobrePreco = (impostosRate || 0) + (cartaoRate || 0) + (comissaoRate || 0) + (repasseRate || 0);

@@ -30,8 +30,13 @@ const PricingDiagnosis = () => {
     status: ''
   });
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const { data, isLoading, isError, refetch, isRefetching } = usePricingList(filters);
 
-  const { data, isLoading, refetch, isRefetching } = usePricingList(filters);
+  const procedures = data?.procedures ?? [];
+  const kpis = data?.kpis ?? { total: 0, critica: 0, ok: 0, ideal: 0, semPreco: 0 };
+  const config = data?.config;
+
+  if (isError) return <div>Erro ao carregar dados.</div>;
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500">
@@ -67,7 +72,7 @@ const PricingDiagnosis = () => {
       </div>
 
       {/* KPI Section */}
-      <PricingKPICards kpis={data?.kpis || { total: 0, critica: 0, ok: 0, ideal: 0, semPreco: 0 }} />
+      <PricingKPICards kpis={kpis} />
 
       {/* Configuration Panel */}
       <PricingConfigPanel />
@@ -125,8 +130,8 @@ const PricingDiagnosis = () => {
 
       {/* Main Table */}
       <PricingList 
-        procedures={data?.procedures || []} 
-        config={data?.config} 
+        procedures={procedures} 
+        config={config} 
         isLoading={isLoading} 
       />
 

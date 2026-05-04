@@ -8,7 +8,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 
 interface Props {
   procedure: any;
-  config: PricingConfig;
+  config?: PricingConfig;
 }
 
 export const PricingListRow = memo(({ procedure, config }: Props) => {

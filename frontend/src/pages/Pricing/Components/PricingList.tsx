@@ -4,7 +4,7 @@ import type { PricingConfig } from '../Utils/pricingCalc';
 
 interface Props {
   procedures: any[];
-  config: PricingConfig;
+  config?: PricingConfig;
   isLoading: boolean;
 }
 

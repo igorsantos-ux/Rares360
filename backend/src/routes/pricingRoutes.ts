@@ -12,8 +12,17 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.use(authMiddleware);
 router.use(requireClinicContext);
 
-router.get('/', controller.getDiagnosis);
-router.get('/config', controller.getConfig);
+// Middleware para desabilitar cache em rotas de dados dinâmicos (evita 304 sem corpo)
+const noCache = (req: any, res: any, next: any) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  res.setHeader('Surrogate-Control', 'no-store');
+  next();
+};
+
+router.get('/', noCache, controller.getDiagnosis);
+router.get('/config', noCache, controller.getConfig);
 router.put('/config', controller.updateConfig);
 router.patch('/:procedureId/price', controller.updatePrice);
 router.post('/procedure', controller.upsertProcedure);
