@@ -831,16 +831,17 @@ export class SaaSController {
 
             const token = AuthService.generateToken({
                 id: user.id,
-                email: user.email,
-                name: user.name,
                 role: user.role,
-                clinicId: user.clinicId,
+                clinicId: user.clinicId || undefined,
                 mustChangePassword: user.mustChangePassword,
                 adminAccessContext
             });
 
+            const refreshToken = AuthService.generateRefreshToken({ id: user.id });
+
             res.json({
                 token,
+                refreshToken,
                 clinic: { id: clinic.id, name: clinic.name, plan: clinic.plan, status: clinic.isActive },
                 redirectTo: '/dashboard'
             });
@@ -879,14 +880,14 @@ export class SaaSController {
             // Reemitir token original do admin
             const token = AuthService.generateToken({
                 id: user.id,
-                email: user.email,
-                name: user.name,
                 role: user.role,
-                clinicId: user.clinicId,
+                clinicId: user.clinicId || undefined,
                 mustChangePassword: user.mustChangePassword
             });
 
-            res.json({ redirectTo: '/saas-dashboard', token });
+            const refreshToken = AuthService.generateRefreshToken({ id: user.id });
+
+            res.json({ redirectTo: '/saas-dashboard', token, refreshToken });
 
         } catch (error) {
             console.error('[ADMIN_EXIT_ERROR]', error);
