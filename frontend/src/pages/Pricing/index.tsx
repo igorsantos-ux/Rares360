@@ -32,11 +32,31 @@ const PricingDiagnosis = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const { data, isLoading, isError, refetch, isRefetching } = usePricingList(filters);
 
+  // Fallbacks seguros
   const procedures = data?.procedures ?? [];
   const kpis = data?.kpis ?? { total: 0, critica: 0, ok: 0, ideal: 0, semPreco: 0 };
   const config = data?.config;
 
-  if (isError) return <div>Erro ao carregar dados.</div>;
+  if (isLoading && !data) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-slate-500 font-bold animate-pulse text-lg">Carregando Diagnóstico...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="p-12 flex flex-col items-center justify-center space-y-4 text-center">
+        <div className="text-red-500 font-black text-xl">Ops! Erro de Conexão</div>
+        <p className="text-slate-500 max-w-md">Não conseguimos carregar os dados de precificação. Verifique sua internet ou tente novamente.</p>
+        <Button onClick={() => refetch()} className="bg-blue-600 text-white rounded-xl px-8 h-12 font-bold shadow-lg">Tentar Novamente</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500">
