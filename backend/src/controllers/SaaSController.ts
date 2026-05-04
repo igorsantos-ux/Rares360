@@ -7,6 +7,7 @@ import { MailService } from '../services/MailService.js';
 import multer from 'multer';
 import { storageProvider } from '../lib/StorageService.js';
 import crypto from 'crypto';
+import path from 'path';
 
 const storage = multer.memoryStorage();
 
