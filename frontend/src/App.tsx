@@ -103,7 +103,7 @@ function App() {
                 </Route>
 
                 {/* Clinic Private Routes */}
-                <Route element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'DOCTOR', 'RECEPTIONIST', 'CLINIC_ADMIN', 'USER']} />}>
+                <Route element={<ProtectedRoute allowedRoles={['ADMIN_GLOBAL', 'OWNER', 'ADMIN', 'DOCTOR', 'RECEPTIONIST', 'CLINIC_ADMIN', 'USER']} />}>
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/billing" element={<BillingPage />} />
                   <Route path="/patients" element={<PatientsPage />} />
