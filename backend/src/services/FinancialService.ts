@@ -59,25 +59,25 @@ export class FinancialService {
         const incomeTransactions = transactions.filter((t: any) => t.type === 'INCOME');
         const expenseTransactions = transactions.filter((t: any) => t.type === 'EXPENSE');
 
-        const grossRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + t.amount, 0);
-        const netRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + (t.netAmount || t.amount), 0);
+        const grossRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + Number(t.amount), 0);
+        const netRevenue = incomeTransactions.reduce((acc: number, t: any) => acc + Number(t.netAmount || t.amount), 0);
         const receivedRevenue = incomeTransactions
             .filter((t: any) => ['PAID', 'RECEBIDO', 'PAGO'].includes(t.status))
-            .reduce((acc: number, t: any) => acc + (t.netAmount || t.amount), 0);
+            .reduce((acc: number, t: any) => acc + Number(t.netAmount || t.amount), 0);
         
         const paidExpenses = expenseTransactions
             .filter((t: any) => ['PAID', 'RECEBIDO', 'PAGO'].includes(t.status))
-            .reduce((acc: number, t: any) => acc + t.amount, 0) + 
-            normalizedPaidInstallments.reduce((acc: number, t: any) => acc + t.amount, 0);
+            .reduce((acc: number, t: any) => acc + Number(t.amount), 0) + 
+            normalizedPaidInstallments.reduce((acc: number, t: any) => acc + Number(t.amount), 0);
 
         const pendingExpenses = expenseTransactions
             .filter((t: any) => ['PENDING', 'PENDENTE'].includes(t.status))
-            .reduce((acc: number, t: any) => acc + t.amount, 0) + 
-            normalizedPendingInstallments.reduce((acc: number, t: any) => acc + t.amount, 0);
+            .reduce((acc: number, t: any) => acc + Number(t.amount), 0) + 
+            normalizedPendingInstallments.reduce((acc: number, t: any) => acc + Number(t.amount), 0);
 
         const pendingReceivables = incomeTransactions
             .filter((t: any) => ['PENDING', 'PENDENTE'].includes(t.status))
-            .reduce((acc: number, t: any) => acc + t.amount, 0);
+            .reduce((acc: number, t: any) => acc + Number(t.amount), 0);
 
         const uniquePatients = new Set(incomeTransactions.map((t: any) => t.patientId).filter(Boolean)).size;
 
@@ -112,15 +112,15 @@ export class FinancialService {
 
         const fixedCosts = transactions
             .filter((t: Transaction) => t.type === 'EXPENSE' && t.category === 'Fixo')
-            .reduce((acc: number, t: Transaction) => acc + t.amount, 0);
+            .reduce((acc: number, t: Transaction) => acc + Number(t.amount), 0);
 
         const variableCosts = transactions
             .filter((t: Transaction) => t.type === 'EXPENSE' && t.category !== 'Fixo')
-            .reduce((acc: number, t: Transaction) => acc + t.amount, 0);
+            .reduce((acc: number, t: Transaction) => acc + Number(t.amount), 0);
 
         const totalSales = transactions
             .filter((t: Transaction) => t.type === 'INCOME')
-            .reduce((acc: number, t: Transaction) => acc + t.amount, 0);
+            .reduce((acc: number, t: Transaction) => acc + Number(t.amount), 0);
 
         const contributionMarginRatio = totalSales > 0 ? 1 - (variableCosts / totalSales) : 0;
         const breakEvenPoint = contributionMarginRatio > 0 ? fixedCosts / contributionMarginRatio : 0;
@@ -158,11 +158,11 @@ export class FinancialService {
 
             const income = monthTransactions
                 .filter(t => t.type === 'INCOME')
-                .reduce((acc, t) => acc + t.amount, 0);
+                .reduce((acc, t) => acc + Number(t.amount), 0);
 
             const expenses = monthTransactions
                 .filter(t => t.type === 'EXPENSE')
-                .reduce((acc, t) => acc + t.amount, 0);
+                .reduce((acc, t) => acc + Number(t.amount), 0);
 
             evolution.push({
                 month: date.toLocaleString('pt-BR', { month: 'short' }).toUpperCase(),
@@ -216,7 +216,7 @@ export class FinancialService {
 
             const dayIncome = transactions
                 .filter(t => t.date >= dayStart && t.date <= dayEnd)
-                .reduce((acc, t) => acc + t.amount, 0);
+                .reduce((acc, t) => acc + Number(t.amount), 0);
 
             accumulated += dayIncome;
             accumulatedTarget += dailyTarget;

@@ -13,54 +13,90 @@ export class DreController {
             const clinicId = tenantContext.getStore()?.clinicId;
             if (!clinicId) return res.status(403).json({ error: 'Clínica não informada no contexto.' });
 
-            const { startDate, endDate, compareWith, viewType } = req.body;
+            const { startDate, endDate } = req.body;
+            const start = new Date(startDate);
+            const end = new Date(endDate);
 
-            // TODO: Construção detalhada do DRE Aggregate! 
-            // Para efeitos de scaffolding inicial, este será o retorno simulado com DRE zerada 
-            // no formato estrito do Front-end C-Level.
-            // Os aggregates de Transaction e AccountPayable serão adicionados na sequencia
+            // ═══ Agregações Reais ═══
+            const [receitasAgg, deducoesAgg, custosVarAgg, custosFixosAgg, despOpAgg, impAgg] = await Promise.all([
+                prisma.transaction.aggregate({
+                    _sum: { amount: true },
+                    where: { clinicId, type: 'INCOME', date: { gte: start, lte: end } }
+                }),
+                prisma.transaction.aggregate({
+                    _sum: { amount: true },
+                    where: { clinicId, type: 'DEDUCTION', date: { gte: start, lte: end } }
+                }),
+                prisma.accountPayable.aggregate({
+                    _sum: { totalAmount: true },
+                    where: { clinicId, costType: 'VARIAVEL', status: 'PAGO', paymentDate: { gte: start, lte: end } }
+                }),
+                prisma.accountPayable.aggregate({
+                    _sum: { totalAmount: true },
+                    where: { clinicId, costType: 'FIXO', status: 'PAGO', paymentDate: { gte: start, lte: end } }
+                }),
+                prisma.accountPayable.aggregate({
+                    _sum: { totalAmount: true },
+                    where: { clinicId, costType: 'OPERACIONAL', status: 'PAGO', paymentDate: { gte: start, lte: end } }
+                }),
+                prisma.accountPayable.aggregate({
+                    _sum: { totalAmount: true },
+                    where: { clinicId, category: { contains: 'IMPOSTO' }, status: 'PAGO', paymentDate: { gte: start, lte: end } }
+                })
+            ]);
+
+            // Helper para extrair valor e converter Decimal -> Number
+            const getVal = (agg: any, key: string = 'amount') => Number(agg?._sum?.[key] || 0);
+
+            const receitaBruta = getVal(receitasAgg);
+            const deducoes = getVal(deducoesAgg);
+            const receitaLiquida = receitaBruta - deducoes;
+            const custosVariaveis = getVal(custosVarAgg, 'totalAmount');
+            const margemContribuicao = receitaLiquida - custosVariaveis;
+            const custosFixos = getVal(custosFixosAgg, 'totalAmount');
+            const despOperacionais = getVal(despOpAgg, 'totalAmount');
+            const ebitda = margemContribuicao - custosFixos - despOperacionais;
+            const impostos = getVal(impAgg, 'totalAmount');
+            const resultadoLiquido = ebitda - impostos;
 
             res.json({
                 kpis: {
-                    receitaBruta: { value: 0, percentChange: 0, sparkline: [0, 0, 0, 0, 0, 0] },
-                    margemContribuicao: { value: 0, percentValue: 0, percentChange: 0, sparkline: [0, 0, 0, 0, 0, 0] },
-                    resultadoLiquido: { value: 0, percentValue: 0, status: 'Atenção', sparkline: [0, 0, 0, 0, 0, 0] },
-                    ebitda: { value: 0, percentValue: 0, percentChange: 0, sparkline: [0, 0, 0, 0, 0, 0] },
-                    pontoEquilibrio: { value: 0, percentChange: 0 },
-                    eficienciaOperacional: { value: 0, trend: 'neutral' }
+                    receitaBruta: { value: receitaBruta, percentChange: 0, sparkline: [0, 0, receitaBruta] },
+                    margemContribuicao: { value: margemContribuicao, percentValue: receitaLiquida > 0 ? (margemContribuicao / receitaLiquida) * 100 : 0, percentChange: 0, sparkline: [] },
+                    resultadoLiquido: { value: resultadoLiquido, percentValue: receitaBruta > 0 ? (resultadoLiquido / receitaBruta) * 100 : 0, status: resultadoLiquido > 0 ? 'Positivo' : 'Atenção', sparkline: [] },
+                    ebitda: { value: ebitda, percentValue: receitaLiquida > 0 ? (ebitda / receitaLiquida) * 100 : 0, percentChange: 0, sparkline: [] },
+                    pontoEquilibrio: { value: custosFixos / 0.6, percentChange: 0 }, // Simplificado
+                    eficienciaOperacional: { value: receitaBruta > 0 ? (ebitda / receitaBruta) * 100 : 0, trend: 'neutral' }
                 },
                 waterfall: [
-                    { name: 'Receita Bruta', value: 0, type: 'total' },
-                    { name: 'Deduções', value: 0, type: 'negative' },
-                    { name: 'Receita Líquida', value: 0, type: 'total' },
-                    { name: 'Custos Variáveis', value: 0, type: 'negative' },
-                    { name: 'Margem Contribuição', value: 0, type: 'total' },
-                    { name: 'Custos Fixos', value: 0, type: 'negative' },
-                    { name: 'Desp. Operacionais', value: 0, type: 'negative' },
-                    { name: 'EBITDA', value: 0, type: 'total' },
-                    { name: 'Depreciação/Juros', value: 0, type: 'negative' },
-                    { name: 'Impostos', value: 0, type: 'negative' },
-                    { name: 'Resultado Líquido', value: 0, type: 'total' }
+                    { name: 'Receita Bruta', value: receitaBruta, type: 'total' },
+                    { name: 'Deduções', value: deducoes, type: 'negative' },
+                    { name: 'Receita Líquida', value: receitaLiquida, type: 'total' },
+                    { name: 'Custos Variáveis', value: custosVariaveis, type: 'negative' },
+                    { name: 'Margem Contribuição', value: margemContribuicao, type: 'total' },
+                    { name: 'Custos Fixos', value: custosFixos, type: 'negative' },
+                    { name: 'Desp. Operacionais', value: despOperacionais, type: 'negative' },
+                    { name: 'EBITDA', value: ebitda, type: 'total' },
+                    { name: 'Impostos', value: impostos, type: 'negative' },
+                    { name: 'Resultado Líquido', value: resultadoLiquido, type: 'total' }
                 ],
                 tableData: [
-                    { id: 'REC_BRUTA', title: '(+) RECEITA OPERACIONAL BRUTA', value: 0, isHighlighted: true, subRows: [] },
-                    { id: 'DED', title: '(-) DEDUÇÕES DA RECEITA', value: 0, isHighlighted: false, subRows: [] },
-                    { id: 'REC_LIQ', title: '(=) RECEITA OPERACIONAL LÍQUIDA', value: 0, isHighlighted: true },
-                    { id: 'CUSTOS_VAR', title: '(-) CUSTOS E DESPESAS VARIÁVEIS', value: 0, isHighlighted: false, subRows: [] },
-                    { id: 'MARGEM_CONTRIB', title: '(=) MARGEM DE CONTRIBUIÇÃO', value: 0, isHighlighted: true },
-                    { id: 'CUSTOS_FIXOS', title: '(-) CUSTOS FIXOS', value: 0, isHighlighted: false, subRows: [] },
-                    { id: 'DESP_OP', title: '(-) DESPESAS OPERACIONAIS', value: 0, isHighlighted: false, subRows: [] },
-                    { id: 'EBITDA', title: '(=) EBITDA', value: 0, isHighlighted: true },
-                    { id: 'DEP', title: '(-) DEPRECIAÇÃO E AMORTIZAÇÃO', value: 0, isHighlighted: false },
-                    { id: 'FIN', title: '(-) DESPESAS FINANCEIRAS', value: 0, isHighlighted: false },
-                    { id: 'IMP', title: '(-) IMPOSTOS (IRPJ/CSLL)', value: 0, isHighlighted: false },
-                    { id: 'RESULTADO_LIQ', title: '(=) RESULTADO LÍQUIDO', value: 0, isHighlighted: true }
+                    { id: 'REC_BRUTA', title: '(+) RECEITA OPERACIONAL BRUTA', value: receitaBruta, isHighlighted: true, subRows: [] },
+                    { id: 'DED', title: '(-) DEDUÇÕES DA RECEITA', value: deducoes, isHighlighted: false, subRows: [] },
+                    { id: 'REC_LIQ', title: '(=) RECEITA OPERACIONAL LÍQUIDA', value: receitaLiquida, isHighlighted: true },
+                    { id: 'CUSTOS_VAR', title: '(-) CUSTOS E DESPESAS VARIÁVEIS', value: custosVariaveis, isHighlighted: false, subRows: [] },
+                    { id: 'MARGEM_CONTRIB', title: '(=) MARGEM DE CONTRIBUIÇÃO', value: margemContribuicao, isHighlighted: true },
+                    { id: 'CUSTOS_FIXOS', title: '(-) CUSTOS FIXOS', value: custosFixos, isHighlighted: false, subRows: [] },
+                    { id: 'DESP_OP', title: '(-) DESPESAS OPERACIONAIS', value: despOperacionais, isHighlighted: false, subRows: [] },
+                    { id: 'EBITDA', title: '(=) EBITDA', value: ebitda, isHighlighted: true },
+                    { id: 'IMP', title: '(-) IMPOSTOS (IRPJ/CSLL)', value: impostos, isHighlighted: false },
+                    { id: 'RESULTADO_LIQ', title: '(=) RESULTADO LÍQUIDO', value: resultadoLiquido, isHighlighted: true }
                 ],
                 compositionData: [
-                    { name: 'Insumos', value: 0, color: '#3B6D11' },
-                    { name: 'Folha', value: 0, color: '#BA7517' },
-                    { name: 'Aluguel', value: 0, color: '#4B5563' },
-                    { name: 'Outros', value: 0, color: '#9CA3AF' }
+                    { name: 'Insumos', value: custosVariaveis, color: '#3B6D11' },
+                    { name: 'Custos Fixos', value: custosFixos, color: '#BA7517' },
+                    { name: 'Desp. Operacionais', value: despOperacionais, color: '#4B5563' },
+                    { name: 'Impostos', value: impostos, color: '#9CA3AF' }
                 ],
                 marginEvolution: [],
                 topExpenses: []
