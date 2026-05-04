@@ -239,23 +239,63 @@ export class SaaSController {
 
             // Delete all related records first to avoid foreign key constraints
             await basePrisma.$transaction([
+                // Módulo de Faturamento V2 e dependências complexas (Filhos primeiro)
+                basePrisma.baixaEstoqueExecucao.deleteMany({ where: { execucao: { contaItem: { conta: { clinicId: id } } } } }),
+                basePrisma.execucaoProcedimentoV2.deleteMany({ where: { contaItem: { conta: { clinicId: id } } } }),
+                basePrisma.parcelaContaPaciente.deleteMany({ where: { conta: { clinicId: id } } }),
+                basePrisma.contaPacienteItem.deleteMany({ where: { conta: { clinicId: id } } }),
+                basePrisma.documentoPaciente.deleteMany({ where: { paciente: { clinicId: id } } }),
+                basePrisma.orcamentoItem.deleteMany({ where: { orcamento: { clinicId: id } } }),
+                basePrisma.contrato.deleteMany({ where: { clinicId: id } }),
+                basePrisma.orcamento.deleteMany({ where: { clinicId: id } }),
+                basePrisma.contaPaciente.deleteMany({ where: { clinicId: id } }),
+                basePrisma.termo.deleteMany({ where: { clinicId: id } }),
+                
+                // Configurações e Regras
+                basePrisma.regraRepasseMedico.deleteMany({ where: { clinicId: id } }),
+                basePrisma.regraComissaoEquipe.deleteMany({ where: { clinicId: id } }),
+                basePrisma.impostoEmissao.deleteMany({ where: { clinicId: id } }),
+                basePrisma.categoriaProcedimento.deleteMany({ where: { clinicId: id } }),
+                basePrisma.formaPagamento.deleteMany({ where: { clinicId: id } }),
+                
+                // Estoque e Suprimentos
+                basePrisma.stockMovement.deleteMany({ where: { clinicId: id } }),
+                basePrisma.inventoryUsage.deleteMany({ where: { clinicId: id } }),
+                basePrisma.procedimentoInsumo.deleteMany({ where: { procedimento: { clinicId: id } } }),
+                basePrisma.inventoryItem.deleteMany({ where: { clinicId: id } }),
+                basePrisma.setor.deleteMany({ where: { clinicId: id } }),
+                basePrisma.fornecedor.deleteMany({ where: { clinicId: id } }),
+
+                // Atendimento e Clínico
+                basePrisma.procedureExecution.deleteMany({ where: { clinicId: id } }),
+                basePrisma.treatmentItem.deleteMany({ where: { treatmentPlan: { clinicId: id } } }),
+                basePrisma.treatmentPlan.deleteMany({ where: { clinicId: id } }),
+                basePrisma.accountReceivable.deleteMany({ where: { clinicId: id } }),
+                basePrisma.monthlyGoal.deleteMany({ where: { clinicId: id } }),
+                basePrisma.procedure.deleteMany({ where: { clinicId: id } }),
+                basePrisma.appointment.deleteMany({ where: { clinicId: id } }),
+                basePrisma.room.deleteMany({ where: { clinicId: id } }),
+                basePrisma.equipment.deleteMany({ where: { clinicId: id } }),
+                basePrisma.clinicalEvolution.deleteMany({ where: { clinicId: id } }),
+                basePrisma.prescription.deleteMany({ where: { clinicId: id } }),
+                basePrisma.task.deleteMany({ where: { clinicId: id } }),
+
+                // Financeiro Legado e Core
                 basePrisma.transaction.deleteMany({ where: { clinicId: id } }),
+                basePrisma.accountPayableInstallment.deleteMany({ where: { accountPayable: { clinicId: id } } }),
                 basePrisma.accountPayable.deleteMany({ where: { clinicId: id } }),
                 basePrisma.dailyClosure.deleteMany({ where: { clinicId: id } }),
-                basePrisma.inventoryItem.deleteMany({ where: { clinicId: id } }),
-                basePrisma.stockMovement.deleteMany({ where: { clinicId: id } }),
                 basePrisma.financialGoal.deleteMany({ where: { clinicId: id } }),
                 basePrisma.lead.deleteMany({ where: { clinicId: id } }),
                 basePrisma.document.deleteMany({ where: { clinicId: id } }),
                 basePrisma.clinicDocument.deleteMany({ where: { clinicId: id } }),
                 basePrisma.pricingSimulation.deleteMany({ where: { clinicId: id } }),
-                basePrisma.procedureExecution.deleteMany({ where: { clinicId: id } }),
-                basePrisma.procedure.deleteMany({ where: { clinicId: id } }),
-                basePrisma.task.deleteMany({ where: { clinicId: id } }),
+                basePrisma.importBatch.deleteMany({ where: { clinicId: id } }),
+
+                // Entidades Base (Mestres)
                 basePrisma.doctor.deleteMany({ where: { clinicId: id } }),
                 basePrisma.patient.deleteMany({ where: { clinicId: id } }),
-                basePrisma.importBatch.deleteMany({ where: { clinicId: id } }),
-                basePrisma.appointment.deleteMany({ where: { clinicId: id } }),
+                basePrisma.auditLog.deleteMany({ where: { clinicId: id } }),
                 basePrisma.user.deleteMany({ where: { clinicId: id } }),
                 basePrisma.clinic.delete({ where: { id } })
             ]);

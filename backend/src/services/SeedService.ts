@@ -1,6 +1,6 @@
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import prisma from '../lib/prisma.js';
+import prisma, { basePrisma } from '../lib/prisma.js';
 import { AuthService } from './AuthService.js';
 
 const execAsync = promisify(exec);
@@ -60,21 +60,24 @@ export class SeedService {
     static async runSeed() {
         console.log('--- Iniciando Seed de Dados de Teste ---');
         // Limpeza (Não limpamos usuários aqui para evitar deslogar quem está testando)
-        await prisma.transaction.deleteMany();
-        await prisma.financialGoal.deleteMany();
-        await prisma.lead.deleteMany();
-        await prisma.inventoryItem.deleteMany();
-        await prisma.doctor.deleteMany();
-        await prisma.patient.deleteMany();
-        await prisma.clinic.deleteMany();
+        await basePrisma.stockMovement.deleteMany();
+        await basePrisma.inventoryUsage.deleteMany();
+        await basePrisma.inventoryItem.deleteMany();
+        await basePrisma.setor.deleteMany();
+        await basePrisma.transaction.deleteMany();
+        await basePrisma.financialGoal.deleteMany();
+        await basePrisma.lead.deleteMany();
+        await basePrisma.doctor.deleteMany();
+        await basePrisma.patient.deleteMany();
+        await basePrisma.clinic.deleteMany();
 
         const defaultHashedPassword = await AuthService.hashPassword('admin123');
 
         // 1. Garantir Admin (Sem sobrescrever senha se já existir)
         const adminEmail = 'admin@heathfinance.com.br';
-        const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+        const existingAdmin = await basePrisma.user.findUnique({ where: { email: adminEmail } });
         if (!existingAdmin) {
-            await prisma.user.create({
+            await basePrisma.user.create({
                 data: {
                     name: 'Igor Admin',
                     email: adminEmail,
@@ -85,7 +88,7 @@ export class SeedService {
         }
 
         // 2. Criar Clínica de Teste (Novo Schema)
-        const clinic = await prisma.clinic.create({
+        const clinic = await basePrisma.clinic.create({
             data: {
                 name: 'Clínica Health Teste',
                 razaoSocial: 'Health Finance Teste LTDA',
@@ -109,16 +112,16 @@ export class SeedService {
         ];
 
         for (const setor of setoresPadrao) {
-            await prisma.setor.create({
+            await basePrisma.setor.create({
                 data: { ...setor, clinicId: clinic.id }
             });
         }
 
         // 3. Criar Roberta Alamino (Sem sobrescrever senha)
         const robertaEmail = 'roberta@alamino.com';
-        const existingRoberta = await prisma.user.findUnique({ where: { email: robertaEmail } });
+        const existingRoberta = await basePrisma.user.findUnique({ where: { email: robertaEmail } });
         if (!existingRoberta) {
-            await prisma.user.create({
+            await basePrisma.user.create({
                 data: {
                     name: 'Roberta Alamino',
                     email: robertaEmail,
@@ -139,7 +142,7 @@ export class SeedService {
 
         const createdDoctors = [];
         for (const d of doctors) {
-            createdDoctors.push(await prisma.doctor.create({ data: d }));
+            createdDoctors.push(await basePrisma.doctor.create({ data: d }));
         }
 
         // 5. Pacientes
@@ -153,7 +156,7 @@ export class SeedService {
 
         const createdPatients = [];
         for (const c of patients) {
-            createdPatients.push(await prisma.patient.create({ data: c }));
+            createdPatients.push(await basePrisma.patient.create({ data: c }));
         }
 
         // 6. Transações 2026
@@ -172,7 +175,7 @@ export class SeedService {
                 const patient = createdPatients[Math.floor(Math.random() * createdPatients.length)];
                 const day = Math.floor(Math.random() * 28) + 1;
 
-                await prisma.transaction.create({
+                await basePrisma.transaction.create({
                     data: {
                         description: `Atendimento ${proc.name} - ${patient.fullName}`,
                         amount: proc.price,
@@ -188,10 +191,10 @@ export class SeedService {
                 });
             }
 
-            await prisma.transaction.create({
+            await basePrisma.transaction.create({
                 data: { description: 'Aluguel', amount: 8000, type: 'EXPENSE', category: 'Custos Fixos', clinicId: clinic.id, date: new Date(2026, month - 1, 5) }
             });
-            await prisma.transaction.create({
+            await basePrisma.transaction.create({
                 data: { description: 'Salários Equipe', amount: 12000, type: 'EXPENSE', category: 'Custos Fixos', clinicId: clinic.id, date: new Date(2026, month - 1, 20) }
             });
         }
@@ -203,7 +206,7 @@ export class SeedService {
             { month: 3, year: 2026, target: 150000, achieved: 45000, type: 'PROFIT', clinicId: clinic.id },
         ];
         for (const g of goals) {
-            await prisma.financialGoal.create({ data: g });
+            await basePrisma.financialGoal.create({ data: g });
         }
 
         // 8. Leads (Global ou por clínica? No schema não tem clinicId, vou manter global por enquanto ou adicionar depois)
@@ -213,7 +216,7 @@ export class SeedService {
             { name: 'Beatriz F.', source: 'Instagram', status: 'Convertido', clinicId: clinic.id },
         ];
         for (const l of leads) {
-            await prisma.lead.create({ data: l });
+            await basePrisma.lead.create({ data: l });
         }
 
         // 9. Estoque
@@ -222,7 +225,7 @@ export class SeedService {
             { name: 'Ácido Hialurônico', category: 'Injetáveis', quantity: 25, minQuantity: 10, price: 850, clinicId: clinic.id },
         ];
         for (const it of items) {
-            await prisma.inventoryItem.create({ data: it });
+            await basePrisma.inventoryItem.create({ data: it });
         }
     }
 }
