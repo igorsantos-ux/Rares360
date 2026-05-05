@@ -114,6 +114,9 @@ model Clinic {
   // ═══ Módulo de Precificação Dinâmica ═══
   pricingConfig  PricingConfig?
   procedurePrices ProcedurePrice[]
+
+  // ═══ Módulo de Investimentos ═══
+  investments    Investment[]
 }
 
 enum AuditAction {
@@ -1451,3 +1454,39 @@ model ProcedurePrice {
   @@index([clinicId])
 }
 
+model Investment {
+  id              String    @id @default(cuid())
+  clinicId        String
+  nome            String
+  categoria       InvestmentCategory
+  valorTotal      Float
+  entrada         Float     @default(0)
+  parcelas        Int       @default(1)
+  jurosMes        Float     @default(0)
+  dataAquisicao   DateTime
+  vidaUtilAnos    Int       @default(5)
+  valorResidualPct Float    @default(0.10)
+  ticketMedio     Float
+  sessoesMetaMes  Int
+  custoInsumoSessao Float   @default(0)
+  custoFixoMensal Float     @default(0)
+  taxasRepasse    Float     @default(0.40)
+  ativo           Boolean   @default(true)
+  notas           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  clinic          Clinic    @relation(fields:[clinicId],references:[id])
+  @@index([clinicId])
+}
+
+enum InvestmentCategory {
+  EQUIPAMENTO_LASER
+  EQUIPAMENTO_TECNOLOGIA
+  EQUIPAMENTO_ESTETICO
+  REFORMA
+  MARKETING
+  TREINAMENTO
+  CAPITAL_GIRO
+  OUTRO
+}

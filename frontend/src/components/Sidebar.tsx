@@ -80,6 +80,7 @@ const Sidebar = () => {
                 { icon: <Users size={20} />, label: "Pacientes", path: "/patients" },
                 { icon: <Calculator size={20} />, label: "Procedimentos", path: "/procedures" },
                 { icon: <TrendingUp size={20} />, label: "Precificação", path: "/pricing" },
+                { icon: <Activity size={20} />, label: "Investimentos", path: "/investments" },
                 { icon: <Package size={20} />, label: "Estoque", path: "/inventory", id: "estoque-insumos" },
                 { icon: <Brain size={20} />, label: "Inteligência de Compras", path: "/pge", id: "pge-compras" },
                 { icon: <Target size={20} />, label: "Metas", path: "/goals" },

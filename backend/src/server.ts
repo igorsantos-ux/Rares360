@@ -40,6 +40,7 @@ import auditRoutes from './routes/auditRoutes.js';
 import integrationRoutes from './routes/integrationRoutes.js';
 import dreRoutes from './routes/dreRoutes.js';
 import dfcRoutes from './routes/dfcRoutes.js';
+import investmentRoutes from './routes/investmentRoutes.js';
 
 import importRoutes from './routes/importRoutes.js';
 import cashRoutes from './routes/cashRoutes.js';
@@ -229,6 +230,7 @@ app.use('/api/management', authMiddleware, tenantMiddleware, apiLimiter, managem
 app.use('/api/integrations', authMiddleware, tenantMiddleware, apiLimiter, integrationRoutes);
 app.use('/api/dre', authMiddleware, tenantMiddleware, apiLimiter, dreRoutes);
 app.use('/api/dfc', authMiddleware, tenantMiddleware, apiLimiter, dfcRoutes);
+app.use('/api/investments', authMiddleware, tenantMiddleware, apiLimiter, investmentRoutes);
 app.use('/api/import', authMiddleware, tenantMiddleware, apiLimiter, importRoutes);
 app.use('/api/inventory', authMiddleware, tenantMiddleware, apiLimiter, inventoryRoutes);
 app.use('/api/treatment-plans', authMiddleware, tenantMiddleware, apiLimiter, treatmentPlanRoutes);

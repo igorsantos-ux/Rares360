@@ -33,6 +33,10 @@ import ContasPaciente from './pages/Billing/ContasPaciente';
 import TeamPage from './pages/Management/Team';
 import PurchaseIntelligence from './pages/PurchaseIntelligence';
 import ConfiguracoesClinica from './pages/ConfiguracoesClinica';
+import InvestmentsPage from './pages/Investments';
+import InvestmentNew from './pages/Investments/new';
+import InvestmentDetail from './pages/Investments/[id]';
+import InvestmentEdit from './pages/Investments/edit';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import SaaSManagement from './pages/SaaSManagement';
@@ -118,6 +122,10 @@ function App() {
                   <Route path="/fechamento-caixa" element={<DailyClosure />} />
                   <Route path="/dfc" element={<DFCPage />} />
                   <Route path="/pricing" element={<Pricing />} />
+                  <Route path="/investments" element={<InvestmentsPage />} />
+                  <Route path="/investments/new" element={<InvestmentNew />} />
+                  <Route path="/investments/:id" element={<InvestmentDetail />} />
+                  <Route path="/investments/:id/edit" element={<InvestmentEdit />} />
                   <Route path="/procedures" element={<Procedures />} />
                   <Route path="/tasks" element={<CRMPage />} />
                   <Route path="/goals" element={<Goals />} />
