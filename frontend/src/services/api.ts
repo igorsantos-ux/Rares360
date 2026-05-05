@@ -110,7 +110,8 @@ api.interceptors.response.use(
             url: error.config?.url,
             status: status,
             message: error.message,
-            code: errorCode
+            code: errorCode,
+            data: error.response?.data
         });
 
         return Promise.reject(error);
