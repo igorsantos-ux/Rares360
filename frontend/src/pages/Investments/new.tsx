@@ -10,6 +10,7 @@ export default function InvestmentNew() {
 
   const handleSubmit = async (data: any) => {
     try {
+      console.log('DADOS DO FORM:', data);
       await createInvestment(data);
       toast.success('Investimento cadastrado com sucesso!');
       navigate('/investments');

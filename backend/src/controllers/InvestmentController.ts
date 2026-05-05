@@ -15,18 +15,18 @@ const investmentSchema = z.object({
     'CAPITAL_GIRO',
     'OUTRO'
   ]),
-  valorTotal: z.number().min(0),
-  entrada: z.number().min(0).default(0),
-  parcelas: z.number().int().min(1).default(1),
-  jurosMes: z.number().min(0).default(0),
-  dataAquisicao: z.string().or(z.date()).transform((val) => new Date(val)),
-  vidaUtilAnos: z.number().int().min(1).default(5),
-  valorResidualPct: z.number().min(0).max(1).default(0.1),
-  ticketMedio: z.number().min(0),
-  sessoesMetaMes: z.number().int().min(0),
-  custoInsumoSessao: z.number().min(0).default(0),
-  custoFixoMensal: z.number().min(0).default(0),
-  taxasRepasse: z.number().min(0).max(1).default(0.4),
+  valorTotal: z.coerce.number().min(0),
+  entrada: z.coerce.number().min(0).default(0),
+  parcelas: z.coerce.number().int().min(1).default(1),
+  jurosMes: z.coerce.number().min(0).default(0),
+  dataAquisicao: z.coerce.date(),
+  vidaUtilAnos: z.coerce.number().int().min(1).default(5),
+  valorResidualPct: z.coerce.number().min(0).max(1).default(0.1),
+  ticketMedio: z.coerce.number().min(0),
+  sessoesMetaMes: z.coerce.number().int().min(0),
+  custoInsumoSessao: z.coerce.number().min(0).default(0),
+  custoFixoMensal: z.coerce.number().min(0).default(0),
+  taxasRepasse: z.coerce.number().min(0).max(1).default(0.4),
   notas: z.string().optional().nullable(),
 });
 
@@ -86,12 +86,16 @@ export class InvestmentController {
   static async create(req: any, res: Response) {
     try {
       const clinicId = req.clinicId;
+      console.log('[InvestmentController.create] Body recebido:', JSON.stringify(req.body, null, 2));
+
       const parsed = investmentSchema.safeParse(req.body);
 
       if (!parsed.success) {
+        console.warn('[InvestmentController.create] Erro de validação Zod:', JSON.stringify(parsed.error.errors, null, 2));
         return res.status(400).json({
           error: 'Dados inválidos',
-          details: parsed.error.flatten().fieldErrors
+          detalhes: parsed.error.errors,
+          fieldErrors: parsed.error.flatten().fieldErrors
         });
       }
 
@@ -150,12 +154,16 @@ export class InvestmentController {
     try {
       const { id } = req.params;
       const clinicId = req.clinicId;
+      console.log('[InvestmentController.update] Body recebido:', JSON.stringify(req.body, null, 2));
+
       const parsed = investmentSchema.partial().safeParse(req.body);
 
       if (!parsed.success) {
+        console.warn('[InvestmentController.update] Erro de validação Zod:', JSON.stringify(parsed.error.errors, null, 2));
         return res.status(400).json({
           error: 'Dados inválidos',
-          details: parsed.error.flatten().fieldErrors
+          detalhes: parsed.error.errors,
+          fieldErrors: parsed.error.flatten().fieldErrors
         });
       }
 
@@ -198,12 +206,15 @@ export class InvestmentController {
 
   static async simulate(req: any, res: Response) {
     try {
+      console.log('[InvestmentController.simulate] Body recebido:', JSON.stringify(req.body, null, 2));
       const parsed = investmentSchema.safeParse(req.body);
 
       if (!parsed.success) {
+        console.warn('[InvestmentController.simulate] Erro de validação Zod:', JSON.stringify(parsed.error.errors, null, 2));
         return res.status(400).json({
           error: 'Dados inválidos',
-          details: parsed.error.flatten().fieldErrors
+          detalhes: parsed.error.errors,
+          fieldErrors: parsed.error.flatten().fieldErrors
         });
       }
 
