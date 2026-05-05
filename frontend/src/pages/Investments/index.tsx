@@ -1,6 +1,4 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { Plus, TrendingUp, DollarSign, Clock, AlertCircle, CheckCircle2, ChevronRight } from 'lucide-react';
+import { Plus, TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useInvestments } from '../../hooks/useInvestments';
 import InvestmentSummaryKPIs from './components/InvestmentSummaryKPIs';
