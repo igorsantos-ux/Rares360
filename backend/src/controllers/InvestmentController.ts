@@ -30,6 +30,20 @@ const investmentSchema = z.object({
   notas: z.string().optional().nullable(),
 });
 
+const simulateSchema = z.object({
+  valorTotal: z.coerce.number().min(0),
+  entrada: z.coerce.number().min(0).default(0),
+  parcelas: z.coerce.number().int().min(1).default(1),
+  jurosMes: z.coerce.number().min(0).default(0),
+  vidaUtilAnos: z.coerce.number().int().min(1).default(5),
+  valorResidualPct: z.coerce.number().min(0).max(1).default(0.1),
+  ticketMedio: z.coerce.number().min(0),
+  sessoesMetaMes: z.coerce.number().int().min(0),
+  custoInsumoSessao: z.coerce.number().min(0).default(0),
+  custoFixoMensal: z.coerce.number().min(0).default(0),
+  taxasRepasse: z.coerce.number().min(0).max(1).default(0.4),
+});
+
 export class InvestmentController {
   static async list(req: any, res: Response) {
     try {
@@ -207,14 +221,18 @@ export class InvestmentController {
   static async simulate(req: any, res: Response) {
     try {
       console.log('[InvestmentController.simulate] Body recebido:', JSON.stringify(req.body, null, 2));
-      const parsed = investmentSchema.safeParse(req.body);
+      const parsed = simulateSchema.safeParse(req.body);
 
       if (!parsed.success) {
         console.warn('[InvestmentController.simulate] Erro de validação Zod:', JSON.stringify(parsed.error.errors, null, 2));
         return res.status(400).json({
           error: 'Dados inválidos',
           detalhes: parsed.error.errors,
-          fieldErrors: parsed.error.flatten().fieldErrors
+          campos: parsed.error.errors.map(e => ({
+            campo: e.path.join('.'),
+            mensagem: e.message,
+            recebido: (e as any).received ?? 'ausente'
+          }))
         });
       }
 
